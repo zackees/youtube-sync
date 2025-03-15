@@ -56,4 +56,4 @@ disable_error_code = ["import-untyped"]
 
 
 [project.scripts]
-youtube-sync = "youtube_sync.youtube_sync:main"
+youtube-sync = "youtube_sync.cli:main"
