@@ -1,10 +1,11 @@
 """
 Unit test file.
 """
+
 import os
 import unittest
 
-COMMAND = "None"
+COMMAND = "youtube-sync"
 
 
 class MainTester(unittest.TestCase):

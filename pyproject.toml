@@ -42,3 +42,7 @@ profile = "black"
 [tool.mypy]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
+
+
+[project.scripts]
+youtube-sync = "youtube_sync.cli:main"
