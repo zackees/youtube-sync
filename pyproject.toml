@@ -17,7 +17,6 @@ dependencies = [
     "beautifulsoup4>=4.13.3",
     "keyvalue_sqlite",
     "python-dateutil",
-    "isodate",
     "requests",
     "types-python-dateutil",
     "types-pytz",
