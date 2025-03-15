@@ -4,28 +4,55 @@
 
 import json
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from youtube_sync.vid_entry import VidEntry
+
+
+class Source(Enum):
+    """Source enum."""
+
+    YOUTUBE = "youtube"
+    RUMBLE = "rumble"
+
+    @staticmethod
+    def from_str(value: str) -> "Source":
+        """Convert from string."""
+        value = value.lower()
+        if value == "youtube":
+            return Source.YOUTUBE
+        if value == "rumble":
+            return Source.RUMBLE
+        raise ValueError(f"Unknown source: {value}")
 
 
 @dataclass
 class LibraryData:
     """Library data."""
 
+    channel_name: str
+    channel_url: str
+    source: Source
     vids: list[VidEntry]
 
     def to_json(self) -> dict:
         """Convert to dictionary."""
-        return {"vids": [vid.to_dict() for vid in self.vids]}
+        return {
+            "channel_name": self.channel_name,
+            "channel_url": self.channel_url,
+            "source": self.source.value,
+            "vids": [vid.to_dict() for vid in self.vids],
+        }
 
     def to_json_str(self) -> str:
         """Convert to json string."""
-        return json.dumps(self.to_json())
+        data = self.to_json()
+        return json.dumps(data)
 
-    def merge(self, other: "LibraryData") -> None:
+    def merge(self, vids: list[VidEntry]) -> None:
         """Merge two libraries."""
-        for vid in other.vids:
+        for vid in vids:
             if vid not in self.vids:
                 self.vids.append(vid)
 
@@ -45,8 +72,16 @@ class LibraryData:
                 data_str = data.read_text(encoding="utf-8")
                 data = json.loads(data_str)
                 assert isinstance(data, dict)
+            channel_name = data["channel_name"]
+            channel_url = data["channel_url"]
+            source = Source.from_str(data["source"])
             vids = [VidEntry.from_dict(vid) for vid in data["vids"]]
-            return LibraryData(vids)
+            return LibraryData(
+                channel_name=channel_name,
+                channel_url=channel_url,
+                source=source,
+                vids=vids,
+            )
         except FileNotFoundError as fe:
             return fe
         except Exception as e:

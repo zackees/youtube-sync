@@ -12,7 +12,7 @@ from appdirs import user_data_dir
 from filelock import SoftFileLock
 
 from youtube_sync.downloadmp3 import download_mp3
-from youtube_sync.library_data import LibraryData
+from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.vid_entry import VidEntry
 
 
@@ -48,11 +48,40 @@ def _find_missing_downloads(
 class Library:
     """Represents the library"""
 
-    def __init__(self, library_json_path: Path) -> None:
-        self.lib_path = library_json_path
-        self.out_dir = library_json_path.parent
+    def __init__(
+        self,
+        channel_name: str,
+        channel_url: str,
+        source: Source | str,
+        json_path: Path,
+    ) -> None:
+        if isinstance(source, str):
+            source = Source.from_str(source)
+        self.source = source
+        self.channel_url = channel_url
+        self.channel_name = channel_name
+        self.lib_path = json_path
+        self.out_dir = json_path.parent
         self.load()
         assert isinstance(self.libdata, LibraryData)
+
+    @staticmethod
+    def from_json(json_path: Path) -> "Library | Exception | FileNotFoundError":
+        """Create from json."""
+        with _FILE_LOCK:
+            lib_or_err = LibraryData.from_json(json_path)
+        if not isinstance(lib_or_err, LibraryData):
+            return lib_or_err
+        libdata = lib_or_err
+        channel_name = libdata.channel_name
+        channel_url = libdata.channel_url
+        source = libdata.source
+        return Library(
+            channel_name=channel_name,
+            channel_url=channel_url,
+            source=source,
+            json_path=json_path,
+        )
 
     def __repr__(self) -> str:
         return self.libdata.to_json_str()
@@ -64,6 +93,14 @@ class Library:
         if not isinstance(value, Library):
             return False
         return self.libdata == value.libdata
+
+    def _empty_data(self) -> LibraryData:
+        return LibraryData(
+            channel_name=self.channel_name,
+            channel_url=self.channel_url,
+            source=self.source,
+            vids=[],
+        )
 
     @property
     def path(self) -> Path:
@@ -81,7 +118,7 @@ class Library:
         with _FILE_LOCK:
             lib_or_err = LibraryData.from_json(self.lib_path)
         if isinstance(lib_or_err, FileNotFoundError):
-            lib_or_err = LibraryData(vids=[])
+            lib_or_err = self._empty_data()
             self.libdata = lib_or_err
         elif isinstance(lib_or_err, Exception):
             raise lib_or_err
@@ -94,7 +131,7 @@ class Library:
 
     def save(self, overwrite=False) -> Exception | None:
         """Save json to file."""
-        data = self.libdata or LibraryData(vids=[])
+        data = self.libdata or self._empty_data()
         text = data.to_json_str()
         with _FILE_LOCK:
             self.lib_path.parent.mkdir(parents=True, exist_ok=True)
@@ -107,7 +144,7 @@ class Library:
         """Merge the vids into the library."""
         self.load()
         assert self.libdata is not None
-        self.libdata.merge(LibraryData(vids))
+        self.libdata.merge(vids)
         if save:
             self.save(overwrite=True)
 

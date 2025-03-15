@@ -7,6 +7,7 @@ Command entry point.
 import argparse
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from youtube_sync.youtube_sync import youtube_sync
@@ -23,7 +24,7 @@ class Args:
     """Command line arguments."""
 
     channel_name: str
-    output: str
+    output: Path
     limit_scroll_pages: int
     skip_download: bool
     download_limit: int
@@ -33,7 +34,7 @@ class Args:
     def __post_init__(self) -> None:
         # check types
         _check_type(self.channel_name, str)
-        _check_type(self.output, str)
+        _check_type(self.output, Path)
         _check_type(self.limit_scroll_pages, int)
         _check_type(self.skip_download, bool)
         _check_type(self.download_limit, int)
@@ -82,7 +83,7 @@ def parse_args() -> Args:
     tmp = parser.parse_args()
     args = Args(
         channel_name=tmp.channel_name,
-        output=tmp.output,
+        output=Path(tmp.output),
         limit_scroll_pages=tmp.limit_scroll_pages,
         skip_download=tmp.skip_download,
         download_limit=tmp.download_limit,

@@ -17,9 +17,15 @@ def to_channel_url(channel: str) -> str:
     return out
 
 
-def youtube_library(outputh_path: Path) -> Library:
-    library_json = outputh_path / "library.json"
-    library = Library(library_json)
+def youtube_library(channel_name: str, output: str | Path) -> Library:
+    url = to_channel_url(channel_name)
+    library_json = Path(output) / "library.json"
+    library = Library(
+        channel_name=channel_name,
+        channel_url=url,
+        source="youtube",
+        json_path=library_json,
+    )
     return library
 
 
@@ -47,7 +53,7 @@ def youtube_scan(
 
 def youtube_sync(
     channel_name: str,
-    output: str | Path,
+    output: Path,
     limit_scroll_pages: int,
     download: bool,
     download_limit: int,
@@ -55,16 +61,17 @@ def youtube_sync(
     yt_dlp_uses_docker: bool,
 ) -> Library:
     output = Path(output)  # coerce to Path
-    library = youtube_library(Path(output))
+    # library = youtube_library(Path(output))
+    lib = youtube_library(channel_name, output)
     youtube_scan(
         channel_name=channel_name,
-        library=library,
+        library=lib,
         limit_scroll_pages=limit_scroll_pages,
         skip_scan=skip_scan,
         yt_dlp_uses_docker=yt_dlp_uses_docker,
     )
 
     if download:
-        library.download_missing(download_limit)
+        lib.download_missing(download_limit)
 
-    return library
+    return lib

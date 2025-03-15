@@ -16,8 +16,13 @@ class LibraryTester(unittest.TestCase):
     def test_simple(self) -> None:
         """Test command line interface (CLI)."""
         with TemporaryDirectory() as temp_dir:
-            libjson = Path(temp_dir) / "library.json"
-            lib: Library = Library(libjson)
+            json_path = Path(temp_dir) / "library.json"
+            lib: Library = Library(
+                channel_name="Some channel",
+                channel_url="https://www.youtube.com/channel/123",
+                source="youtube",
+                json_path=json_path,
+            )
             print(lib.path)
             ve: VidEntry = VidEntry(
                 "https://www.youtube.com/watch?v=123",
@@ -25,7 +30,7 @@ class LibraryTester(unittest.TestCase):
                 "some_title.mp3",
             )
             lib.merge([ve], save=True)
-            lib2 = Library(libjson)
+            lib2 = Library.from_json(json_path)
             print(lib2)
             self.assertEqual(lib, lib2)
             print("done")
