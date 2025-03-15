@@ -83,13 +83,10 @@ class Library:
 
     def __init__(self, library_json_path: Path) -> None:
         self.library_json_path = library_json_path
-        self.base_dir = os.path.dirname(library_json_path)
-        pardir = os.path.dirname(library_json_path)
-        if pardir and not os.path.exists(pardir):
-            os.makedirs(pardir, exist_ok=True)
-        if not os.path.exists(library_json_path):
-            with open(library_json_path, encoding="utf-8", mode="w") as filed:
-                filed.write("[]")
+        self.base_dir = library_json_path.parent
+        if not library_json_path.exists():
+            with _FILE_LOCK:
+                save_json(library_json_path, [])
 
     @property
     def path(self) -> Path:
