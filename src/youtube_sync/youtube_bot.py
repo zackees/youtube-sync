@@ -1,4 +1,3 @@
-# flake8: noqa=W293
 # pylint: disable=line-too-long,missing-class-docstring,missing-function-docstring,consider-using-f-string,too-many-locals,invalid-name
 # mypy: ignore-errors
 
