@@ -13,7 +13,7 @@ from .youtube_bot import fetch_all_vids
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser("youtube-pull")
+    parser = argparse.ArgumentParser("youtube-sync")
     parser.add_argument(
         "--channel-name",
         type=str,
