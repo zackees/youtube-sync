@@ -21,7 +21,6 @@ def youtube_sync(
     output: str,
     limit_scroll_pages: int,
     download: bool,
-    skip_download: bool,
     download_limit: int,
     skip_scan: bool,
     yt_dlp_uses_docker: bool,
@@ -44,9 +43,6 @@ def youtube_sync(
     else:
         if not os.path.exists(library_json):
             raise FileNotFoundError(f"{library_json} does not exist. Cannot skip scan.")
+
     if download:
-        print(
-            "Warning: The --download option is deprecated is now implied. Use --skip-download to avoid downloading"
-        )
-    if not skip_download:
         library.download_missing(download_limit)

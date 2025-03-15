@@ -25,7 +25,6 @@ class Args:
     channel_name: str
     output: str
     limit_scroll_pages: int
-    download: bool
     skip_download: bool
     download_limit: int
     skip_scan: bool
@@ -36,7 +35,6 @@ class Args:
         _check_type(self.channel_name, str)
         _check_type(self.output, str)
         _check_type(self.limit_scroll_pages, int)
-        _check_type(self.download, bool)
         _check_type(self.skip_download, bool)
         _check_type(self.download_limit, int)
         _check_type(self.skip_scan, bool)
@@ -59,11 +57,6 @@ def parse_args() -> Args:
         type=int,
         default=1000,
         help="Limit the number of the number of pages to scroll down",
-    )
-    parser.add_argument(
-        "--download",
-        action="store_true",
-        help="Deprecated: This option does nothing.",
     )
     parser.add_argument(
         "--skip-download",
@@ -91,7 +84,6 @@ def parse_args() -> Args:
         channel_name=tmp.channel_name,
         output=tmp.output,
         limit_scroll_pages=tmp.limit_scroll_pages,
-        download=tmp.download,
         skip_download=tmp.skip_download,
         download_limit=tmp.download_limit,
         skip_scan=tmp.skip_scan,
@@ -107,7 +99,6 @@ def main() -> None:
         args.channel_name,
         args.output,
         args.limit_scroll_pages,
-        args.download,
         args.skip_download,
         args.download_limit,
         args.skip_scan,
