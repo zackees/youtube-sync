@@ -97,13 +97,13 @@ def main() -> None:
     """Main function."""
     args = parse_args()
     youtube_sync(
-        args.channel_name,
-        args.output,
-        args.limit_scroll_pages,
-        args.skip_download,
-        args.download_limit,
-        args.skip_scan,
-        args.yt_dlp_uses_docker,
+        channel_name=args.channel_name,
+        media_output=args.output,
+        limit_scroll_pages=args.limit_scroll_pages,
+        download=not args.skip_download,
+        download_limit=args.download_limit,
+        skip_scan=args.skip_scan,
+        yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
 
 

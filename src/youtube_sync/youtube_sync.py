@@ -17,15 +17,23 @@ def to_channel_url(channel: str) -> str:
     return out
 
 
-def youtube_library(channel_name: str, output: str | Path) -> Library:
-    url = to_channel_url(channel_name)
-    library_json = Path(output) / "library.json"
+def youtube_library(
+    channel_name: str,
+    channel_url: str | None,  # None means auto-find
+    media_output: Path,
+    library_path: (
+        Path | None
+    ) = None,  # None means place the library in the media_output
+) -> Library:
+    url = channel_url or to_channel_url(channel_name)
+    library_json = library_path or media_output / "library.json"
     library = Library(
         channel_name=channel_name,
         channel_url=url,
         source="youtube",
         json_path=library_json,
     )
+    library.load()
     return library
 
 
@@ -57,16 +65,24 @@ def youtube_download_missing(library: Library, download_limit: int) -> Library:
 
 def youtube_sync(
     channel_name: str,
-    output: Path,
+    media_output: Path,
     limit_scroll_pages: int,
     download: bool,
     download_limit: int,
     skip_scan: bool,
-    yt_dlp_uses_docker: bool,
+    library_path: (
+        Path | None
+    ) = None,  # None means place the library.json file in the media_output
+    channel_url: str | None = None,  # None means auto-find
+    yt_dlp_uses_docker: bool = False,
 ) -> Library:
-    output = Path(output)  # coerce to Path
     # library = youtube_library(Path(output))
-    lib = youtube_library(channel_name, output)
+    lib = youtube_library(
+        channel_name=channel_name,
+        channel_url=channel_url,
+        media_output=media_output,
+        library_path=library_path,
+    )
     youtube_scan(
         library=lib,
         limit_scroll_pages=limit_scroll_pages,

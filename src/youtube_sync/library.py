@@ -127,6 +127,12 @@ class Library:
         else:
             raise ValueError(f"Unexpected return type {type(lib_or_err)}")
         assert isinstance(lib_or_err, LibraryData)
+        assert self.channel_name == lib_or_err.channel_name
+        assert self.channel_url == lib_or_err.channel_url
+        assert self.source == lib_or_err.source
+        self.channel_name = self.libdata.channel_name
+        self.channel_url = self.libdata.channel_url
+        self.source = self.libdata.source
         return self.libdata.vids.copy()
 
     def save(self, overwrite=False) -> Exception | None:
