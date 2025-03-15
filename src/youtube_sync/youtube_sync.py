@@ -107,33 +107,55 @@ def to_channel_url(channel: str) -> str:
     return out
 
 
-def main() -> None:
-    """Main function."""
-    args = parse_args()
-    if args.yt_dlp_uses_docker:
+def youtube_sync(
+    channel_name: str,
+    output: str,
+    limit_scroll_pages: int,
+    download: bool,
+    skip_download: bool,
+    download_limit: int,
+    skip_scan: bool,
+    yt_dlp_uses_docker: bool,
+) -> None:
+    if yt_dlp_uses_docker:
         os.environ["USE_DOCKER_YT_DLP"] = "1"
-    channel_url = to_channel_url(args.channel_name)
-    # base_dir = Path(args.basedir)
-    # output_dir = str(base_dir / args.channel / "youtube")
-    output_dir = args.output
-    limit_scroll_pages = args.limit_scroll_pages
+    channel_url = to_channel_url(channel_name)
+    # base_dir = Path(basedir)
+    # output_dir = str(base_dir / channel / "youtube")
+    output_dir = output
+    limit_scroll_pages = limit_scroll_pages
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     library_json = os.path.join(output_dir, "library.json")
     library = Library(library_json)
-    if not args.skip_scan:
+    if not skip_scan:
         vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
         library.merge(vids)
         print(f"Updated {library_json}")
     else:
         if not os.path.exists(library_json):
             raise FileNotFoundError(f"{library_json} does not exist. Cannot skip scan.")
-    if args.download:
+    if download:
         print(
             "Warning: The --download option is deprecated is now implied. Use --skip-download to avoid downloading"
         )
-    if not args.skip_download:
-        library.download_missing(args.download_limit)
+    if not skip_download:
+        library.download_missing(download_limit)
+
+
+def main() -> None:
+    """Main function."""
+    args = parse_args()
+    youtube_sync(
+        args.channel_name,
+        args.output,
+        args.limit_scroll_pages,
+        args.download,
+        args.skip_download,
+        args.download_limit,
+        args.skip_scan,
+        args.yt_dlp_uses_docker,
+    )
 
 
 if __name__ == "__main__":
