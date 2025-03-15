@@ -29,6 +29,14 @@ class LibraryData:
             if vid not in self.vids:
                 self.vids.append(vid)
 
+    def __eq__(self, value) -> bool:
+        if not isinstance(value, LibraryData):
+            return False
+        return self.vids == value.vids
+
+    def __ne__(self, value) -> bool:
+        return not self.__eq__(value)
+
     @staticmethod
     def from_json(data: dict | Path) -> "LibraryData | Exception | FileNotFoundError":
         """Create from dictionary."""

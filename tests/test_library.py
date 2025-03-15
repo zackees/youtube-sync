@@ -27,6 +27,7 @@ class LibraryTester(unittest.TestCase):
             lib.merge([ve], save=True)
             lib2 = Library(libjson)
             print(lib2)
+            self.assertEqual(lib, lib2)
             print("done")
 
 

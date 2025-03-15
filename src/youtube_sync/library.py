@@ -54,6 +54,15 @@ class Library:
         self.load()
         assert isinstance(self.libdata, LibraryData)
 
+    def __repr__(self) -> str:
+        return self.libdata.to_json_str()
+
+    def __str__(self) -> str:
+        return self.libdata.to_json_str()
+
+    def __eq__(self, value):
+        return self.libdata == value.libdata
+
     @property
     def path(self) -> Path:
         """Get the path."""
