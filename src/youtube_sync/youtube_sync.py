@@ -18,7 +18,6 @@ def to_channel_url(channel: str) -> str:
 
 
 def youtube_library(outputh_path: Path) -> Library:
-    # library_json = os.path.join(output_name, "library.json")
     library_json = outputh_path / "library.json"
     library = Library(library_json)
     return library
