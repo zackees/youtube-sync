@@ -16,4 +16,5 @@ jobs:
 
     - name: Run Linting
       run: |
+        ./install
         ./lint
