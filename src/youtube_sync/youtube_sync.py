@@ -37,7 +37,7 @@ def youtube_scan(
     # output_dir = str(base_dir / channel / "youtube")
     if not skip_scan:
         vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
-        library.merge(vids)
+        library.merge(vids, save=True)
         print(f"Updated {library.path}")
     else:
         if not library.path.exists():

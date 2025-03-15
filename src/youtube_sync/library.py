@@ -81,21 +81,24 @@ class Library:
         assert isinstance(lib_or_err, LibraryData)
         return self.libdata.vids.copy()
 
-    def save(self) -> None:
+    def save(self, overwrite=False) -> Exception | None:
         """Save json to file."""
         data = self.libdata or LibraryData(vids=[])
         text = data.to_json_str()
         with _FILE_LOCK:
             self.lib_path.parent.mkdir(parents=True, exist_ok=True)
+            if self.lib_path.exists() and not overwrite:
+                return FileExistsError(f"{self.lib_path} exists.")
             self.lib_path.write_text(text, encoding="utf-8")
+        return None
 
-    def merge(self, vids: list[VidEntry], save=True) -> None:
+    def merge(self, vids: list[VidEntry], save: bool) -> None:
         """Merge the vids into the library."""
         self.load()
         assert self.libdata is not None
         self.libdata.merge(LibraryData(vids))
         if save:
-            self.save()
+            self.save(overwrite=True)
 
     def download_missing(self, download_limit: int = -1) -> None:
         """Download the missing files."""
@@ -126,7 +129,7 @@ class Library:
     def mark_error(self, vid: VidEntry) -> None:
         """Mark the vid as an error."""
         vid.error = True
-        self.merge([vid])
+        self.merge([vid], save=True)
         print(f"Marked {vid.url} as an error.")
 
     def date_range(self) -> tuple[datetime, datetime] | None:
