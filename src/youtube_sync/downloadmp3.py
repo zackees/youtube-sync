@@ -96,17 +96,16 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
         shutil.copy(os.path.join(temp_dir, "temp.mp3"), str(outmp3))
 
 
-def download_mp3(url: str, outmp3: Path) -> None:
+def download_mp3(url: str, outmp3: Path, yt_dlp_uses_docker: bool) -> None:
     """Download the youtube video as an mp3."""
-    docker_yt_dlp = os.environ.get("USE_DOCKER_YT_DLP", "0") == "1"
-    if docker_yt_dlp:
+    if yt_dlp_uses_docker:
         return docker_yt_dlp_download_mp3(url, outmp3)
     return yt_dlp_download_mp3(url, outmp3)
 
 
-def update_yt_dlp(check=True) -> bool:
-    docker_yt_dlp = os.environ.get("USE_DOCKER_YT_DLP", "0") == "1"
-    if docker_yt_dlp:
+def update_yt_dlp(check: bool, yt_dlp_uses_docker: bool) -> bool:
+    if yt_dlp_uses_docker:
+        warnings.warn("yt-dlp-uses-docker is True. Cannot update yt-dlp.")
         return False
     yt_exe = _yt_exe_path()
     cmd_list = [yt_exe, "--update"]
@@ -143,7 +142,7 @@ def unit_test() -> None:
     """Run the tests."""
     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
     outmp3 = Path("tmp.mp3")
-    download_mp3(url, outmp3)
+    download_mp3(url=url, outmp3=outmp3, yt_dlp_uses_docker=False)
     print(f"Downloaded {url} as {outmp3}")
     os.remove(outmp3)
 

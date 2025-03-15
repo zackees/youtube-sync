@@ -154,11 +154,13 @@ class Library:
         if save:
             self.save(overwrite=True)
 
-    def download_missing(self, download_limit: int = -1) -> None:
+    def download_missing(
+        self, download_limit: int | None, yt_dlp_uses_docker: bool
+    ) -> None:
         """Download the missing files."""
         download_count = 0
         while True:
-            if download_limit != -1 and download_count >= download_limit:
+            if (download_limit is not None) and (download_count >= download_limit):
                 break
             missing_downloads = self.find_missing_downloads()
             # make full paths
@@ -172,7 +174,11 @@ class Library:
                 "###################"
             )
             try:
-                download_mp3(url=next_url, outmp3=next_mp3_path)
+                download_mp3(
+                    url=next_url,
+                    outmp3=next_mp3_path,
+                    yt_dlp_uses_docker=yt_dlp_uses_docker,
+                )
             except Exception as e:  # pylint: disable=broad-except
                 stacktrace_str = traceback.format_exc()
                 print(f"Error downloading {next_url}: {e}")
