@@ -12,6 +12,7 @@ from appdirs import user_data_dir
 from filelock import SoftFileLock
 
 from youtube_sync.downloadmp3 import download_mp3
+from youtube_sync.library_data import LibraryData
 from youtube_sync.vid_entry import VidEntry
 
 
@@ -23,11 +24,11 @@ def _get_library_json_lock_path() -> str:
 _FILE_LOCK = SoftFileLock(_get_library_json_lock_path())
 
 
-def find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
+def _find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
     """Find missing downloads."""
     pardir = library_json_path.parent
     out: list[VidEntry] = []
-    data = load_json(library_json_path)
+    data = _load_json(library_json_path)
     for vid in data:
         file_path = vid.file_path
         full_path = pardir / file_path
@@ -44,7 +45,7 @@ def find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
     return out
 
 
-def load_json(file_path: Path) -> list[VidEntry]:
+def _load_json(file_path: Path) -> list[VidEntry]:
     """Load json from file."""
     if not file_path.exists():
         return []
@@ -53,21 +54,12 @@ def load_json(file_path: Path) -> list[VidEntry]:
     return VidEntry.deserialize(data)
 
 
-def save_json(file_path: Path, data: list[VidEntry]) -> None:
+def _save_json(file_path: Path, data: LibraryData) -> None:
     """Save json to file."""
-    json_out = VidEntry.serialize(data)
+    text = data.to_json_str()
     with _FILE_LOCK:
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(json_out, encoding="utf-8")
-
-
-def merge_into_library(library_json_path: Path, vids: list[VidEntry]) -> None:
-    """Merge the vids into the library."""
-    existing_entries = load_json(library_json_path)
-    for vid in vids:
-        if vid not in existing_entries:
-            existing_entries.append(vid)
-    save_json(library_json_path, existing_entries)
+        file_path.write_text(text, encoding="utf-8")
 
 
 class Library:
@@ -76,8 +68,8 @@ class Library:
     def __init__(self, library_json_path: Path) -> None:
         self.library_json_path = library_json_path
         self.base_dir = library_json_path.parent
-        if not library_json_path.exists():
-            save_json(library_json_path, [])
+        self.load()
+        assert isinstance(self.libdata, LibraryData)
 
     @property
     def path(self) -> Path:
@@ -86,19 +78,37 @@ class Library:
 
     def find_missing_downloads(self) -> list[VidEntry]:
         """Find missing downloads."""
-        return find_missing_downloads(self.library_json_path)
+        return _find_missing_downloads(self.library_json_path)
 
     def load(self) -> list[VidEntry]:
         """Load json from file."""
-        return load_json(self.library_json_path)
+        # self.libdata = _load_json(self.library_json_path)
+        # return self.libdata.vids
+        lib_or_err = LibraryData.from_json(self.library_json_path)
+        if isinstance(lib_or_err, FileNotFoundError):
+            lib_or_err = LibraryData(vids=[])
+            self.libdata = lib_or_err
+        elif isinstance(lib_or_err, Exception):
+            raise lib_or_err
+        elif isinstance(lib_or_err, LibraryData):
+            self.libdata = lib_or_err
+        else:
+            raise ValueError(f"Unexpected return type {type(lib_or_err)}")
+        assert isinstance(lib_or_err, LibraryData)
+        return self.libdata.vids.copy()
 
-    def save(self, data: list[VidEntry]) -> None:
+    def save(self) -> None:
         """Save json to file."""
-        save_json(self.library_json_path, data)
+        data = self.libdata or LibraryData(vids=[])
+        _save_json(self.library_json_path, data)
 
-    def merge(self, vids: list[VidEntry]) -> None:
+    def merge(self, vids: list[VidEntry], save=True) -> None:
         """Merge the vids into the library."""
-        merge_into_library(self.library_json_path, vids)
+        self.load()
+        assert self.libdata is not None
+        self.libdata.merge(LibraryData(vids))
+        if save:
+            self.save()
 
     def download_missing(self, download_limit: int = -1) -> None:
         """Download the missing files."""
