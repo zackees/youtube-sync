@@ -46,6 +46,8 @@ def find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
 
 def load_json(file_path: Path) -> list[VidEntry]:
     """Load json from file."""
+    if not file_path.exists():
+        return []
     with _FILE_LOCK:
         data = file_path.read_text(encoding="utf-8")
     return VidEntry.deserialize(data)
@@ -55,23 +57,16 @@ def save_json(file_path: Path, data: list[VidEntry]) -> None:
     """Save json to file."""
     json_out = VidEntry.serialize(data)
     with _FILE_LOCK:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(json_out, encoding="utf-8")
 
 
 def merge_into_library(library_json_path: Path, vids: list[VidEntry]) -> None:
     """Merge the vids into the library."""
-    found_entries: list[VidEntry] = []
-    for vid in vids:
-        title = vid.title
-        file_path = vid.file_path
-        found_entries.append(
-            VidEntry(url=vid.url, title=title, file_path=file_path, date=vid.date)
-        )
-
     existing_entries = load_json(library_json_path)
-    for found in found_entries:
-        if found not in existing_entries:
-            existing_entries.append(found)
+    for vid in vids:
+        if vid not in existing_entries:
+            existing_entries.append(vid)
     save_json(library_json_path, existing_entries)
 
 
@@ -117,7 +112,7 @@ class Library:
                 break
             vid = missing_downloads[0]
             next_url = vid.url
-            next_mp3_path = os.path.join(self.base_dir, vid.file_path)
+            next_mp3_path = self.base_dir / vid.file_path
             print(
                 f"\n#######################\n# Downloading missing file {next_url}: {next_mp3_path}\n"
                 "###################"

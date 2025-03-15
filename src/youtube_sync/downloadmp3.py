@@ -25,13 +25,13 @@ def _yt_exe_path() -> str:
     raise FileNotFoundError("yt-dlp not found.")
 
 
-def yt_dlp_download_mp3(url: str, outmp3: str) -> None:
+def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     """Download the youtube video as an mp3."""
     global FFMPEG_PATH_ADDED  # pylint: disable=global-statement
     if not FFMPEG_PATH_ADDED:
         add_paths()
         FFMPEG_PATH_ADDED = True
-    par_dir = os.path.dirname(outmp3)
+    par_dir = os.path.dirname(str(outmp3))
     if par_dir:
         os.makedirs(par_dir, exist_ok=True)
 
@@ -68,7 +68,7 @@ def yt_dlp_download_mp3(url: str, outmp3: str) -> None:
         warnings.warn(f"Failed all attempts to download {url} as mp3.")
 
 
-def docker_yt_dlp_download_mp3(url: str, outmp3: str) -> None:
+def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     """Download the youtube video as an mp3."""
     here = os.path.abspath(os.path.dirname(__file__))
     dockerfile = os.path.join(here, "Dockerfile")
@@ -93,10 +93,10 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: str) -> None:
             cwd=Path(temp_dir),
             cmd_list=cmd_args,
         )
-        shutil.copy(os.path.join(temp_dir, "temp.mp3"), outmp3)
+        shutil.copy(os.path.join(temp_dir, "temp.mp3"), str(outmp3))
 
 
-def download_mp3(url: str, outmp3: str) -> None:
+def download_mp3(url: str, outmp3: Path) -> None:
     """Download the youtube video as an mp3."""
     docker_yt_dlp = os.environ.get("USE_DOCKER_YT_DLP", "0") == "1"
     if docker_yt_dlp:
@@ -142,7 +142,7 @@ def update_yt_dlp(check=True) -> bool:
 def unit_test() -> None:
     """Run the tests."""
     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
-    outmp3 = "tmp.mp3"
+    outmp3 = Path("tmp.mp3")
     download_mp3(url, outmp3)
     print(f"Downloaded {url} as {outmp3}")
     os.remove(outmp3)
