@@ -61,6 +61,8 @@ class Library:
         return self.libdata.to_json_str()
 
     def __eq__(self, value):
+        if not isinstance(value, Library):
+            return False
         return self.libdata == value.libdata
 
     @property
