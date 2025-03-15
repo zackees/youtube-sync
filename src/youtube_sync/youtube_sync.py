@@ -30,7 +30,6 @@ def youtube_library(channel_name: str, output: str | Path) -> Library:
 
 
 def youtube_scan(
-    channel_name: str,
     library: Library,
     limit_scroll_pages: int,
     skip_scan: bool,
@@ -38,7 +37,7 @@ def youtube_scan(
 ) -> Library:
     if yt_dlp_uses_docker:
         os.environ["USE_DOCKER_YT_DLP"] = "1"
-    channel_url = to_channel_url(channel_name)
+    channel_url = library.channel_url
     # base_dir = Path(basedir)
     # output_dir = str(base_dir / channel / "youtube")
     if not skip_scan:
@@ -48,6 +47,11 @@ def youtube_scan(
     else:
         if not library.path.exists():
             raise FileNotFoundError(f"{library.path} does not exist. Cannot skip scan.")
+    return library
+
+
+def youtube_download_missing(library: Library, download_limit: int) -> Library:
+    library.download_missing(download_limit)
     return library
 
 
@@ -64,7 +68,6 @@ def youtube_sync(
     # library = youtube_library(Path(output))
     lib = youtube_library(channel_name, output)
     youtube_scan(
-        channel_name=channel_name,
         library=lib,
         limit_scroll_pages=limit_scroll_pages,
         skip_scan=skip_scan,
@@ -72,6 +75,7 @@ def youtube_sync(
     )
 
     if download:
-        lib.download_missing(download_limit)
+        # lib.download_missing(download_limit)
+        youtube_download_missing(lib, download_limit)
 
     return lib
