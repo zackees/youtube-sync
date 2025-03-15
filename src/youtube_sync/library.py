@@ -25,12 +25,13 @@ _FILE_LOCK = SoftFileLock(_get_library_json_lock_path())
 
 def find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
     """Find missing downloads."""
-    pardir = os.path.dirname(library_json_path)
+    pardir = library_json_path.parent
     out: list[VidEntry] = []
     data = load_json(library_json_path)
     for vid in data:
         file_path = vid.file_path
-        if not os.path.exists(os.path.join(pardir, file_path)):
+        full_path = pardir / file_path
+        if not full_path.exists():
             # if error
             if not vid.error:
                 out.append(vid)
