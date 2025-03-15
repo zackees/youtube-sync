@@ -26,7 +26,7 @@ def youtube_library(outputh_path: Path) -> Library:
 
 def youtube_scan(
     channel_name: str,
-    output: str,
+    library: Library,
     limit_scroll_pages: int,
     skip_scan: bool,
     yt_dlp_uses_docker: bool,
@@ -36,34 +36,30 @@ def youtube_scan(
     channel_url = to_channel_url(channel_name)
     # base_dir = Path(basedir)
     # output_dir = str(base_dir / channel / "youtube")
-    output_dir = output
-    limit_scroll_pages = limit_scroll_pages
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    library_json = Path(output_dir) / "library.json"
-    library = Library(library_json)
     if not skip_scan:
         vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
         library.merge(vids)
-        print(f"Updated {library_json}")
+        print(f"Updated {library.path}")
     else:
-        if not os.path.exists(library_json):
-            raise FileNotFoundError(f"{library_json} does not exist. Cannot skip scan.")
+        if not library.path.exists():
+            raise FileNotFoundError(f"{library.path} does not exist. Cannot skip scan.")
     return library
 
 
 def youtube_sync(
     channel_name: str,
-    output: str,
+    output: str | Path,
     limit_scroll_pages: int,
     download: bool,
     download_limit: int,
     skip_scan: bool,
     yt_dlp_uses_docker: bool,
 ) -> Library:
-    library = youtube_scan(
+    output = Path(output)  # coerce to Path
+    library = youtube_library(Path(output))
+    youtube_scan(
         channel_name=channel_name,
-        output=output,
+        library=library,
         limit_scroll_pages=limit_scroll_pages,
         skip_scan=skip_scan,
         yt_dlp_uses_docker=yt_dlp_uses_docker,

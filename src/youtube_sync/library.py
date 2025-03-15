@@ -244,6 +244,11 @@ class Library:
             with open(library_json_path, encoding="utf-8", mode="w") as filed:
                 filed.write("[]")
 
+    @property
+    def path(self) -> Path:
+        """Get the path."""
+        return self.library_json_path
+
     def find_missing_downloads(self) -> list[VidEntry]:
         """Find missing downloads."""
         return find_missing_downloads(self.library_json_path)
