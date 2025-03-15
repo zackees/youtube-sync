@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import warnings
+from pathlib import Path
 
 from docker_run_cmd.api import docker_run
 from static_ffmpeg import add_paths
@@ -87,7 +88,10 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: str) -> None:
             "--no-geo-bypass",
         ]
         docker_run(
-            name="yt-dlp", dockerfile_or_url=dockerfile, cwd=temp_dir, cmd_list=cmd_args
+            name="yt-dlp",
+            dockerfile_or_url=dockerfile,
+            cwd=Path(temp_dir),
+            cmd_list=cmd_args,
         )
         shutil.copy(os.path.join(temp_dir, "temp.mp3"), outmp3)
 

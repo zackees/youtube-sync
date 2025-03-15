@@ -12,7 +12,8 @@ from datetime import datetime
 
 from appdirs import user_data_dir
 from filelock import SoftFileLock as FileLock
-from vidcrawler.downloadmp3 import download_mp3
+
+from .downloadmp3 import download_mp3
 
 
 def _get_library_json_lock_path() -> str:

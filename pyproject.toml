@@ -12,12 +12,6 @@ license = { text = "BSD 3-Clause License" }
 classifiers = ["Programming Language :: Python :: 3"]
 
 dependencies = [
-    "feedparser",
-    "pytz",
-    "beautifulsoup4>=4.13.3",
-    "keyvalue_sqlite",
-    "python-dateutil",
-    "httpx",
     "filelock",
     "static-ffmpeg",
     "pytest-playwright",
