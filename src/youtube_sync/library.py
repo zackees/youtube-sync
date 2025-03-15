@@ -9,11 +9,12 @@ import traceback
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 from appdirs import user_data_dir
-from filelock import SoftFileLock as FileLock
+from filelock import SoftFileLock
 
-from .downloadmp3 import download_mp3
+from youtube_sync.downloadmp3 import download_mp3
 
 
 def _get_library_json_lock_path() -> str:
@@ -21,7 +22,7 @@ def _get_library_json_lock_path() -> str:
     return os.path.join(user_data_dir("vidcrawler"), "library.json.lock")
 
 
-_FILE_LOCK = FileLock(_get_library_json_lock_path())
+_FILE_LOCK = SoftFileLock(_get_library_json_lock_path())
 
 
 def clean_filename(filename: str) -> str:
@@ -175,12 +176,12 @@ class VidEntry:
         return out
 
 
-def find_missing_downloads(library_json_path: str) -> list[VidEntry]:
+def find_missing_downloads(library_json_path: Path) -> list[VidEntry]:
     """Find missing downloads."""
     pardir = os.path.dirname(library_json_path)
     out: list[VidEntry] = []
-    lock = library_json_path + ".lock"
-    with FileLock(lock):
+    lock = str(library_json_path) + ".lock"
+    with SoftFileLock(lock):
         data = load_json(library_json_path)
         for vid in data:
             file_path = vid.file_path
@@ -199,21 +200,21 @@ def find_missing_downloads(library_json_path: str) -> list[VidEntry]:
     return out
 
 
-def load_json(file_path: str) -> list[VidEntry]:
+def load_json(file_path: Path) -> list[VidEntry]:
     """Load json from file."""
-    with open(file_path, encoding="utf-8", mode="r") as filed:
-        data = filed.read()
+    with SoftFileLock(str(file_path) + ".lock"):
+        data = file_path.read_text(encoding="utf-8")
     return VidEntry.deserialize(data)
 
 
-def save_json(file_path: str, data: list[VidEntry]) -> None:
+def save_json(file_path: Path, data: list[VidEntry]) -> None:
     """Save json to file."""
     json_out = VidEntry.serialize(data)
     with open(file_path, encoding="utf-8", mode="w") as filed:
         filed.write(json_out)
 
 
-def merge_into_library(library_json_path: str, vids: list[VidEntry]) -> None:
+def merge_into_library(library_json_path: Path, vids: list[VidEntry]) -> None:
     """Merge the vids into the library."""
     found_entries: list[VidEntry] = []
     for vid in vids:
@@ -233,7 +234,7 @@ def merge_into_library(library_json_path: str, vids: list[VidEntry]) -> None:
 class Library:
     """Represents the library"""
 
-    def __init__(self, library_json_path: str) -> None:
+    def __init__(self, library_json_path: Path) -> None:
         self.library_json_path = library_json_path
         self.base_dir = os.path.dirname(library_json_path)
         pardir = os.path.dirname(library_json_path)
