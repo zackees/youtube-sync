@@ -98,7 +98,9 @@ class YouTubeSync:
         media_output: Path,
         library_path: Path | None = None,
         channel_url: str | None = None,
+        yt_dlp_uses_docker: bool = False,
     ):
+        self.yt_dlp_uses_docker = yt_dlp_uses_docker
         self.lib: Library = youtube_library(
             channel_name=channel_name,
             channel_url=channel_url,
@@ -116,10 +118,13 @@ class YouTubeSync:
         )
 
     def download(
-        self,
-        download_limit: int | None,
-        yt_dlp_uses_docker: bool,
+        self, download_limit: int | None, yt_dlp_uses_docker: bool | None = None
     ) -> None:
+        yt_dlp_uses_docker = (
+            yt_dlp_uses_docker
+            if yt_dlp_uses_docker is not None
+            else self.yt_dlp_uses_docker
+        )
         youtube_download_missing(
             library=self.lib,
             download_limit=download_limit,
@@ -130,7 +135,7 @@ class YouTubeSync:
         self,
         limit_scroll_pages: int,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool,
+        yt_dlp_uses_docker: bool | None = None,
     ) -> None:
         self.scan_for_vids(limit_scroll_pages)
         self.download(download_limit, yt_dlp_uses_docker)
