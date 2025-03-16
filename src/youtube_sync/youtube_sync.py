@@ -38,7 +38,7 @@ def youtube_library(
 
 def youtube_scan(
     library: Library,
-    limit_scroll_pages: int,
+    limit_scroll_pages: int | None,
 ) -> Library:
     channel_url = library.channel_url
     # base_dir = Path(basedir)
@@ -51,17 +51,16 @@ def youtube_scan(
 
 def youtube_download_missing(
     library: Library, download_limit: int | None, yt_dlp_uses_docker: bool
-) -> Library:
+) -> None:
     library.download_missing(
         download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
     )
-    return library
 
 
 def youtube_sync(
     channel_name: str,
     media_output: Path,
-    limit_scroll_pages: int,
+    limit_scroll_pages: int | None,  # None means no limit
     download: bool,
     download_limit: int | None,
     scan: bool,

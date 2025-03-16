@@ -196,13 +196,14 @@ def test_channel_url(channel_url: str) -> bool:
     return response.status_code == 200
 
 
-def fetch_all_vids(yt_channel_url: str, limit: int = -1) -> list[VidEntry]:
+def fetch_all_vids(yt_channel_url: str, limit: int | None) -> list[VidEntry]:
     """
     Open a web driver and navigate to Google. yt_channel_url should be
     of the form https://www.youtube.com/@silverguru/videos
     """
     if not test_channel_url(yt_channel_url):
         raise ValueError(f"Invalid channel url: {yt_channel_url}")
+    limit = limit if limit is not None else -1
     pending_fetches = fetch_all_sources(yt_channel_url=yt_channel_url, limit=limit)
     list_vids: list[list[VidEntry]] = []
     num_workers = max(1, os.cpu_count() or 0)

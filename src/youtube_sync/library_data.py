@@ -45,10 +45,11 @@ class LibraryData:
             "vids": [vid.to_dict() for vid in self.vids],
         }
 
-    def to_json_str(self) -> str:
+    def to_json_str(self, minify=False) -> str:
         """Convert to json string."""
         data = self.to_json()
-        return json.dumps(data)
+        indent = None if minify else 4
+        return json.dumps(data, indent=indent)
 
     def merge(self, vids: list[VidEntry]) -> None:
         """Merge two libraries."""
