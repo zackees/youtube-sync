@@ -102,7 +102,7 @@ def main() -> None:
         limit_scroll_pages=args.limit_scroll_pages,
         download=not args.skip_download,
         download_limit=args.download_limit,
-        skip_scan=args.skip_scan,
+        scan=not args.skip_scan,
         yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
 

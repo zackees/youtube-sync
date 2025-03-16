@@ -102,6 +102,13 @@ class Library:
             vids=[],
         )
 
+    def downloaded_vids(self, load=True) -> list[VidEntry]:
+        """Get the downloaded vids."""
+        if load:
+            self.load()
+        assert self.libdata is not None
+        return self.libdata.vids.copy()
+
     @property
     def path(self) -> Path:
         """Get the path."""

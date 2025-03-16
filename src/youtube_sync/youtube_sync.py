@@ -64,7 +64,7 @@ def youtube_sync(
     limit_scroll_pages: int,
     download: bool,
     download_limit: int | None,
-    skip_scan: bool,
+    scan: bool,
     library_path: (
         Path | None
     ) = None,  # None means place the library.json file in the media_output
@@ -78,7 +78,7 @@ def youtube_sync(
         media_output=media_output,
         library_path=library_path,
     )
-    if not skip_scan:
+    if scan:
         youtube_scan(library=lib, limit_scroll_pages=limit_scroll_pages)
 
     if download:
@@ -107,6 +107,9 @@ class YouTubeSync:
             library_path=library_path,
         )
 
+    def downloaded_vids(self, refresh=True) -> list[VidEntry]:
+        return self.lib.downloaded_vids(load=refresh)
+
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
         youtube_scan(
             library=self.lib,
@@ -123,3 +126,12 @@ class YouTubeSync:
             download_limit=download_limit,
             yt_dlp_uses_docker=yt_dlp_uses_docker,
         )
+
+    def sync(
+        self,
+        limit_scroll_pages: int,
+        download_limit: int | None,
+        yt_dlp_uses_docker: bool,
+    ) -> None:
+        self.scan_for_vids(limit_scroll_pages)
+        self.download(download_limit, yt_dlp_uses_docker)
