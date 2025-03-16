@@ -15,6 +15,7 @@ class Source(Enum):
 
     YOUTUBE = "youtube"
     RUMBLE = "rumble"
+    BRIGHTEON = "brighteon"
 
     @staticmethod
     def from_str(value: str) -> "Source":
@@ -24,6 +25,8 @@ class Source(Enum):
             return Source.YOUTUBE
         if value == "rumble":
             return Source.RUMBLE
+        if value == "brighteon":
+            return Source.BRIGHTEON
         raise ValueError(f"Unknown source: {value}")
 
 

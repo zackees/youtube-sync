@@ -21,7 +21,10 @@ dependencies = [
     "Pillow",
     "certifi",
     "appdirs",
-    "open-webdriver>=1.6.1"
+    "open-webdriver>=1.6.1",
+    "pytz",
+    "python-dateutil",
+    "feedparser"
 ]
 
 # Change this with the version number bump.
