@@ -7,6 +7,7 @@ Command entry point.
 from pathlib import Path
 
 from youtube_sync.library import Library, VidEntry
+from youtube_sync.types import Source
 from youtube_sync.youtube.youtube import (
     youtube_download_missing,
     youtube_library,
@@ -14,21 +15,17 @@ from youtube_sync.youtube.youtube import (
 )
 
 
-def to_channel_url(channel: str) -> str:
-    """Convert channel name to channel URL."""
-    out = f"https://www.youtube.com/{channel}/videos"
-    return out
-
-
 class YouTubeSync:
     def __init__(
         self,
         channel_name: str,
         media_output: Path,
+        source: Source = Source.YOUTUBE,
         library_path: Path | None = None,
         channel_url: str | None = None,
         yt_dlp_uses_docker: bool = False,
     ):
+        self.source = source
         self.yt_dlp_uses_docker = yt_dlp_uses_docker
         self.lib: Library = youtube_library(
             channel_name=channel_name,
