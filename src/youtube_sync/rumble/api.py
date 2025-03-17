@@ -4,21 +4,14 @@ Command entry point.
 
 # pylint: disable=consider-using-f-string
 
-from pathlib import Path
 
 from youtube_sync.base_sync import BaseSync
-from youtube_sync.types import VidEntry
+from youtube_sync.library import Library
+from youtube_sync.types import Source, VidEntry
 
 
 class RumbleSyncImpl(BaseSync):
-    def __init__(
-        self,
-        channel_name: str,
-        media_output: Path,
-        library_path: Path | None = None,
-        channel_url: str | None = None,
-        yt_dlp_uses_docker: bool = False,
-    ):
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
         # self.yt_dlp_uses_docker = yt_dlp_uses_docker
         # self.lib: Library = youtube_library(
         #     channel_name=channel_name,
@@ -26,7 +19,15 @@ class RumbleSyncImpl(BaseSync):
         #     media_output=media_output,
         #     library_path=library_path,
         # )
+        self.lib = library
         raise NotImplementedError("RumbleSyncImpl.__init__")
+
+    def library(self) -> Library:
+        assert isinstance(self.lib, Library)
+        return self.lib
+
+    def source(self) -> Source:
+        return Source.YOUTUBE
 
     def downloaded_vids(self, refresh: bool) -> list[VidEntry]:
         # return self.lib.downloaded_vids(load=refresh)
