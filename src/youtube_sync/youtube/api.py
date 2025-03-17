@@ -32,7 +32,7 @@ class YouTubeSyncImpl(BaseSync):
             library_path=library_path,
         )
 
-    def downloaded_vids(self, refresh=True) -> list[VidEntry]:
+    def downloaded_vids(self, refresh) -> list[VidEntry]:
         return self.lib.downloaded_vids(load=refresh)
 
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
@@ -42,7 +42,7 @@ class YouTubeSyncImpl(BaseSync):
         )
 
     def download(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool | None = None
+        self, download_limit: int | None, yt_dlp_uses_docker: bool | None
     ) -> None:
         yt_dlp_uses_docker = (
             yt_dlp_uses_docker
@@ -59,7 +59,7 @@ class YouTubeSyncImpl(BaseSync):
         self,
         limit_scroll_pages: int,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool | None = None,
+        yt_dlp_uses_docker: bool | None,
     ) -> None:
         self.scan_for_vids(limit_scroll_pages)
         self.download(download_limit, yt_dlp_uses_docker)
