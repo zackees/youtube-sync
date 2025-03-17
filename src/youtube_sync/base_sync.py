@@ -7,7 +7,7 @@ Command entry point.
 from abc import ABC, abstractmethod
 
 from youtube_sync.library import Library
-from youtube_sync.types import VidEntry
+from youtube_sync.types import Source, VidEntry
 
 
 class BaseSync(ABC):
@@ -33,6 +33,11 @@ class BaseSync(ABC):
     @abstractmethod
     def library(self) -> Library:
         """Return the library object."""
+        pass
+
+    @abstractmethod
+    def source(self) -> Source:
+        """Return the source object."""
         pass
 
     @abstractmethod

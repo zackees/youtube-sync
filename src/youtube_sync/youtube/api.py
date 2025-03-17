@@ -7,7 +7,7 @@ Command entry point.
 
 from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library
-from youtube_sync.types import VidEntry
+from youtube_sync.types import Source, VidEntry
 from youtube_sync.youtube.youtube import (
     youtube_download_missing,
     youtube_scan,
@@ -34,6 +34,9 @@ class YouTubeSyncImpl(BaseSync):
 
     def library(self) -> Library:
         return self.lib
+
+    def source(self) -> Source:
+        return Source.YOUTUBE
 
     def download(
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None

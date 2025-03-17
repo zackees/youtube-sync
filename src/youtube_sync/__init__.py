@@ -62,6 +62,10 @@ class YouTubeSync:
     def library(self) -> Library:
         return self.api.library()
 
+    @property
+    def source(self) -> Source:
+        return self.api.source()
+
     def downloaded_vids(self, refresh=True) -> list[VidEntry]:
         return self.api.downloaded_vids(refresh=refresh)
 
