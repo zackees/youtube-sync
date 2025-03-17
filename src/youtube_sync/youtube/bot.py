@@ -22,7 +22,7 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.common.by import By
 
-from .library import VidEntry
+from ..library import VidEntry
 
 IS_GITHUB_RUNNER = os.environ.get("GITHUB_ACTIONS") == "true"
 # Always headless now.

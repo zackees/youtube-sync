@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from youtube_sync.youtube_sync import youtube_sync
+from youtube_sync.youtube.youtube import youtube_sync
 
 
 def _check_type(obj: Any, class_type: Any) -> None:

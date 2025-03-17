@@ -17,10 +17,10 @@ from bs4 import BeautifulSoup  # type: ignore
 from feedparser import FeedParserDict, parse
 from PIL import Image  # type: ignore
 
-from .date import iso_fmt, now_local
+from ..date import iso_fmt, now_local
 
 # from .fetch_html import fetch_html_using_request_lib as fetch_html
-from .video_info import VideoInfo
+from ..video_info import VideoInfo
 
 # https://www.brighteon.com/api-v3/channels/hrreport/rss/rss.xml
 

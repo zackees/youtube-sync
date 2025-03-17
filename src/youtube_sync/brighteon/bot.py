@@ -12,9 +12,9 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from .library import Library, VidEntry
-from .library_data import Source
-from .playwright_launcher import launch_playwright, set_headless
+from ..library import Library, VidEntry
+from ..library_data import Source
+from ..playwright_launcher import launch_playwright, set_headless
 
 BASE_URL = "https://www.brighteon.com"
 

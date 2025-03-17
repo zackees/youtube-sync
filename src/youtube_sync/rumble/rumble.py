@@ -14,11 +14,11 @@ from typing import List
 
 from bs4 import BeautifulSoup  # type: ignore
 
-from .date import iso_fmt, now_local, timestamp_to_iso8601
-from .fetch_html import FetchResult
-from .fetch_html import fetch_html_using_curl as fetch_html
-from .video_info import VideoInfo
-from .ytdlp import fetch_video_info
+from ..date import iso_fmt, now_local, timestamp_to_iso8601
+from ..fetch_html import FetchResult
+from ..fetch_html import fetch_html_using_curl as fetch_html
+from ..video_info import VideoInfo
+from ..ytdlp import fetch_video_info
 
 
 @dataclass

@@ -5,7 +5,7 @@ import os
 import sys
 from pathlib import Path
 
-from .library import Library, VidEntry
+from ..library import Library, VidEntry
 from .rumble import PartialVideo, fetch_rumble_channel_all_partial_result
 
 
