@@ -11,7 +11,7 @@ class YouTubeSync:
         self,
         channel_name: str,
         media_output: Path,
-        source: Source,
+        source: Source = Source.YOUTUBE,
         library_path: Path | None = None,
         channel_url: str | None = None,
         yt_dlp_uses_docker: bool = False,

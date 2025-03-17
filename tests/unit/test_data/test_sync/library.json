@@ -996,6 +996,27 @@
             "date": null,
             "file_path": "Good_As_Gold.mp3",
             "error": false
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=Y9GNyiTVot0&pp=0gcJCU8JAYcqIYzv",
+            "title": "Preview Of Your Financial Future",
+            "date": null,
+            "file_path": "Preview_Of_Your_Financial_Future.mp3",
+            "error": false
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=9-Y172yi69s&pp=0gcJCU8JAYcqIYzv",
+            "title": "Something New for 2025",
+            "date": null,
+            "file_path": "Something_New_for_2025.mp3",
+            "error": false
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=ajGCbTjhffs&pp=0gcJCU8JAYcqIYzv",
+            "title": "A New Concept In Banking",
+            "date": null,
+            "file_path": "A_New_Concept_In_Banking.mp3",
+            "error": false
         }
     ]
 }
