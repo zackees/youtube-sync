@@ -142,3 +142,4 @@ uv.lock
 
 tests/test_data
 .wdm
+.aider*

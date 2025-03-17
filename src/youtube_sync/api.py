@@ -6,6 +6,7 @@ Command entry point.
 
 from pathlib import Path
 
+from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library, VidEntry
 from youtube_sync.types import Source
 from youtube_sync.youtube.youtube import (
@@ -15,7 +16,7 @@ from youtube_sync.youtube.youtube import (
 )
 
 
-class YouTubeSync:
+class YouTubeSync(BaseSync):
     def __init__(
         self,
         channel_name: str,
