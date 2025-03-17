@@ -4,14 +4,12 @@ Command entry point.
 
 # pylint: disable=consider-using-f-string
 
-from pathlib import Path
 
 from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library
 from youtube_sync.types import VidEntry
 from youtube_sync.youtube.youtube import (
     youtube_download_missing,
-    youtube_library,
     youtube_scan,
 )
 
@@ -19,19 +17,11 @@ from youtube_sync.youtube.youtube import (
 class YouTubeSyncImpl(BaseSync):
     def __init__(
         self,
-        channel_name: str,
-        media_output: Path,
-        library_path: Path | None = None,
-        channel_url: str | None = None,
+        library: Library,
         yt_dlp_uses_docker: bool = False,
     ):
         self.yt_dlp_uses_docker = yt_dlp_uses_docker
-        self.lib: Library = youtube_library(
-            channel_name=channel_name,
-            channel_url=channel_url,
-            media_output=media_output,
-            library_path=library_path,
-        )
+        self.lib: Library = library
 
     def downloaded_vids(self, refresh) -> list[VidEntry]:
         return self.lib.downloaded_vids(load=refresh)
@@ -41,6 +31,9 @@ class YouTubeSyncImpl(BaseSync):
             library=self.lib,
             limit_scroll_pages=limit_scroll_pages,
         )
+
+    def library(self) -> Library:
+        return self.lib
 
     def download(
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None

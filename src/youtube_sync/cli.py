@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from youtube_sync.youtube.youtube import youtube_sync
+from youtube_sync import Source, YouTubeSync
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
@@ -96,15 +96,31 @@ def parse_args() -> Args:
 def main() -> None:
     """Main function."""
     args = parse_args()
-    youtube_sync(
+    # youtube_sync(
+    #     channel_name=args.channel_name,
+    #     media_output=args.output,
+    #     limit_scroll_pages=args.limit_scroll_pages,
+    #     download=not args.skip_download,
+    #     download_limit=args.download_limit,
+    #     scan=not args.skip_scan,
+    #     yt_dlp_uses_docker=args.yt_dlp_uses_docker,
+    # )
+    yt = YouTubeSync(
         channel_name=args.channel_name,
         media_output=args.output,
-        limit_scroll_pages=args.limit_scroll_pages,
-        download=not args.skip_download,
-        download_limit=args.download_limit,
-        scan=not args.skip_scan,
+        source=Source.YOUTUBE,
+        # limit_scroll_pages=args.limit_scroll_pages,
+        # download=not args.skip_download,
+        # download_limit=args.download_limit,
+        # scan=not args.skip_scan,
         yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
+
+    if not args.skip_scan:
+        yt.scan_for_vids(args.limit_scroll_pages)
+
+    if not args.skip_download:
+        yt.download(args.download_limit)
 
 
 if __name__ == "__main__":

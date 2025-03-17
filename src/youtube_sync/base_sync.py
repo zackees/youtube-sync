@@ -6,6 +6,7 @@ Command entry point.
 
 from abc import ABC, abstractmethod
 
+from youtube_sync.library import Library
 from youtube_sync.types import VidEntry
 
 
@@ -27,6 +28,11 @@ class BaseSync(ABC):
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None
     ) -> None:
         """Download videos with optional limit and docker configuration."""
+        pass
+
+    @abstractmethod
+    def library(self) -> Library:
+        """Return the library object."""
         pass
 
     @abstractmethod
