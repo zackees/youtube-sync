@@ -1,9 +1,3 @@
-"""
-Command entry point.
-"""
-
-# pylint: disable=consider-using-f-string
-
 from pathlib import Path
 
 from .base_sync import BaseSync
