@@ -3,6 +3,7 @@ from pathlib import Path
 from .base_sync import BaseSync
 from .create import create
 from .library import Library
+from .rumble.rumble_extra import to_channel_url as to_channel_url_rumble
 from .types import Source, VidEntry
 from .youtube.youtube import to_channel_url as to_channel_url_youtube
 
@@ -10,6 +11,8 @@ from .youtube.youtube import to_channel_url as to_channel_url_youtube
 def to_channel_url(source: Source, channel_name: str) -> str:
     if source == Source.YOUTUBE:
         return to_channel_url_youtube(channel_name)
+    elif source == Source.RUMBLE:
+        return to_channel_url_rumble(channel_name)
     raise ValueError(f"Unknown source: {source}")
 
 
