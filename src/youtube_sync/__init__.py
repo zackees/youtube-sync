@@ -3,38 +3,7 @@ from pathlib import Path
 from .base_sync import BaseSync
 from .create import create
 from .library import Library
-from .rumble.rumble_extra import to_channel_url as to_channel_url_rumble
 from .types import Source, VidEntry
-from .youtube.youtube import to_channel_url as to_channel_url_youtube
-
-
-def to_channel_url(source: Source, channel_name: str) -> str:
-    if source == Source.YOUTUBE:
-        return to_channel_url_youtube(channel_name)
-    elif source == Source.RUMBLE:
-        return to_channel_url_rumble(channel_name)
-    raise ValueError(f"Unknown source: {source}")
-
-
-def make_library(
-    channel_name: str,
-    channel_url: str | None,  # None means auto-find
-    media_output: Path,
-    source: Source,
-    library_path: (
-        Path | None
-    ) = None,  # None means place the library in the media_output
-) -> Library:
-    url = channel_url or to_channel_url(source=source, channel_name=channel_name)
-    library_json = library_path or media_output / "library.json"
-    library = Library(
-        channel_name=channel_name,
-        channel_url=url,
-        source=source,
-        json_path=library_json,
-    )
-    library.load()
-    return library
 
 
 class YouTubeSync:
@@ -47,7 +16,7 @@ class YouTubeSync:
         channel_url: str | None = None,
         yt_dlp_uses_docker: bool = False,
     ) -> None:
-        library = make_library(
+        library = Library.get_or_create(
             channel_name=channel_name,
             channel_url=channel_url,
             media_output=media_output,

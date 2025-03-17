@@ -24,6 +24,17 @@ def _get_library_json_lock_path() -> str:
 _FILE_LOCK = SoftFileLock(_get_library_json_lock_path())
 
 
+def _to_channel_url(source: Source, channel_name: str) -> str:
+    from .rumble.rumble_extra import to_channel_url as to_channel_url_rumble
+    from .youtube.youtube import to_channel_url as to_channel_url_youtube
+
+    if source == Source.YOUTUBE:
+        return to_channel_url_youtube(channel_name)
+    elif source == Source.RUMBLE:
+        return to_channel_url_rumble(channel_name)
+    raise ValueError(f"Unknown source: {source}")
+
+
 def _find_missing_downloads(
     vids: list[VidEntry], dst_video_path: Path
 ) -> list[VidEntry]:
@@ -45,6 +56,25 @@ def _find_missing_downloads(
     return out
 
 
+def _make_library(
+    channel_name: str,
+    channel_url: str | None,  # None means auto-find
+    source: Source,
+    library_path: Path,
+) -> "Library":
+    url = channel_url or _to_channel_url(source=source, channel_name=channel_name)
+    if library_path.exists():
+        raise FileExistsError(f"Library file already exists: {library_path}")
+    library = Library(
+        channel_name=channel_name,
+        channel_url=url,
+        source=source,
+        json_path=library_path,
+    )
+    library.load()
+    return library
+
+
 class Library:
     """Represents the library"""
 
@@ -64,6 +94,50 @@ class Library:
         self.out_dir = json_path.parent
         self.load()
         assert isinstance(self.libdata, LibraryData)
+
+    @staticmethod
+    def create(
+        channel_name: str,
+        channel_url: str | None,  # None means auto-find
+        media_output: Path,
+        source: Source,
+        # None means place the library at the root of the media_output
+        library_path: Path | None = None,
+    ) -> "Library":
+        library_path = library_path or media_output / "library.json"
+        out = _make_library(
+            channel_name=channel_name,
+            channel_url=channel_url,
+            source=source,
+            library_path=library_path,
+        )
+        return out
+
+    @staticmethod
+    def get_or_create(
+        channel_name: str,
+        channel_url: str | None,  # None means auto-find
+        media_output: Path,
+        source: Source,
+        # None means place the library at the root of the media_output
+        library_path: Path | None = None,
+    ) -> "Library":
+        library_path = library_path or media_output / "library.json"
+        if library_path.exists():
+            library_or_err = Library.from_json(library_path)
+            if isinstance(library_or_err, Library):
+                return library_or_err
+            warnings.warn(
+                f"Error loading library: {library_or_err}, falling back to create."
+            )
+
+        return Library.create(
+            channel_name=channel_name,
+            channel_url=channel_url,
+            media_output=media_output,
+            source=source,
+            library_path=library_path,
+        )
 
     @staticmethod
     def from_json(json_path: Path) -> "Library | Exception | FileNotFoundError":

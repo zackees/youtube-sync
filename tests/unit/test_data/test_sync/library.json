@@ -989,6 +989,13 @@
             "date": null,
             "file_path": "The_Miracle_of_Compound_Interest.mp3",
             "error": false
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=8mhO7J4xtNg&pp=0gcJCU8JAYcqIYzv",
+            "title": "Good As Gold",
+            "date": null,
+            "file_path": "Good_As_Gold.mp3",
+            "error": false
         }
     ]
 }
