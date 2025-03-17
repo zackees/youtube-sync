@@ -14,11 +14,11 @@ from typing import List
 
 from bs4 import BeautifulSoup  # type: ignore
 
-from ..date import iso_fmt, now_local, timestamp_to_iso8601
-from ..fetch_html import FetchResult
-from ..fetch_html import fetch_html_using_curl as fetch_html
-from ..video_info import VideoInfo
-from ..ytdlp import fetch_video_info
+from youtube_sync.date import iso_fmt, now_local, timestamp_to_iso8601
+from youtube_sync.fetch_html import FetchResult
+from youtube_sync.fetch_html import fetch_html_using_curl as fetch_html
+from youtube_sync.video_info import VideoInfo
+from youtube_sync.ytdlp import fetch_video_info
 
 
 @dataclass
@@ -26,6 +26,28 @@ class RumbleResponse:
     html_doc: str
     channel_url: str
     fetch_result: FetchResult
+
+
+@dataclass
+class PartialVideo:
+    url: str
+    title: str
+    duration: str
+    videoid: str
+    channel_url: str
+    channel_name: str
+    date: datetime
+
+    def to_dict(self) -> dict:
+        """Returns a json serializable dictionary."""
+        return {
+            "url": self.url,
+            "duration": self.duration,
+            "videoid": self.videoid,
+            "channel_url": self.channel_url,
+            "channel_name": self.channel_name,
+            "date": self.date.isoformat(),
+        }
 
 
 def fetch_rumble_channel_url(channel_url: str) -> RumbleResponse:
@@ -68,28 +90,6 @@ def fetch_rumble(channel: str) -> RumbleResponse:
 
 def rumble_video_id_to_embed_url(video_id: str) -> str:
     return f"https://rumble.com/embed/{video_id}"
-
-
-@dataclass
-class PartialVideo:
-    url: str
-    title: str
-    duration: str
-    videoid: str
-    channel_url: str
-    channel_name: str
-    date: datetime
-
-    def to_dict(self) -> dict:
-        """Returns a json serializable dictionary."""
-        return {
-            "url": self.url,
-            "duration": self.duration,
-            "videoid": self.videoid,
-            "channel_url": self.channel_url,
-            "channel_name": self.channel_name,
-            "date": self.date.isoformat(),
-        }
 
 
 def fetch_rumble_channel_today_legacy(
@@ -239,7 +239,7 @@ def parse_date(article_soup: BeautifulSoup) -> str:
     return ""
 
 
-def get_channel_url(channel: str, page_num: int, is_user_channel: bool) -> str:
+def get_channel_url_for_page(channel: str, page_num: int, is_user_channel: bool) -> str:
     # only return a page if the page number is greater than 1
     # if page_num > 1:
     #    if is_user_channel:
@@ -258,6 +258,22 @@ def get_channel_url(channel: str, page_num: int, is_user_channel: bool) -> str:
     return base_url
 
 
+def to_channel_url(channel: str) -> str:
+    test_url = get_channel_url_for_page(
+        channel=channel, page_num=1, is_user_channel=False
+    )
+    fetch_response = fetch_html(test_url)
+    if fetch_response.ok:
+        return test_url
+    test_url = get_channel_url_for_page(
+        channel=channel, page_num=1, is_user_channel=True
+    )
+    fetch_response = fetch_html(test_url)
+    if fetch_response.ok:
+        return test_url
+    raise ValueError(f"Could not find channel or user {channel}")
+
+
 def parse_fuzzy_date(datestr: str) -> datetime:
     """Parses strings like 'November 6, 2023' into datetime objects."""
     return datetime.strptime(datestr, "%B %d, %Y")
@@ -269,12 +285,12 @@ def fetch_rumble_channel_all_partial_result(
     out: List[PartialVideo] = []
     page = 1
     is_user_channel = False
-    test_url = get_channel_url(channel, page, is_user_channel)
+    test_url = get_channel_url_for_page(channel, page, is_user_channel)
     fetch_response = fetch_html(test_url)
     if not fetch_response.ok:
         is_user_channel = True
         # now assert they can be reached
-        test_url = get_channel_url(channel, page, is_user_channel)
+        test_url = get_channel_url_for_page(channel, page, is_user_channel)
         fetch_response = fetch_html(test_url)
         if not fetch_response.ok:
             raise ValueError(f"Could not find channel or user {channel}")
@@ -283,7 +299,9 @@ def fetch_rumble_channel_all_partial_result(
             curr_page = page
             page += 1
             html_doc: str = ""
-            current_channel_url = get_channel_url(channel, curr_page, is_user_channel)
+            current_channel_url = get_channel_url_for_page(
+                channel=channel, page_num=curr_page, is_user_channel=is_user_channel
+            )
             # html_doc = fetch_rumble_channel_url(current_channel_url)
             fetch_result: FetchResult = fetch_html(current_channel_url)
             if fetch_result.ok:

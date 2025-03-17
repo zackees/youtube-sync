@@ -13,7 +13,7 @@ from filelock import SoftFileLock
 
 from youtube_sync.downloadmp3 import download_mp3
 from youtube_sync.library_data import LibraryData, Source
-from youtube_sync.vid_entry import VidEntry
+from youtube_sync.types import VidEntry
 
 
 def _get_library_json_lock_path() -> str:

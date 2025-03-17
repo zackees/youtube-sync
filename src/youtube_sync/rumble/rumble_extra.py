@@ -7,17 +7,16 @@ Command entry point.
 from pathlib import Path
 
 from youtube_sync.library import Library
+from youtube_sync.rumble.rumble import to_channel_url
 from youtube_sync.types import VidEntry
-from youtube_sync.youtube.bot import fetch_all_vids
 
 
-def to_channel_url(channel: str) -> str:
-    """Convert channel name to channel URL."""
-    out = f"https://www.youtube.com/{channel}/videos"
-    return out
+# vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
+def fetch_all_vids(channel_url: str, limit: int | None) -> list[VidEntry]:
+    raise NotImplementedError("fetch_all_vids")
 
 
-def youtube_library(
+def rumble_library(
     channel_name: str,
     channel_url: str | None,  # None means auto-find
     media_output: Path,
@@ -37,20 +36,18 @@ def youtube_library(
     return library
 
 
-def youtube_scan(
+def rumble_scan(
     library: Library,
     limit_scroll_pages: int | None,
 ) -> Library:
     channel_url = library.channel_url
-    # base_dir = Path(basedir)
-    # output_dir = str(base_dir / channel / "youtube")
     vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
     library.merge(vids, save=True)
     print(f"Updated {library.path}")
     return library
 
 
-def youtube_download_missing(
+def rumble_download_missing(
     library: Library, download_limit: int | None, yt_dlp_uses_docker: bool
 ) -> None:
     library.download_missing(
@@ -58,7 +55,7 @@ def youtube_download_missing(
     )
 
 
-def youtube_sync(
+def rumble_sync(
     channel_name: str,
     media_output: Path,
     limit_scroll_pages: int | None,  # None means no limit
@@ -72,21 +69,23 @@ def youtube_sync(
     yt_dlp_uses_docker: bool = False,
 ) -> Library:
     # library = youtube_library(Path(output))
-    lib = youtube_library(
-        channel_name=channel_name,
-        channel_url=channel_url,
-        media_output=media_output,
-        library_path=library_path,
-    )
-    if scan:
-        youtube_scan(library=lib, limit_scroll_pages=limit_scroll_pages)
 
-    if download:
-        # lib.download_missing(download_limit)
-        youtube_download_missing(
-            library=lib,
-            download_limit=download_limit,
-            yt_dlp_uses_docker=yt_dlp_uses_docker,
-        )
+    raise NotImplementedError("This function is not implemented yet.")
+    # lib = youtube_library(
+    #     channel_name=channel_name,
+    #     channel_url=channel_url,
+    #     media_output=media_output,
+    #     library_path=library_path,
+    # )
+    # if scan:
+    #     youtube_scan(library=lib, limit_scroll_pages=limit_scroll_pages)
 
-    return lib
+    # if download:
+    #     # lib.download_missing(download_limit)
+    #     youtube_download_missing(
+    #         library=lib,
+    #         download_limit=download_limit,
+    #         yt_dlp_uses_docker=yt_dlp_uses_docker,
+    #     )
+
+    # return lib

@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from youtube_sync.library import Library
-from youtube_sync.vid_entry import VidEntry
+from youtube_sync.types import VidEntry
 
 
 class LibraryTester(unittest.TestCase):

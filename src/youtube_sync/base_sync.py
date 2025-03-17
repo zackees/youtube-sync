@@ -6,7 +6,7 @@ Command entry point.
 
 from abc import ABC, abstractmethod
 
-from youtube_sync.library import VidEntry
+from youtube_sync.types import VidEntry
 
 
 class BaseSync(ABC):

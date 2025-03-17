@@ -5,8 +5,12 @@ import os
 import sys
 from pathlib import Path
 
-from ..library import Library, VidEntry
-from .rumble import PartialVideo, fetch_rumble_channel_all_partial_result
+from youtube_sync.library import Library
+from youtube_sync.rumble.rumble import (
+    PartialVideo,
+    fetch_rumble_channel_all_partial_result,
+)
+from youtube_sync.types import VidEntry
 
 
 def _update_library(outdir: str, channel_name: str) -> Library:

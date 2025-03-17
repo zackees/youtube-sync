@@ -2,8 +2,7 @@ from pathlib import Path
 
 from .base_sync import BaseSync
 from .create import create
-from .library import VidEntry
-from .types import Source
+from .types import Source, VidEntry
 
 
 class YouTubeSync:

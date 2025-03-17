@@ -7,7 +7,8 @@ Command entry point.
 from pathlib import Path
 
 from youtube_sync.base_sync import BaseSync
-from youtube_sync.library import Library, VidEntry
+from youtube_sync.library import Library
+from youtube_sync.types import VidEntry
 from youtube_sync.youtube.youtube import (
     youtube_download_missing,
     youtube_library,
