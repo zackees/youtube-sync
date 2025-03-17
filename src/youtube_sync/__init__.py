@@ -43,8 +43,7 @@ class YouTubeSync:
         library_path: Path | None = None,
         channel_url: str | None = None,
         yt_dlp_uses_docker: bool = False,
-    ):
-        self.source = source
+    ) -> None:
         library = make_library(
             channel_name=channel_name,
             channel_url=channel_url,
