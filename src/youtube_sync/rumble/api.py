@@ -12,15 +12,8 @@ from youtube_sync.types import Source, VidEntry
 
 class RumbleSyncImpl(BaseSync):
     def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        # self.yt_dlp_uses_docker = yt_dlp_uses_docker
-        # self.lib: Library = youtube_library(
-        #     channel_name=channel_name,
-        #     channel_url=channel_url,
-        #     media_output=media_output,
-        #     library_path=library_path,
-        # )
-        self.lib = library
-        raise NotImplementedError("RumbleSyncImpl.__init__")
+        self.yt_dlp_uses_docker = yt_dlp_uses_docker
+        self.lib: Library = library
 
     def library(self) -> Library:
         assert isinstance(self.lib, Library)
