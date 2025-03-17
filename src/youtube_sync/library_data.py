@@ -4,30 +4,10 @@
 
 import json
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
+from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
-
-
-class Source(Enum):
-    """Source enum."""
-
-    YOUTUBE = "youtube"
-    RUMBLE = "rumble"
-    BRIGHTEON = "brighteon"
-
-    @staticmethod
-    def from_str(value: str) -> "Source":
-        """Convert from string."""
-        value = value.lower()
-        if value == "youtube":
-            return Source.YOUTUBE
-        if value == "rumble":
-            return Source.RUMBLE
-        if value == "brighteon":
-            return Source.BRIGHTEON
-        raise ValueError(f"Unknown source: {value}")
 
 
 @dataclass

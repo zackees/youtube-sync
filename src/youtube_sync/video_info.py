@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 
-from .date import iso_fmt, now_local, parse_datetime
+from youtube_sync.date import iso_fmt, now_local, parse_datetime
 
 
 @dataclass
@@ -215,7 +215,7 @@ def _parse_views(view_str: str) -> str:
 
 def test() -> None:
     url: str = "2021-03-29 01:13:15+00:00"
-    d: Any = parse_datetime(url)
+    d: datetime = parse_datetime(url)
     print(f'"{d.isoformat()}"')
 
 
