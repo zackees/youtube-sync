@@ -6,7 +6,7 @@ from .library import VidEntry
 from .types import Source
 
 
-class YouTubeSync(BaseSync):
+class YouTubeSync:
     def __init__(
         self,
         channel_name: str,
@@ -17,7 +17,7 @@ class YouTubeSync(BaseSync):
         yt_dlp_uses_docker: bool = False,
     ):
         self.source = source
-        self.api = create(
+        self.api: BaseSync = create(
             source=source,
             channel_name=channel_name,
             media_output=media_output,

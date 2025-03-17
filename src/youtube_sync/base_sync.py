@@ -13,7 +13,7 @@ class BaseSync(ABC):
     """Abstract base class defining the interface for YouTube synchronization."""
 
     @abstractmethod
-    def downloaded_vids(self, refresh=True) -> list[VidEntry]:
+    def downloaded_vids(self, refresh) -> list[VidEntry]:
         """Return list of downloaded videos, optionally refreshing from disk."""
         pass
 
@@ -24,7 +24,7 @@ class BaseSync(ABC):
 
     @abstractmethod
     def download(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool | None = None
+        self, download_limit: int | None, yt_dlp_uses_docker: bool | None
     ) -> None:
         """Download videos with optional limit and docker configuration."""
         pass
@@ -34,7 +34,7 @@ class BaseSync(ABC):
         self,
         limit_scroll_pages: int,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool | None = None,
+        yt_dlp_uses_docker: bool | None,
     ) -> None:
         """Scan and download videos in one operation."""
         pass
