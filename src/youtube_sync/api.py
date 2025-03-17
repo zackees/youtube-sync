@@ -7,13 +7,31 @@ Command entry point.
 from pathlib import Path
 
 from youtube_sync.base_sync import BaseSync
-from youtube_sync.library import Library, VidEntry
+from youtube_sync.library import VidEntry
 from youtube_sync.types import Source
-from youtube_sync.youtube.youtube import (
-    youtube_download_missing,
-    youtube_library,
-    youtube_scan,
+from youtube_sync.youtube.api import (
+    YouTubeSyncImpl,
 )
+
+
+def _make_api_object(
+    source: Source,
+    channel_name: str,
+    media_output: Path,
+    library_path: Path | None = None,
+    channel_url: str | None = None,
+    yt_dlp_uses_docker: bool = False,
+) -> BaseSync:
+    if source == Source.YOUTUBE:
+        out = YouTubeSyncImpl(
+            channel_name=channel_name,
+            media_output=media_output,
+            library_path=library_path,
+            channel_url=channel_url,
+            yt_dlp_uses_docker=yt_dlp_uses_docker,
+        )
+        return out
+    raise ValueError(f"Unknown source: {source}")
 
 
 class YouTubeSync(BaseSync):
@@ -27,35 +45,26 @@ class YouTubeSync(BaseSync):
         yt_dlp_uses_docker: bool = False,
     ):
         self.source = source
-        self.yt_dlp_uses_docker = yt_dlp_uses_docker
-        self.lib: Library = youtube_library(
+        self.api = _make_api_object(
+            source=source,
             channel_name=channel_name,
-            channel_url=channel_url,
             media_output=media_output,
             library_path=library_path,
+            channel_url=channel_url,
+            yt_dlp_uses_docker=yt_dlp_uses_docker,
         )
 
     def downloaded_vids(self, refresh=True) -> list[VidEntry]:
-        return self.lib.downloaded_vids(load=refresh)
+        return self.api.downloaded_vids(refresh=refresh)
 
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
-        youtube_scan(
-            library=self.lib,
-            limit_scroll_pages=limit_scroll_pages,
-        )
+        self.api.scan_for_vids(limit_scroll_pages)
 
     def download(
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None = None
     ) -> None:
-        yt_dlp_uses_docker = (
-            yt_dlp_uses_docker
-            if yt_dlp_uses_docker is not None
-            else self.yt_dlp_uses_docker
-        )
-        youtube_download_missing(
-            library=self.lib,
-            download_limit=download_limit,
-            yt_dlp_uses_docker=yt_dlp_uses_docker,
+        self.api.download(
+            download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
         )
 
     def sync(
@@ -64,5 +73,8 @@ class YouTubeSync(BaseSync):
         download_limit: int | None,
         yt_dlp_uses_docker: bool | None = None,
     ) -> None:
-        self.scan_for_vids(limit_scroll_pages)
-        self.download(download_limit, yt_dlp_uses_docker)
+        self.api.sync(
+            limit_scroll_pages=limit_scroll_pages,
+            download_limit=download_limit,
+            yt_dlp_uses_docker=yt_dlp_uses_docker,
+        )
