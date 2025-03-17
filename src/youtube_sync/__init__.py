@@ -1,3 +1,3 @@
-from .youtube_sync import YouTubeSync
+from .api import YouTubeSync
 
 __all__ = ["YouTubeSync"]

@@ -5,7 +5,7 @@ Unit test file.
 import unittest
 from pathlib import Path
 
-from youtube_sync.youtube_sync import YouTubeSync
+from youtube_sync.api import YouTubeSync
 
 HERE = Path(__file__).parent
 TEST_DATA = HERE / "test_data" / "test_sync"
