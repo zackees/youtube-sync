@@ -140,7 +140,7 @@ activate
 **/.DS_Store
 uv.lock
 
-tests/test_data
+tests/unit/test_data
 .wdm
 .aider*
 

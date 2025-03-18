@@ -2,9 +2,6 @@
 Command entry point.
 """
 
-# pylint: disable=consider-using-f-string
-
-
 from base import Args, integration_test
 
 from youtube_sync import Source
