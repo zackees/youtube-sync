@@ -1,3 +1,4 @@
+import pickle
 from pathlib import Path
 from typing import Iterator
 
@@ -71,6 +72,15 @@ class Cookies:
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
 
+    def save(self, out_pickle_file: Path) -> None:
+        assert out_pickle_file.suffix == ".pkl"
+        self.to_pickle(out_pickle_file)
+
+    @staticmethod
+    def load(file_path: Path) -> "Cookies":
+        assert file_path.suffix == ".pkl"
+        return Cookies.from_pickle(file_path)
+
     def __len__(self) -> int:
         return len(self.data)
 
@@ -82,3 +92,32 @@ class Cookies:
 
     def __str__(self) -> str:
         return self.cookies_txt
+
+    def to_pickle(self, file_path: Path) -> None:
+        """
+        Serialize the Cookies object to a pickle file.
+
+        Args:
+            file_path: Path where the pickle file will be saved
+        """
+        with open(file_path, "wb") as f:
+            pickle.dump(self.data, f)
+
+    @staticmethod
+    def from_pickle(file_path: Path) -> "Cookies":
+        """
+        Create a Cookies object from a pickle file.
+
+        Args:
+            file_path: Path to the pickle file
+
+        Returns:
+            A Cookies object with data loaded from the pickle file
+
+        Raises:
+            FileNotFoundError: If the pickle file doesn't exist
+            pickle.UnpicklingError: If the file contains invalid pickle data
+        """
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+        return Cookies(data)
