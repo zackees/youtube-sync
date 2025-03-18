@@ -34,21 +34,6 @@ class RumbleSyncImpl(BaseSync):
             limit_scroll_pages=limit_scroll_pages,
         )
 
-    def download(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool | None
-    ) -> None:
-        # yt_dlp_uses_docker = (
-        #     yt_dlp_uses_docker
-        #     if yt_dlp_uses_docker is not None
-        #     else self.yt_dlp_uses_docker
-        # )
-        # youtube_download_missing(
-        #     library=self.lib,
-        #     download_limit=download_limit,
-        #     yt_dlp_uses_docker=yt_dlp_uses_docker,
-        # )
-        raise NotImplementedError("RumbleSyncImpl.download")
-
     def sync(
         self,
         limit_scroll_pages: int,
