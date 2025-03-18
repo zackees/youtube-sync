@@ -1,9 +1,9 @@
-from typing import Any
+from pathlib import Path
 
 from open_webdriver import open_webdriver  # type: ignore
 
 
-def convert_cookies_to_txt(cookies: list[dict[str, Any]]) -> str:
+def convert_cookies_to_txt(cookies: list[dict]) -> str:
     """
     Convert a list of cookie dictionaries to the cookies.txt (Netscape format).
 
@@ -48,22 +48,36 @@ def convert_cookies_to_txt(cookies: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def get_cookies(url: str) -> list[dict]:
+class Cookies:
+    data: list[dict]
+    cookies_txt: str
+
+    def __init__(self, data: list[dict]):
+        self.data = data
+        self.cookies_txt = convert_cookies_to_txt(data)
+
+    def write_cookies_txt(self, file_path: Path):
+        file_path.write_text(self.cookies_txt, encoding="utf-8")
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+
+def get_cookies(url: str) -> Cookies:
     with open_webdriver() as driver:
         driver.get(url)
-        return driver.get_cookies()
+        return Cookies(driver.get_cookies())
 
 
-cookies = get_cookies("https://youtube.com")
+cookies: Cookies = get_cookies("https://youtube.com")
 print(f"Found {len(cookies)} cookies.")
 
 for cookie in cookies:
     print(cookie)
 
-print(f"Converting {len(cookies)} cookies to cookies.txt format.")
 
-cookies_txt = convert_cookies_to_txt(cookies)
-
-print(f"Generated cookies.txt:\n{cookies_txt}")
-
+print(f"Generated cookies.txt:\n{cookies.cookies_txt}")
 print("done")
