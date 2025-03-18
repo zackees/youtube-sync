@@ -26,11 +26,14 @@ def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
     return Path(yt_exe)
 
 
-def yt_dlp_verbose() -> str | Exception:
+def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
     """Get yt-dlp verbose output."""
-    exe = yt_dlp_exe()
-    if isinstance(exe, Exception):
-        return exe
+    if yt_exe is None:
+        exe = yt_dlp_exe()
+        if isinstance(exe, Exception):
+            return exe
+    else:
+        exe = yt_exe
     exe_str = exe.as_posix()
     cp = subprocess.run([exe_str, "--verbose"], capture_output=True)
     stdout_bytes = cp.stdout
@@ -97,12 +100,14 @@ def fetch_video_info(video_url: str) -> dict:
     return data
 
 
-def fetch_channel_url_ytdlp(video_url: str) -> str:
+def fetch_channel_url_ytdlp(video_url: str, yt_exe: Path | None = None) -> str:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
-    yt_exe = yt_dlp_exe()
-    if isinstance(yt_exe, Exception):
-        raise yt_exe
+    if yt_exe is None:
+        yt_or_error = yt_dlp_exe()
+        if isinstance(yt_or_error, Exception):
+            raise yt_or_error
+        yt_exe = yt_or_error
     cmd_list = [
         yt_exe.as_posix(),
         "--print",
@@ -125,9 +130,9 @@ def fetch_channel_url_ytdlp(video_url: str) -> str:
     return out
 
 
-def fetch_channel_id_ytdlp(video_url: str) -> ChannelId:
+def fetch_channel_id_ytdlp(video_url: str, yt_exe: Path | None = None) -> ChannelId:
     """Fetch the info."""
-    url = fetch_channel_url_ytdlp(video_url)
+    url = fetch_channel_url_ytdlp(video_url, yt_exe)
     match = re.search(r"/channel/([^/]+)/?", url)
     if match:
         out: str = str(match.group(1))
@@ -135,13 +140,17 @@ def fetch_channel_id_ytdlp(video_url: str) -> ChannelId:
     raise RuntimeError(f"Could not find channel id in: {video_url} using yt-dlp.")
 
 
-def fetch_videos_from_channel(channel_url: str) -> list[VideoId]:
+def fetch_videos_from_channel(
+    channel_url: str, yt_exe: Path | None = None
+) -> list[VideoId]:
     """Fetch the videos from a channel."""
     # yt-dlp -J "CHANNEL_URL" > channel_info.json
     # cmd = f'yt-dlp -i --get-id "https://www.youtube.com/channel/{channel_id}"'
-    yt_exe = yt_dlp_exe()
-    if isinstance(yt_exe, Exception):
-        raise yt_exe
+    if yt_exe is None:
+        yt_or_error = yt_dlp_exe()
+        if isinstance(yt_or_error, Exception):
+            raise yt_or_error
+        yt_exe = yt_or_error
     cmd_list = [yt_exe.as_posix(), "--print", "id", channel_url]
     cms_str = subprocess.list2cmdline(cmd_list)
     print(f"Running: {cms_str}")
@@ -168,10 +177,12 @@ def fetch_videos_from_channel(channel_url: str) -> list[VideoId]:
     return out_channel_ids
 
 
-def fetch_videos_from_youtube_channel(channel_id: str) -> list[VideoId]:
+def fetch_videos_from_youtube_channel(
+    channel_id: str, yt_exe: Path | None = None
+) -> list[VideoId]:
     """Fetch the videos from a youtube channel."""
     channel_url = f"https://www.youtube.com/channel/{channel_id}"
-    return fetch_videos_from_channel(channel_url)
+    return fetch_videos_from_channel(channel_url, yt_exe)
 
 
 class YtDlp:
