@@ -7,16 +7,15 @@ Command entry point.
 from abc import ABC, abstractmethod
 
 from youtube_sync.library import Library
-from youtube_sync.types import Source, VidEntry
+from youtube_sync.types import Source
 
 
 class BaseSync(ABC):
     """Abstract base class defining the interface for YouTube synchronization."""
 
-    @abstractmethod
-    def downloaded_vids(self, refresh) -> list[VidEntry]:
-        """Return list of downloaded videos, optionally refreshing from disk."""
-        pass
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
+        self.yt_dlp_uses_docker = yt_dlp_uses_docker
+        self.lib: Library = library
 
     @abstractmethod
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
