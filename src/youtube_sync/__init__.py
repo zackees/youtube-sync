@@ -2,6 +2,7 @@ from pathlib import Path
 
 from .base_sync import BaseSync
 from .create import create
+from .downloadmp3 import update_yt_dlp
 from .library import Library
 from .types import Source, VidEntry
 
@@ -67,4 +68,4 @@ class YouTubeSync:
         self.download(download_limit, yt_dlp_uses_docker)
 
 
-__all__ = ["YouTubeSync"]
+__all__ = ["YouTubeSync", "update_yt_dlp", "Source", "Library", "VidEntry"]
