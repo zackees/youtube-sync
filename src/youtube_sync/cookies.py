@@ -4,7 +4,7 @@ from typing import Iterator
 from open_webdriver import open_webdriver  # type: ignore
 
 
-def convert_cookies_to_txt(cookies: list[dict]) -> str:
+def _convert_cookies_to_txt(cookies: list[dict]) -> str:
     """
     Convert a list of cookie dictionaries to the cookies.txt (Netscape format).
 
@@ -49,13 +49,21 @@ def convert_cookies_to_txt(cookies: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _get_cookies_from_browser(url: str) -> "Cookies":
+    with open_webdriver() as driver:
+        driver.get(url)
+        return Cookies(driver.get_cookies())
+
+
 class Cookies:
-    data: list[dict]
-    cookies_txt: str
+
+    @staticmethod
+    def from_browser(url: str) -> "Cookies":
+        return _get_cookies_from_browser(url)
 
     def __init__(self, data: list[dict]):
         self.data = data
-        self.cookies_txt = convert_cookies_to_txt(data)
+        self.cookies_txt = _convert_cookies_to_txt(data)
 
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
@@ -71,9 +79,3 @@ class Cookies:
 
     def __str__(self) -> str:
         return self.cookies_txt
-
-
-def get_cookies_from_browser(url: str) -> Cookies:
-    with open_webdriver() as driver:
-        driver.get(url)
-        return Cookies(driver.get_cookies())

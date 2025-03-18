@@ -1,6 +1,6 @@
-from youtube_sync.cookies import Cookies, get_cookies_from_browser
+from youtube_sync.cookies import Cookies
 
-cookies: Cookies = get_cookies_from_browser("https://youtube.com")
+cookies: Cookies = Cookies.from_browser("https://youtube.com")
 print(f"Found {len(cookies)} cookies.")
 
 for cookie in cookies:
