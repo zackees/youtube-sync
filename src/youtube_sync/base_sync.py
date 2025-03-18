@@ -32,12 +32,12 @@ class BaseSync(ABC):
     @abstractmethod
     def library(self) -> Library:
         """Return the library object."""
-        pass
+        return self.lib
 
     @abstractmethod
     def source(self) -> Source:
         """Return the source object."""
-        pass
+        return self.lib.source
 
     @abstractmethod
     def sync(
