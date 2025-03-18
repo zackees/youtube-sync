@@ -5,8 +5,8 @@ Unit test file.
 import unittest
 from pathlib import Path
 
-from youtube_sync.ytdlp import yt_dlp_exe, yt_dlp_plugin_dir, yt_dlp_verbose
-from youtube_sync.ytdlp_plugins import yt_dlp_install_plugins
+from youtube_sync.ytdlp import yt_dlp_exe, yt_dlp_verbose
+from youtube_sync.ytdlp_plugins import yt_dlp_install_plugins, yt_dlp_plugin_dir
 
 HERE = Path(__file__).parent
 TEST_DATA = HERE / "test_data" / "test_sync"
