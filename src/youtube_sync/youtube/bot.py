@@ -94,7 +94,7 @@ def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
             title = str(title)
             assert href.startswith("/")  # type: ignore
             href = URL_BASE + href
-            title = sanitize_filepath(title.strip())
+            # title = sanitize_filepath(title.strip())
         except KeyboardInterrupt:
             _ERRORS = True
             _thread.interrupt_main()

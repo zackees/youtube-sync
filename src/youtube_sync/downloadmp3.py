@@ -17,6 +17,9 @@ from static_ffmpeg import add_paths
 from youtube_sync.ytdlp import yt_dlp_exe
 
 FFMPEG_PATH_ADDED = False
+_OVERRIDE_COOKIES_FROM_BROWSER: bool | None = (
+    False  # None is default, true/false is override
+)
 
 
 def _add_ffmpeg_paths_once() -> None:
@@ -35,6 +38,11 @@ def _get_ytdlp_command_mp3_download(
     cookies_from_browser: bool,
 ) -> list[str]:
     _add_ffmpeg_paths_once()
+    if _OVERRIDE_COOKIES_FROM_BROWSER is not None:
+        warnings.warn(
+            f"overriding cookies_from_browser to {_OVERRIDE_COOKIES_FROM_BROWSER}"
+        )
+        cookies_from_browser = _OVERRIDE_COOKIES_FROM_BROWSER
     is_youtube = "youtube.com" in url or "youtu.be" in url
     cmd_list: list[str] = []
     cmd_list += [
@@ -83,11 +91,13 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
                 cmd_list: list[str] = _get_ytdlp_command_mp3_download(
                     yt_exe=yt_exe,
                     url=url,
-                    out_file=outmp3,
+                    out_file=Path(temp_file),
                     no_geo_bypass=True,
                     update=False,
                     cookies_from_browser=True,
                 )
+                cmd_str = subprocess.list2cmdline(cmd_list)
+                print(f"Running: {cmd_str}")
                 subprocess.run(cmd_list, check=True)
                 shutil.copy(temp_file, outmp3)
                 return

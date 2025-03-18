@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from appdirs import user_data_dir
-from filelock import SoftFileLock
+from filelock import FileLock
 
 from youtube_sync.downloadmp3 import download_mp3
 from youtube_sync.library_data import LibraryData, Source
@@ -18,10 +18,11 @@ from youtube_sync.types import VidEntry
 
 def _get_library_json_lock_path() -> str:
     """Get the library json path."""
-    return os.path.join(user_data_dir("youtube-sync"), "library.json.lock")
+    out = os.path.join(user_data_dir("youtube-sync"), "library.json.lock")
+    return out
 
 
-_FILE_LOCK = SoftFileLock(_get_library_json_lock_path())
+_FILE_LOCK = FileLock(_get_library_json_lock_path())
 
 
 def _to_channel_url(source: Source, channel_name: str) -> str:
