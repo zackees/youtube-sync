@@ -44,6 +44,7 @@ class YouTubeSync:
 
     def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
         out: list[VidEntry] = self.api.scan_for_vids(limit_scroll_pages)
+        self.library.merge(out, save=True)
         return out
 
     def download(

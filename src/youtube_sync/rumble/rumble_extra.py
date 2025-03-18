@@ -51,11 +51,11 @@ def rumble_library(
 
 
 def rumble_scan(
-    library: Library,
+    channel_name: str,
     limit_scroll_pages: int | None,
 ) -> list[VidEntry]:
     vids: list[VidEntry] = fetch_all_vids(
-        channel_name=library.channel_name, limit=limit_scroll_pages
+        channel_name=channel_name, limit=limit_scroll_pages
     )
     # library.merge(vids, save=True)
     # print(f"Updated {library.path}")

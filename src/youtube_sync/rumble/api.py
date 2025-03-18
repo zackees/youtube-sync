@@ -18,7 +18,7 @@ class RumbleSyncImpl(BaseSync):
         from youtube_sync.rumble.rumble_extra import rumble_scan
 
         out: list[VidEntry] = rumble_scan(
-            library=self.lib,
+            channel_name=self.lib.channel_name,
             limit_scroll_pages=limit_scroll_pages,
         )
         return out

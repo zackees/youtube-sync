@@ -23,7 +23,7 @@ class YouTubeSyncImpl(BaseSync):
 
     def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
         out: list[VidEntry] = youtube_scan(
-            library=self.lib,
+            channel_url=self.lib.channel_url,
             limit_scroll_pages=limit_scroll_pages,
         )
         return out
