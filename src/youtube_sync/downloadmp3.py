@@ -20,6 +20,7 @@ FFMPEG_PATH_ADDED = False
 _OVERRIDE_COOKIES_FROM_BROWSER: bool | None = (
     False  # None is default, true/false is override
 )
+# _OVERRIDE_COOKIES_FROM_BROWSER = None
 
 
 def _add_ffmpeg_paths_once() -> None:
