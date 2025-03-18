@@ -64,20 +64,14 @@ def _fetch_vid_infos(page: Page, channel_url: str, page_num: int) -> list[VidEnt
     raise last_exception
 
 
-def _update_library(
-    outdir: str, channel_name: str, full_scan: bool, limit: int = -1
-) -> Library:
+def scan_for_vids(
+    channel_url: str,
+    full_scan: bool,
+    stored_vids: list[VidEntry],
+    limit: int = -1,
+) -> list[VidEntry]:
     """Simple test to verify the title of a page."""
-    channel_url = f"https://www.brighteon.com/channels/{channel_name}"
-    library_json = os.path.join(outdir, "library.json")
-    library = Library(
-        channel_name=channel_name,
-        channel_url=channel_url,
-        source=Source.BRIGHTEON,
-        json_path=Path(library_json),
-    )
     count = 0
-    stored_vids: list[VidEntry] = library.load()
     with launch_playwright(timeout_seconds=300) as (page, _):
         # Determine whether to run headless based on the environment variable
         urls: list[VidEntry] = []
@@ -102,8 +96,30 @@ def _update_library(
             except Exception as e:  # pylint: disable=broad-except
                 warnings.warn(f"Failed to get urls: {e}")
                 break
-    print(f"Got {len(urls)} urls.")
-    library.merge(urls, save=True)
+    return urls
+
+
+def _update_library(
+    outdir: str, channel_name: str, full_scan: bool, limit: int = -1
+) -> Library:
+    """Simple test to verify the title of a page."""
+    channel_url = f"https://www.brighteon.com/channels/{channel_name}"
+    library_json = os.path.join(outdir, "library.json")
+    library = Library(
+        channel_name=channel_name,
+        channel_url=channel_url,
+        source=Source.BRIGHTEON,
+        json_path=Path(library_json),
+    )
+    stored_vids = library.load()
+    vids = scan_for_vids(
+        channel_url=channel_url,
+        stored_vids=stored_vids,
+        full_scan=full_scan,
+        limit=limit,
+    )
+    print(f"Got {len(vids)} urls.")
+    library.merge(vids, save=True)
     return library
 
 
