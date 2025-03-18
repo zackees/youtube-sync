@@ -24,7 +24,8 @@ dependencies = [
     "open-webdriver>=1.6.1",
     "pytz",
     "python-dateutil",
-    "feedparser"
+    "feedparser",
+    "download",
 ]
 
 # Change this with the version number bump.
