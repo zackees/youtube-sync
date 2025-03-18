@@ -39,12 +39,18 @@ def yt_dlp_verbose() -> str | Exception:
     return stdout
 
 
-def fetch_channel_info_ytdlp(video_url: str) -> dict[Any, Any]:
+def fetch_channel_info_ytdlp(
+    video_url: str, yt_exe: Path | None = None
+) -> dict[Any, Any]:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
-    yt_exe = yt_dlp_exe()
-    if isinstance(yt_exe, Exception):
-        raise yt_exe
+
+    if yt_exe is None:
+        yt_or_error = yt_dlp_exe()
+        if isinstance(yt_or_error, Exception):
+            raise yt_or_error
+        yt_exe = yt_or_error
+
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
@@ -166,3 +172,21 @@ def fetch_videos_from_youtube_channel(channel_id: str) -> list[VideoId]:
     """Fetch the videos from a youtube channel."""
     channel_url = f"https://www.youtube.com/channel/{channel_id}"
     return fetch_videos_from_channel(channel_url)
+
+
+class YtDlp:
+
+    def __init__(self) -> None:
+        pass
+
+    def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
+        return fetch_channel_info_ytdlp(video_url)
+
+    def fetch_video_info(self, video_url: str) -> dict:
+        return fetch_video_info(video_url)
+
+    def fetch_channel_url(self, video_url: str) -> str:
+        return fetch_channel_url_ytdlp(video_url)
+
+    def fetch_channel_id(self, video_url: str) -> ChannelId:
+        return fetch_channel_id_ytdlp(video_url)
