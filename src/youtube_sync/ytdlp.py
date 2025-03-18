@@ -12,7 +12,7 @@ from .types import ChannelId, VideoId
 # https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
 
 
-def _yt_dlp_exe() -> str:
+def yt_dlp_exe() -> str:
     yt_exe = shutil.which("yt-dlp")
     if yt_exe is None:
         raise FileNotFoundError("yt-dlp not found in PATH")
@@ -22,7 +22,7 @@ def _yt_dlp_exe() -> str:
 def fetch_channel_info_ytdlp(video_url: str) -> dict[Any, Any]:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
-    yt_exe = _yt_dlp_exe()
+    yt_exe = yt_dlp_exe()
     cmd_list = [
         yt_exe,
         "-J",
@@ -45,7 +45,7 @@ def fetch_channel_info_ytdlp(video_url: str) -> dict[Any, Any]:
 
 
 def fetch_video_info(video_url: str) -> dict:
-    yt_exe = _yt_dlp_exe()
+    yt_exe = yt_dlp_exe()
     cmd_list = [
         yt_exe,
         "-J",
@@ -70,7 +70,7 @@ def fetch_video_info(video_url: str) -> dict:
 def fetch_channel_url_ytdlp(video_url: str) -> str:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
-    yt_exe = _yt_dlp_exe()
+    yt_exe = yt_dlp_exe()
     cmd_list = [
         yt_exe,
         "--print",
@@ -107,7 +107,7 @@ def fetch_videos_from_channel(channel_url: str) -> list[VideoId]:
     """Fetch the videos from a channel."""
     # yt-dlp -J "CHANNEL_URL" > channel_info.json
     # cmd = f'yt-dlp -i --get-id "https://www.youtube.com/channel/{channel_id}"'
-    yt_exe = _yt_dlp_exe()
+    yt_exe = yt_dlp_exe()
     cmd_list = [yt_exe, "--print", "id", channel_url]
     cms_str = subprocess.list2cmdline(cmd_list)
     print(f"Running: {cms_str}")
