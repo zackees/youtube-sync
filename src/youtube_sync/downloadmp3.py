@@ -26,12 +26,13 @@ def _add_ffmpeg_paths_once() -> None:
         FFMPEG_PATH_ADDED = True
 
 
-def _get_ytdlp_command(
+def _get_ytdlp_command_mp3_download(
     yt_exe: Path,
     url: str,
     out_file: Path,
-    update=True,
-    no_geo_bypass=True,
+    update: bool,
+    no_geo_bypass: bool,
+    cookies_from_browser: bool,
 ) -> list[str]:
     _add_ffmpeg_paths_once()
     is_youtube = "youtube.com" in url or "youtu.be" in url
@@ -56,8 +57,9 @@ def _get_ytdlp_command(
         cmd_list.append("--update")
     if no_geo_bypass:
         cmd_list.append("--no-geo-bypass")
-    cmd_list.append("--cookies-from-browser")
-    cmd_list.append("chrome")
+    if cookies_from_browser:
+        cmd_list.append("--cookies-from-browser")
+        cmd_list.append("chrome")
     return cmd_list
 
 
@@ -78,7 +80,14 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
             try:
-                cmd_list: list[str] = _get_ytdlp_command(yt_exe, url, outmp3)
+                cmd_list: list[str] = _get_ytdlp_command_mp3_download(
+                    yt_exe=yt_exe,
+                    url=url,
+                    out_file=outmp3,
+                    no_geo_bypass=True,
+                    update=False,
+                    cookies_from_browser=True,
+                )
                 subprocess.run(cmd_list, check=True)
                 shutil.copy(temp_file, outmp3)
                 return
@@ -110,14 +119,15 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
         #     "--update",
         #     "--no-geo-bypass",
         # ]
-        cmd_args: list[str] = _get_ytdlp_command(
+        cmd_args: list[str] = _get_ytdlp_command_mp3_download(
             yt_exe=Path("DELETE_THIS"),
             url=url,
             out_file=Path("/host_dir/temp.mp3"),
             update=True,
             no_geo_bypass=True,
+            cookies_from_browser=True,
         )
-        # remove first element for docker
+        # remove first element for docker cmd
         cmd_args.pop(0)
         docker_run(
             name="yt-dlp",
