@@ -5,6 +5,7 @@ Unit test file.
 import subprocess
 import sys
 import unittest
+import warnings
 from pathlib import Path
 
 from download import download
@@ -83,13 +84,24 @@ def install_yt_dlp_plugin_from_url(
     return None
 
 
-def yt_dlp_install_plugins(verbose: bool = False) -> list[Exception] | None:
+def yt_dlp_install_plugins(verbose: bool = False) -> dict[str, Exception] | None:
     """Install yt-dlp plugins."""
-    exceptions: list[Exception] = []
+    urls: list[str] = []
     if sys.platform == "win32":
-        err = install_yt_dlp_plugin_from_url(CHROME_COOKIES_PLUGIN_ZIP, verbose=verbose)
-        if err is not None:
-            exceptions.append(err)
+        urls.append(CHROME_COOKIES_PLUGIN_ZIP)
+    exceptions: dict[str, Exception] = {}
+    for url in urls:
+        try:
+            err = install_yt_dlp_plugin_from_url(url, verbose=verbose)
+            if err is not None:
+                exceptions[url] = err
+        except Exception as e:
+            warnings.warn(f"Unexpected error installing plugin: {e}")
+            exceptions[url] = e
+    if exceptions and verbose:
+        print("One or more exceptions occurred:")
+        for url, err in exceptions.items():
+            print(f"URL: {url}, Error: {err}")
     return exceptions if exceptions else None
 
 
@@ -120,7 +132,8 @@ class YtDlpTester(unittest.TestCase):
         print("done")
 
     def test_install_plugin(self) -> None:
-        yt_dlp_install_plugins(verbose=True)
+        errors = yt_dlp_install_plugins(verbose=True)
+        self.assertIsNone(errors)
         stdout = yt_dlp_verbose()
         print(stdout)
         print("done")
