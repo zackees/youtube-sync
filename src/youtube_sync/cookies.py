@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterator
 
 from open_webdriver import open_webdriver  # type: ignore
 
@@ -62,8 +63,14 @@ class Cookies:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[dict]:
         return iter(self.data)
+
+    def __repr__(self) -> str:
+        return f"Cookies({self.data})"
+
+    def __str__(self) -> str:
+        return self.cookies_txt
 
 
 def get_cookies_from_browser(url: str) -> Cookies:
