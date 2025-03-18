@@ -33,6 +33,7 @@ def _get_ytdlp_command(
     update=True,
     no_geo_bypass=True,
 ) -> list[str]:
+    _add_ffmpeg_paths_once()
     is_youtube = "youtube.com" in url or "youtu.be" in url
     cmd_list: list[str] = []
     cmd_list += [
