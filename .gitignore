@@ -141,6 +141,8 @@ activate
 uv.lock
 
 tests/unit/test_data
+
+
 .wdm
 .aider*
 
