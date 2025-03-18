@@ -26,6 +26,38 @@ def _add_ffmpeg_paths_once() -> None:
         FFMPEG_PATH_ADDED = True
 
 
+def _get_ytdlp_command(
+    yt_exe: Path,
+    url: str,
+    out_file: Path,
+    update=True,
+    no_geo_bypass=True,
+) -> list[str]:
+    is_youtube = "youtube.com" in url or "youtu.be" in url
+    cmd_list: list[str] = []
+    cmd_list += [
+        yt_exe.as_posix(),
+        url,
+    ]
+    if is_youtube:
+        cmd_list += [
+            "-f",
+            "bestaudio",
+        ]
+    cmd_list += [
+        "--extract-audio",
+        "--audio-format",
+        "mp3",
+        "--output",
+        out_file.as_posix(),
+    ]
+    if update:
+        cmd_list.append("--update")
+    if no_geo_bypass:
+        cmd_list.append("--no-geo-bypass")
+    return cmd_list
+
+
 def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     """Download the youtube video as an mp3."""
     _add_ffmpeg_paths_once()
@@ -37,27 +69,13 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     if isinstance(yt_exe, Exception):
         raise yt_exe
 
-    yt_exe_str = yt_exe.as_posix()
+    # yt_exe_str = yt_exe.as_posix()
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
             try:
-                cmd_list: list[str] = []
-                cmd_list += [yt_exe_str, url]
-                is_youtube = "youtube.com" in url or "youtu.be" in url
-                if is_youtube:
-                    cmd_list += [
-                        "-f",
-                        "bestaudio",
-                    ]
-                cmd_list += [
-                    "--extract-audio",
-                    "--audio-format",
-                    "mp3",
-                    "--output",
-                    temp_file,
-                ]
+                cmd_list: list[str] = _get_ytdlp_command(yt_exe, url, outmp3)
                 subprocess.run(cmd_list, check=True)
                 shutil.copy(temp_file, outmp3)
                 return
@@ -77,18 +95,27 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     dockerfile = os.path.abspath(dockerfile)
     assert os.path.exists(dockerfile), f"dockerfile {dockerfile} does not exist"
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
-        cmd_args = [
-            url,
-            "-f",
-            "bestaudio",
-            "--extract-audio",
-            "--audio-format",
-            "mp3",
-            "--output",
-            "/host_dir/temp.mp3",
-            "--update",
-            "--no-geo-bypass",
-        ]
+        # cmd_args = [
+        #     url,
+        #     "-f",
+        #     "bestaudio",
+        #     "--extract-audio",
+        #     "--audio-format",
+        #     "mp3",
+        #     "--output",
+        #     "/host_dir/temp.mp3",
+        #     "--update",
+        #     "--no-geo-bypass",
+        # ]
+        cmd_args: list[str] = _get_ytdlp_command(
+            yt_exe=Path("DELETE_THIS"),
+            url=url,
+            out_file=Path("/host_dir/temp.mp3"),
+            update=True,
+            no_geo_bypass=True,
+        )
+        # remove first element for docker
+        cmd_args.pop(0)
         docker_run(
             name="yt-dlp",
             dockerfile_or_url=dockerfile,

@@ -1,3 +1,7 @@
+"""
+An experimental python api use, but doesn't work with docker.
+"""
+
 import json
 from pathlib import Path
 
@@ -7,10 +11,16 @@ URL = "https://www.youtube.com/watch?v=XfELJU1mRMg"
 
 
 def yt_dlp_vid_info(url: str) -> dict | Exception:
-    ydl_opts: dict = {}
+    print("\n\n\n\n")
+    ydl_opts: dict = {
+        "verbose": True,
+        "--cookies-from-browser": ("chrome",),
+    }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
+            ydl.print_debug_header()
+            print("done")
         except yt_dlp.utils.DownloadError as e:
             return e
     if not isinstance(info, dict):
@@ -53,5 +63,5 @@ def yt_dlp_download_audio(url: str, out_audio: Path) -> None:
         ydl.download([url])
 
 
-# print_info(URL)
-yt_dlp_download_audio(URL, Path("test.m4a"))
+print_info(URL)
+# yt_dlp_download_audio(URL, Path("test.m4a"))
