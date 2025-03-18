@@ -14,15 +14,9 @@ from pathlib import Path
 from docker_run_cmd.api import docker_run
 from static_ffmpeg import add_paths
 
+from youtube_sync.ytdlp import yt_dlp_exe
+
 FFMPEG_PATH_ADDED = False
-
-
-def _yt_exe_path() -> str:
-    """Return the path to the yt-dlp executable."""
-    yt_exe = shutil.which("yt-dlp")
-    if yt_exe:
-        return yt_exe
-    raise FileNotFoundError("yt-dlp not found.")
 
 
 def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
@@ -35,14 +29,18 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
     if par_dir:
         os.makedirs(par_dir, exist_ok=True)
 
-    yt_exe = _yt_exe_path()
+    yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
+
+    yt_exe_str = yt_exe.as_posix()
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
             try:
                 cmd_list: list[str] = []
-                cmd_list += [yt_exe, url]
+                cmd_list += [yt_exe_str, url]
                 is_youtube = "youtube.com" in url or "youtu.be" in url
                 if is_youtube:
                     cmd_list += [
@@ -107,8 +105,11 @@ def update_yt_dlp(check: bool, yt_dlp_uses_docker: bool) -> bool:
     if yt_dlp_uses_docker:
         warnings.warn("yt-dlp-uses-docker is True. Cannot update yt-dlp.")
         return False
-    yt_exe = _yt_exe_path()
-    cmd_list = [yt_exe, "--update"]
+    yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        warnings.warn(f"can't update because yt-dlp not found: {yt_exe}")
+        return False
+    cmd_list = [yt_exe.as_posix(), "--update"]
     cp = subprocess.run(cmd_list, check=False, capture_output=True)
     cps = [cp]
     if cp.returncode != 0:
