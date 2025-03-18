@@ -53,6 +53,8 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
 
 def _get_cookies_from_browser(url: str) -> "Cookies":
     with open_webdriver() as driver:
+        # clear cookies
+        driver.delete_all_cookies()
         driver.get(url)
         return Cookies(driver.get_cookies())
 
@@ -63,7 +65,7 @@ class Cookies:
     def from_browser(url: str) -> "Cookies":
         return _get_cookies_from_browser(url)
 
-    def __init__(self, data: list[dict]):
+    def __init__(self, data: list[dict]) -> None:
         self.data = data
         self.creation_time = datetime.now()
 
@@ -73,6 +75,11 @@ class Cookies:
 
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
+
+    @staticmethod
+    def load(file_path: Path) -> "Cookies":
+        assert file_path.suffix == ".pkl"
+        return Cookies.from_pickle(file_path)
 
     def save(self, out_file: Path) -> None:
         # assert out_pickle_file.suffix == ".pkl"
@@ -84,11 +91,6 @@ class Cookies:
             self.write_cookies_txt(out_file)
         else:
             raise ValueError(f"Unsupported file extension: {suffix}")
-
-    @staticmethod
-    def load(file_path: Path) -> "Cookies":
-        assert file_path.suffix == ".pkl"
-        return Cookies.from_pickle(file_path)
 
     def __len__(self) -> int:
         return len(self.data)
