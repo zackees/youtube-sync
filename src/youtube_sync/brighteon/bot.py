@@ -105,11 +105,12 @@ def _update_library(
     """Simple test to verify the title of a page."""
     channel_url = f"https://www.brighteon.com/channels/{channel_name}"
     library_json = os.path.join(outdir, "library.json")
-    library = Library(
+    library: Library = Library.get_or_create(
         channel_name=channel_name,
         channel_url=channel_url,
         source=Source.BRIGHTEON,
-        json_path=Path(library_json),
+        media_output=Path(outdir),
+        library_path=Path(library_json),
     )
     stored_vids = library.load()
     vids = scan_for_vids(

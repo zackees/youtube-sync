@@ -32,6 +32,8 @@ def _to_channel_url(source: Source, channel_name: str) -> str:
         return to_channel_url_youtube(channel_name)
     elif source == Source.RUMBLE:
         return to_channel_url_rumble(channel_name)
+    elif source == Source.BRIGHTEON:
+        return f"https://www.brighteon.com/channels/{channel_name}"
     raise ValueError(f"Unknown source: {source}")
 
 

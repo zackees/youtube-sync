@@ -15,6 +15,7 @@ def create(
     library: Library,
     yt_dlp_uses_docker: bool = False,
 ) -> BaseSync:
+    from youtube_sync.brighteon.api import BrighteonSyncImpl
     from youtube_sync.rumble.api import RumbleSyncImpl
     from youtube_sync.youtube.api import YouTubeSyncImpl
 
@@ -27,6 +28,12 @@ def create(
         return out
     if source == Source.RUMBLE:
         out = RumbleSyncImpl(
+            library=library,
+            yt_dlp_uses_docker=yt_dlp_uses_docker,
+        )
+        return out
+    if source == Source.BRIGHTEON:
+        out = BrighteonSyncImpl(
             library=library,
             yt_dlp_uses_docker=yt_dlp_uses_docker,
         )
