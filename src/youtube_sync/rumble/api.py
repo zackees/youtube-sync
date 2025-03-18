@@ -7,7 +7,6 @@ Command entry point.
 
 from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library
-from youtube_sync.types import Source, VidEntry
 
 
 class RumbleSyncImpl(BaseSync):
@@ -18,13 +17,6 @@ class RumbleSyncImpl(BaseSync):
     def library(self) -> Library:
         assert isinstance(self.lib, Library)
         return self.lib
-
-    def source(self) -> Source:
-        return Source.YOUTUBE
-
-    def downloaded_vids(self, refresh: bool) -> list[VidEntry]:
-        # return self.lib.downloaded_vids(load=refresh)
-        raise NotImplementedError("RumbleSyncImpl.downloaded_vids")
 
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
         from youtube_sync.rumble.rumble_extra import rumble_scan

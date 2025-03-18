@@ -30,7 +30,6 @@ class BaseSync(ABC):
             download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
         )
 
-    @abstractmethod
     def source(self) -> Source:
         """Return the source object."""
         return self.lib.source
