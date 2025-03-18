@@ -63,7 +63,10 @@ class Cookies:
 
     def __init__(self, data: list[dict]):
         self.data = data
-        self.cookies_txt = _convert_cookies_to_txt(data)
+
+    @property
+    def cookies_txt(self) -> str:
+        return _convert_cookies_to_txt(self.data)
 
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
