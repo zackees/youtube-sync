@@ -19,11 +19,9 @@ def to_channel_url(channel: str) -> str:
 def youtube_scan(
     library: Library,
     limit_scroll_pages: int | None,
-) -> Library:
+) -> list[VidEntry]:
     channel_url = library.channel_url
     # base_dir = Path(basedir)
     # output_dir = str(base_dir / channel / "youtube")
     vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
-    library.merge(vids, save=True)
-    print(f"Updated {library.path}")
-    return library
+    return vids

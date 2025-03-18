@@ -10,7 +10,7 @@ from youtube_sync.library import Library
 from youtube_sync.types import VidEntry
 
 
-class RumbleSyncImpl(BaseSync):
+class BrighteonSyncImpl(BaseSync):
     def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
         super().__init__(library, yt_dlp_uses_docker)
 

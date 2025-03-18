@@ -7,6 +7,7 @@ Command entry point.
 
 from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library
+from youtube_sync.types import VidEntry
 from youtube_sync.youtube.youtube import (
     youtube_scan,
 )
@@ -20,8 +21,9 @@ class YouTubeSyncImpl(BaseSync):
     ):
         super().__init__(library, yt_dlp_uses_docker)
 
-    def scan_for_vids(self, limit_scroll_pages: int) -> None:
-        youtube_scan(
+    def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
+        out: list[VidEntry] = youtube_scan(
             library=self.lib,
             limit_scroll_pages=limit_scroll_pages,
         )
+        return out

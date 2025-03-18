@@ -7,7 +7,7 @@ Command entry point.
 from abc import ABC, abstractmethod
 
 from youtube_sync.library import Library
-from youtube_sync.types import Source
+from youtube_sync.types import Source, VidEntry
 
 
 class BaseSync(ABC):
@@ -35,6 +35,6 @@ class BaseSync(ABC):
         return self.lib.source
 
     @abstractmethod
-    def scan_for_vids(self, limit_scroll_pages: int) -> None:
+    def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
         """Scan for videos with optional limit on scroll pages."""
         pass
