@@ -35,6 +35,6 @@ class BaseSync(ABC):
         return self.lib.source
 
     @abstractmethod
-    def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
+    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         """Scan for videos with optional limit on scroll pages."""
         pass

@@ -21,7 +21,7 @@ class YouTubeSyncImpl(BaseSync):
     ):
         super().__init__(library, yt_dlp_uses_docker)
 
-    def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
+    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         out: list[VidEntry] = youtube_scan(
             channel_url=self.lib.channel_url,
             limit_scroll_pages=limit_scroll_pages,

@@ -14,7 +14,7 @@ class RumbleSyncImpl(BaseSync):
     def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
         super().__init__(library, yt_dlp_uses_docker)
 
-    def scan_for_vids(self, limit_scroll_pages: int) -> list[VidEntry]:
+    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         from youtube_sync.rumble.rumble_extra import rumble_scan
 
         out: list[VidEntry] = rumble_scan(
