@@ -14,10 +14,10 @@ from .types import ChannelId, VideoId
 # https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
 
 
-def yt_dlp_exe() -> Path:
+def yt_dlp_exe() -> Path | Exception:
     yt_exe = shutil.which("yt-dlp")
     if yt_exe is None:
-        raise FileNotFoundError("yt-dlp not found in PATH")
+        return FileNotFoundError("yt-dlp not found")
     return Path(yt_exe)
 
 
@@ -42,8 +42,9 @@ def _parse_plugin_dirs(stdout: str) -> list[Path]:
 def yt_dlp_plugin_dir() -> Path | Exception:
     """Get plugin directory."""
     exe = yt_dlp_exe()
-    if exe is None:
-        return FileNotFoundError("yt-dlp not found")
+    if isinstance(exe, Exception):
+        return exe
+    assert isinstance(exe, Path)
 
     try:
         cp = subprocess.run([exe, "--verbose"], capture_output=True)
@@ -69,6 +70,8 @@ def fetch_channel_info_ytdlp(video_url: str) -> dict[Any, Any]:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
     yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
@@ -92,6 +95,8 @@ def fetch_channel_info_ytdlp(video_url: str) -> dict[Any, Any]:
 
 def fetch_video_info(video_url: str) -> dict:
     yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
@@ -117,6 +122,8 @@ def fetch_channel_url_ytdlp(video_url: str) -> str:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
     yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
     cmd_list = [
         yt_exe.as_posix(),
         "--print",
@@ -154,6 +161,8 @@ def fetch_videos_from_channel(channel_url: str) -> list[VideoId]:
     # yt-dlp -J "CHANNEL_URL" > channel_info.json
     # cmd = f'yt-dlp -i --get-id "https://www.youtube.com/channel/{channel_id}"'
     yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
     cmd_list = [yt_exe.as_posix(), "--print", "id", channel_url]
     cms_str = subprocess.list2cmdline(cmd_list)
     print(f"Running: {cms_str}")

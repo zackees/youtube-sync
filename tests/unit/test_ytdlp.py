@@ -83,20 +83,23 @@ def install_yt_dlp_plugin_from_url(
     return None
 
 
-def install_yt_dlp_win_plugin_chrome_cookies(verbose: bool = False) -> None:
-    install_yt_dlp_plugin_from_url(CHROME_COOKIES_PLUGIN_ZIP, verbose=verbose)
-
-
-def yt_dlp_install_plugins(verbose: bool = False) -> None:
+def yt_dlp_install_plugins(verbose: bool = False) -> list[Exception] | None:
     """Install yt-dlp plugins."""
+    exceptions: list[Exception] = []
     if sys.platform == "win32":
-        install_yt_dlp_win_plugin_chrome_cookies(verbose=verbose)
+        err = install_yt_dlp_plugin_from_url(CHROME_COOKIES_PLUGIN_ZIP, verbose=verbose)
+        if err is not None:
+            exceptions.append(err)
+    return exceptions if exceptions else None
 
 
-def yt_dlp_verbose() -> str:
+def yt_dlp_verbose() -> str | Exception:
     """Get yt-dlp verbose output."""
     exe = yt_dlp_exe()
-    cp = subprocess.run([exe, "--verbose"], capture_output=True)
+    if isinstance(exe, Exception):
+        return exe
+    exe_str = exe.as_posix()
+    cp = subprocess.run([exe_str, "--verbose"], capture_output=True)
     stdout_bytes = cp.stdout
     stderr_bytes = cp.stderr
     stdout = stdout_bytes.decode("utf-8") + stderr_bytes.decode("utf-8")
