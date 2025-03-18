@@ -38,13 +38,3 @@ class BaseSync(ABC):
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
         """Scan for videos with optional limit on scroll pages."""
         pass
-
-    @abstractmethod
-    def sync(
-        self,
-        limit_scroll_pages: int,
-        download_limit: int | None,
-        yt_dlp_uses_docker: bool | None,
-    ) -> None:
-        """Scan and download videos in one operation."""
-        pass

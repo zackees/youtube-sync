@@ -60,11 +60,8 @@ class YouTubeSync:
         download_limit: int | None,
         yt_dlp_uses_docker: bool | None = None,
     ) -> None:
-        self.api.sync(
-            limit_scroll_pages=limit_scroll_pages,
-            download_limit=download_limit,
-            yt_dlp_uses_docker=yt_dlp_uses_docker,
-        )
+        self.scan_for_vids(limit_scroll_pages)
+        self.download(download_limit, yt_dlp_uses_docker)
 
 
 __all__ = ["YouTubeSync"]
