@@ -9,7 +9,6 @@ from youtube_sync.base_sync import BaseSync
 from youtube_sync.library import Library
 from youtube_sync.types import Source, VidEntry
 from youtube_sync.youtube.youtube import (
-    youtube_download_missing,
     youtube_scan,
 )
 
@@ -37,20 +36,6 @@ class YouTubeSyncImpl(BaseSync):
 
     def source(self) -> Source:
         return Source.YOUTUBE
-
-    def download(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool | None
-    ) -> None:
-        yt_dlp_uses_docker = (
-            yt_dlp_uses_docker
-            if yt_dlp_uses_docker is not None
-            else self.yt_dlp_uses_docker
-        )
-        youtube_download_missing(
-            library=self.lib,
-            download_limit=download_limit,
-            yt_dlp_uses_docker=yt_dlp_uses_docker,
-        )
 
     def sync(
         self,

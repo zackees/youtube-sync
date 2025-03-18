@@ -17,27 +17,28 @@ class BaseSync(ABC):
         self.yt_dlp_uses_docker = yt_dlp_uses_docker
         self.lib: Library = library
 
-    @abstractmethod
-    def scan_for_vids(self, limit_scroll_pages: int) -> None:
-        """Scan for videos with optional limit on scroll pages."""
-        pass
+    def library(self) -> Library:
+        """Return the library object."""
+        return self.lib
 
-    @abstractmethod
     def download(
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None
     ) -> None:
         """Download videos with optional limit and docker configuration."""
-        pass
-
-    @abstractmethod
-    def library(self) -> Library:
-        """Return the library object."""
-        return self.lib
+        yt_dlp_uses_docker = bool(yt_dlp_uses_docker)
+        self.lib.download_missing(
+            download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
+        )
 
     @abstractmethod
     def source(self) -> Source:
         """Return the source object."""
         return self.lib.source
+
+    @abstractmethod
+    def scan_for_vids(self, limit_scroll_pages: int) -> None:
+        """Scan for videos with optional limit on scroll pages."""
+        pass
 
     @abstractmethod
     def sync(
