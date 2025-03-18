@@ -7,6 +7,10 @@ from typing import Any
 
 from .types import ChannelId, VideoId
 
+# yt-dlp-ChromeCookieUnlock
+
+# https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
+
 
 def _yt_dlp_exe() -> str:
     yt_exe = shutil.which("yt-dlp")
