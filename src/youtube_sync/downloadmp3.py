@@ -55,6 +55,8 @@ def _get_ytdlp_command(
         cmd_list.append("--update")
     if no_geo_bypass:
         cmd_list.append("--no-geo-bypass")
+    cmd_list.append("--cookies-from-browser")
+    cmd_list.append("chrome")
     return cmd_list
 
 
