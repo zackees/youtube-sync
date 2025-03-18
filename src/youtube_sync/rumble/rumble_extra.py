@@ -7,13 +7,27 @@ Command entry point.
 from pathlib import Path
 
 from youtube_sync.library import Library
-from youtube_sync.rumble.rumble import to_channel_url
+from youtube_sync.rumble.rumble import (
+    PartialVideo,
+    fetch_rumble_channel_all_partial_result,
+    to_channel_url,
+)
 from youtube_sync.types import VidEntry
 
 
 # vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
-def fetch_all_vids(channel_url: str, limit: int | None) -> list[VidEntry]:
-    raise NotImplementedError("fetch_all_vids")
+def fetch_all_vids(channel_name: str, limit: int | None) -> list[VidEntry]:
+    # channel_url = f"https://www.brighteon.com/channels/{channel_name}"
+    videos: list[PartialVideo] = fetch_rumble_channel_all_partial_result(
+        channel_name=channel_name,
+        channel=channel_name,
+        after=None,
+        limit=limit,
+    )
+    vids: list[VidEntry] = [
+        VidEntry(url=vid.url, title=vid.title, date=vid.date) for vid in videos
+    ]
+    return vids
 
 
 def rumble_library(

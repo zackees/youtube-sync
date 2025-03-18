@@ -280,7 +280,10 @@ def parse_fuzzy_date(datestr: str) -> datetime:
 
 
 def fetch_rumble_channel_all_partial_result(
-    channel_name: str, channel: str, after: datetime | None = None
+    channel_name: str,
+    channel: str,
+    after: datetime | None = None,
+    limit: int | None = None,
 ) -> list[PartialVideo]:
     out: List[PartialVideo] = []
     page = 1
@@ -294,7 +297,11 @@ def fetch_rumble_channel_all_partial_result(
         fetch_response = fetch_html(test_url)
         if not fetch_response.ok:
             raise ValueError(f"Could not find channel or user {channel}")
+    count = 0
     while True:
+        if limit is not None and count >= limit:
+            break
+        count += 1
         try:
             curr_page = page
             page += 1
