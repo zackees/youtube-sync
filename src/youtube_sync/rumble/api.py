@@ -27,11 +27,12 @@ class RumbleSyncImpl(BaseSync):
         raise NotImplementedError("RumbleSyncImpl.downloaded_vids")
 
     def scan_for_vids(self, limit_scroll_pages: int) -> None:
-        # youtube_scan(
-        #     library=self.lib,
-        #     limit_scroll_pages=limit_scroll_pages,
-        # )
-        raise NotImplementedError("RumbleSyncImpl.scan_for_vids")
+        from youtube_sync.rumble.rumble_extra import rumble_scan
+
+        rumble_scan(
+            library=self.lib,
+            limit_scroll_pages=limit_scroll_pages,
+        )
 
     def download(
         self, download_limit: int | None, yt_dlp_uses_docker: bool | None

@@ -39,12 +39,11 @@ def rumble_library(
 def rumble_scan(
     library: Library,
     limit_scroll_pages: int | None,
-) -> Library:
+) -> None:
     channel_url = library.channel_url
     vids: list[VidEntry] = fetch_all_vids(channel_url, limit=limit_scroll_pages)
     library.merge(vids, save=True)
     print(f"Updated {library.path}")
-    return library
 
 
 def rumble_download_missing(
