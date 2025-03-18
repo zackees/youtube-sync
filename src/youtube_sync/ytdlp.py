@@ -75,8 +75,12 @@ def fetch_channel_info_ytdlp(
     return data
 
 
-def fetch_video_info(video_url: str) -> dict:
-    yt_exe = yt_dlp_exe()
+def fetch_video_info(video_url: str, yt_exe: Path | None = None) -> dict:
+    if yt_exe is None:
+        yt_or_error = yt_dlp_exe()
+        if isinstance(yt_or_error, Exception):
+            raise yt_or_error
+        yt_exe = yt_or_error
     if isinstance(yt_exe, Exception):
         raise yt_exe
     cmd_list = [
@@ -188,16 +192,19 @@ def fetch_videos_from_youtube_channel(
 class YtDlp:
 
     def __init__(self) -> None:
-        pass
+        yt_exe = yt_dlp_exe()
+        if isinstance(yt_exe, Exception):
+            raise yt_exe
+        self.yt_exe: Path = yt_exe
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
-        return fetch_channel_info_ytdlp(video_url)
+        return fetch_channel_info_ytdlp(video_url, yt_exe=self.yt_exe)
 
     def fetch_video_info(self, video_url: str) -> dict:
-        return fetch_video_info(video_url)
+        return fetch_video_info(video_url, yt_exe=self.yt_exe)
 
     def fetch_channel_url(self, video_url: str) -> str:
-        return fetch_channel_url_ytdlp(video_url)
+        return fetch_channel_url_ytdlp(video_url, yt_exe=self.yt_exe)
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
-        return fetch_channel_id_ytdlp(video_url)
+        return fetch_channel_id_ytdlp(video_url, yt_exe=self.yt_exe)
