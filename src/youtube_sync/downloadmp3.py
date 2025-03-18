@@ -19,12 +19,16 @@ from youtube_sync.ytdlp import yt_dlp_exe
 FFMPEG_PATH_ADDED = False
 
 
-def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
-    """Download the youtube video as an mp3."""
+def _add_ffmpeg_paths_once() -> None:
     global FFMPEG_PATH_ADDED  # pylint: disable=global-statement
     if not FFMPEG_PATH_ADDED:
         add_paths()
         FFMPEG_PATH_ADDED = True
+
+
+def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
+    """Download the youtube video as an mp3."""
+    _add_ffmpeg_paths_once()
     par_dir = os.path.dirname(str(outmp3))
     if par_dir:
         os.makedirs(par_dir, exist_ok=True)
