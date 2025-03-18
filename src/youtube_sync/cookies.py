@@ -1,4 +1,5 @@
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Iterator
 
@@ -64,6 +65,7 @@ class Cookies:
 
     def __init__(self, data: list[dict]):
         self.data = data
+        self.creation_time = datetime.now()
 
     @property
     def cookies_txt(self) -> str:
