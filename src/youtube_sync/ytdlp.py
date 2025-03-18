@@ -21,6 +21,19 @@ def yt_dlp_exe() -> Path | Exception:
     return Path(yt_exe)
 
 
+def yt_dlp_verbose() -> str | Exception:
+    """Get yt-dlp verbose output."""
+    exe = yt_dlp_exe()
+    if isinstance(exe, Exception):
+        return exe
+    exe_str = exe.as_posix()
+    cp = subprocess.run([exe_str, "--verbose"], capture_output=True)
+    stdout_bytes = cp.stdout
+    stderr_bytes = cp.stderr
+    stdout = stdout_bytes.decode("utf-8") + stderr_bytes.decode("utf-8")
+    return stdout
+
+
 def _parse_plugin_dirs(stdout: str) -> list[Path]:
     """Parse plugin dirs."""
     lines = stdout.splitlines()
