@@ -42,6 +42,17 @@ class Source(Enum):
             return Source.BRIGHTEON
         raise ValueError(f"Unknown source: {value}")
 
+    @staticmethod
+    def check(value: "str | Source") -> bool:
+        """Check if value is a Source."""
+        if isinstance(value, Source):
+            return True
+        try:
+            _ = Source.from_str(value)
+            return True
+        except ValueError:
+            return False
+
 
 @dataclass
 class VidEntry:
