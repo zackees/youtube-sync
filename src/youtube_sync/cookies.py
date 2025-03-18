@@ -74,9 +74,16 @@ class Cookies:
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
 
-    def save(self, out_pickle_file: Path) -> None:
-        assert out_pickle_file.suffix == ".pkl"
-        self.to_pickle(out_pickle_file)
+    def save(self, out_file: Path) -> None:
+        # assert out_pickle_file.suffix == ".pkl"
+        # self.to_pickle(out_pickle_file)
+        suffix = out_file.suffix
+        if suffix == ".pkl":
+            self.to_pickle(out_file)
+        elif suffix == ".txt":
+            self.write_cookies_txt(out_file)
+        else:
+            raise ValueError(f"Unsupported file extension: {suffix}")
 
     @staticmethod
     def load(file_path: Path) -> "Cookies":
