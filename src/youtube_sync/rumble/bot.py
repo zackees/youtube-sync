@@ -62,7 +62,7 @@ def unit_test() -> int:
     sys.argv.append("--channel-name")
     sys.argv.append("PlandemicSeriesOfficial")
     sys.argv.append("--output")
-    sys.argv.append("tmp3")
+    sys.argv.append("tmp")
     sys.argv.append("--skip-download")
     main()
     return 0

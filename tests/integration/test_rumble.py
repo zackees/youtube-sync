@@ -9,9 +9,9 @@ from base import Args, integration_test
 
 from youtube_sync import Source
 
-RUMBLE_GLEN_GRENWALD = Args(
+RUMBLE_PLANDEMIC = Args(
     source=Source.RUMBLE,
-    channel_name="GGreenwald",
+    channel_name="PlandemicSeriesOfficial",
     limit_scroll_pages=1,
     skip_download=False,
     download_limit=1,
@@ -20,4 +20,4 @@ RUMBLE_GLEN_GRENWALD = Args(
 )
 
 if __name__ == "__main__":
-    integration_test(RUMBLE_GLEN_GRENWALD)
+    integration_test(RUMBLE_PLANDEMIC)
