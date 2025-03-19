@@ -14,6 +14,7 @@ from filelock import FileLock
 from youtube_sync.downloadmp3 import download_mp3
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.types import VidEntry
+from youtube_sync.ytdlp import YtDlp
 
 
 def _get_library_json_lock_path() -> str:
@@ -78,6 +79,9 @@ def _make_library(
     return library
 
 
+_YT_DLP = YtDlp()
+
+
 class Library:
     """Represents the library"""
 
@@ -91,6 +95,7 @@ class Library:
         if isinstance(source, str):
             source = Source.from_str(source)
         self.source = source
+        self.ytdlp = _YT_DLP
         self.channel_url = channel_url
         self.channel_name = channel_name
         self.lib_path = json_path
@@ -262,6 +267,7 @@ class Library:
                     url=next_url,
                     outmp3=next_mp3_path,
                     yt_dlp_uses_docker=yt_dlp_uses_docker,
+                    ytdlp=self.ytdlp,
                 )
             except Exception as e:  # pylint: disable=broad-except
                 stacktrace_str = traceback.format_exc()

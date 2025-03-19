@@ -14,13 +14,9 @@ from pathlib import Path
 from docker_run_cmd.api import docker_run
 from static_ffmpeg import add_paths
 
-from youtube_sync.ytdlp import yt_dlp_exe
+from youtube_sync.ytdlp import YtDlp, yt_dlp_exe
 
 FFMPEG_PATH_ADDED = False
-_OVERRIDE_COOKIES_FROM_BROWSER: bool | None = (
-    False  # None is default, true/false is override
-)
-# _OVERRIDE_COOKIES_FROM_BROWSER = None
 
 
 def _add_ffmpeg_paths_once() -> None:
@@ -36,15 +32,12 @@ def _get_ytdlp_command_mp3_download(
     out_file: Path,
     update: bool,
     no_geo_bypass: bool,
-    cookies_from_browser: bool,
+    cookies_txt: Path | None,
 ) -> list[str]:
     _add_ffmpeg_paths_once()
-    if _OVERRIDE_COOKIES_FROM_BROWSER is not None:
-        warnings.warn(
-            f"overriding cookies_from_browser to {_OVERRIDE_COOKIES_FROM_BROWSER}"
-        )
-        cookies_from_browser = _OVERRIDE_COOKIES_FROM_BROWSER
     is_youtube = "youtube.com" in url or "youtu.be" in url
+    if is_youtube:
+        assert cookies_txt is not None, "cookies_txt must be provided for youtube.com"
     cmd_list: list[str] = []
     cmd_list += [
         yt_exe.as_posix(),
@@ -66,13 +59,14 @@ def _get_ytdlp_command_mp3_download(
         cmd_list.append("--update")
     if no_geo_bypass:
         cmd_list.append("--no-geo-bypass")
-    if cookies_from_browser:
-        cmd_list.append("--cookies-from-browser")
-        cmd_list.append("chrome")
+    if cookies_txt:
+        assert cookies_txt.exists(), f"cookies_txt does not exist: {cookies_txt}"
+        cmd_list.append("--cookies")
+        cmd_list.append(cookies_txt.as_posix())
     return cmd_list
 
 
-def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
+def yt_dlp_download_mp3(url: str, outmp3: Path, ytdlp: YtDlp) -> None:
     """Download the youtube video as an mp3."""
     _add_ffmpeg_paths_once()
     par_dir = os.path.dirname(str(outmp3))
@@ -95,7 +89,7 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
                     out_file=Path(temp_file),
                     no_geo_bypass=True,
                     update=False,
-                    cookies_from_browser=True,
+                    cookies_txt=ytdlp.youtube_cookies_txt,
                 )
                 cmd_str = subprocess.list2cmdline(cmd_list)
                 print(f"Running: {cmd_str}")
@@ -111,7 +105,7 @@ def yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
         warnings.warn(f"Failed all attempts to download {url} as mp3.")
 
 
-def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
+def docker_yt_dlp_download_mp3(url: str, outmp3: Path, ytdlp: YtDlp) -> None:
     """Download the youtube video as an mp3."""
     here = os.path.abspath(os.path.dirname(__file__))
     dockerfile = os.path.join(here, "Dockerfile")
@@ -136,7 +130,7 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
             out_file=Path("/host_dir/temp.mp3"),
             update=True,
             no_geo_bypass=True,
-            cookies_from_browser=True,
+            cookies_txt=ytdlp.youtube_cookies_txt,
         )
         # remove first element for docker cmd
         cmd_args.pop(0)
@@ -149,11 +143,13 @@ def docker_yt_dlp_download_mp3(url: str, outmp3: Path) -> None:
         shutil.copy(os.path.join(temp_dir, "temp.mp3"), str(outmp3))
 
 
-def download_mp3(url: str, outmp3: Path, yt_dlp_uses_docker: bool) -> None:
+def download_mp3(
+    url: str, outmp3: Path, yt_dlp_uses_docker: bool, ytdlp: YtDlp
+) -> None:
     """Download the youtube video as an mp3."""
     if yt_dlp_uses_docker:
-        return docker_yt_dlp_download_mp3(url, outmp3)
-    return yt_dlp_download_mp3(url, outmp3)
+        return docker_yt_dlp_download_mp3(url=url, outmp3=outmp3, ytdlp=ytdlp)
+    return yt_dlp_download_mp3(url=url, outmp3=outmp3, ytdlp=ytdlp)
 
 
 def update_yt_dlp(check: bool, yt_dlp_uses_docker: bool) -> bool:
@@ -198,7 +194,7 @@ def unit_test() -> None:
     """Run the tests."""
     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
     outmp3 = Path("tmp.mp3")
-    download_mp3(url=url, outmp3=outmp3, yt_dlp_uses_docker=False)
+    download_mp3(url=url, outmp3=outmp3, yt_dlp_uses_docker=False, ytdlp=YtDlp())
     print(f"Downloaded {url} as {outmp3}")
     os.remove(outmp3)
 

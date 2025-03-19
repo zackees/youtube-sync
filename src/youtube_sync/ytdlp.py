@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from filelock import FileLock
+
 from .cookies import Cookies
 from .types import ChannelId, VideoId
 
@@ -227,23 +229,31 @@ def _is_youtube(url: str) -> bool:
     return "youtube.com" in url or "youtu.be" in url
 
 
+_YOUTUBE_COOKIES_LOCK_PATH = Path("cookies") / "youtube" / "cookies.lock"
+_YOUTUBE_COOKIES_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
+_YOUTUBE_COOKIES_LOCK = FileLock(_YOUTUBE_COOKIES_LOCK_PATH)
+
+
 def _get_or_refresh_cookies(
     url: str, cookies_pkl: Path, refresh_time: int, cookies: Cookies | None
 ) -> Cookies:
-    now = datetime.now()
-    if cookies is not None:
-        expire_time = cookies.creation_time + timedelta(hours=refresh_time)
-        if now < expire_time:
-            return cookies
-    elif cookies_pkl.exists():
-        yt_cookies = Cookies.load(cookies_pkl)
-        hours_old = (yt_cookies.creation_time - yt_cookies.creation_time).seconds / 3600
-        if hours_old < refresh_time:
-            return yt_cookies
-    # refresh
-    yt_cookies = Cookies.from_browser(url)
-    yt_cookies.save(cookies_pkl)
-    return yt_cookies
+    with _YOUTUBE_COOKIES_LOCK:
+        now = datetime.now()
+        if cookies is not None:
+            expire_time = cookies.creation_time + timedelta(hours=refresh_time)
+            if now < expire_time:
+                return cookies
+        elif cookies_pkl.exists():
+            yt_cookies = Cookies.load(cookies_pkl)
+            hours_old = (
+                yt_cookies.creation_time - yt_cookies.creation_time
+            ).seconds / 3600
+            if hours_old < refresh_time:
+                return yt_cookies
+        # refresh
+        yt_cookies = Cookies.from_browser(url)
+        yt_cookies.save(cookies_pkl)
+        return yt_cookies
 
 
 class YtDlp:
