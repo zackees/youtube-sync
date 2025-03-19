@@ -4,6 +4,7 @@
 Scrapes the brighteon website for video urls and downloads them.
 """
 
+import _thread
 import argparse
 import os
 import sys
@@ -12,9 +13,9 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
-from ..library import Library, VidEntry
-from ..library_data import Source
-from ..playwright_launcher import launch_playwright, set_headless
+from youtube_sync.library import Library, VidEntry
+from youtube_sync.library_data import Source
+from youtube_sync.playwright_launcher import launch_playwright, set_headless
 
 BASE_URL = "https://www.brighteon.com"
 
@@ -57,6 +58,9 @@ def _fetch_vid_infos(page: Page, channel_url: str, page_num: int) -> list[VidEnt
                     warnings.warn(f"Failed to get url: {e}")
             print(f"Found {len(vids)} videos.")
             return vids
+        except KeyboardInterrupt:
+            _thread.interrupt_main()
+            raise
         except Exception as e:  # pylint: disable=broad-except
             print(f"Attempt to fetch video info failed with error: {e}. Retrying...")
             last_exception = e
