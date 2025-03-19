@@ -235,44 +235,51 @@ class YtDlp:
         self.youtube_cookies_txt: Path = Path("cookies") / "youtube" / "cookies.txt"
         self.youtube_cookies_pkl: Path = Path("cookies") / "youtube" / "cookies.pkl"
 
-    def _extract_cookies_if_needed(self, url: str) -> None:
-        if self.youtube_cookies is None and _is_youtube(url):
-            if self.youtube_cookies_pkl.exists():
-                yt_cookies = Cookies.load(self.youtube_cookies_pkl)
-                hours_old = (
-                    yt_cookies.creation_time - yt_cookies.creation_time
-                ).seconds / 3600
-                if hours_old < 24:
-                    self.youtube_cookies = yt_cookies
-                else:
-                    self.youtube_cookies = Cookies.from_browser(
-                        "https://www.youtube.com"
-                    )
-                    self.youtube_cookies.save(self.youtube_cookies_txt)
-                    self.youtube_cookies.save(self.youtube_cookies_pkl)
+    def _extract_cookies_if_needed(self, url: str) -> Path | None:
+
+        if not _is_youtube(url):
+            return None
+
+        if self.youtube_cookies is not None:
+            return self.youtube_cookies_txt
+
+        if self.youtube_cookies_pkl.exists():
+            yt_cookies = Cookies.load(self.youtube_cookies_pkl)
+            hours_old = (
+                yt_cookies.creation_time - yt_cookies.creation_time
+            ).seconds / 3600
+            if hours_old < 24:
+                self.youtube_cookies = yt_cookies
+            else:
+                self.youtube_cookies = Cookies.from_browser("https://www.youtube.com")
+        else:
+            self.youtube_cookies = Cookies.from_browser("https://www.youtube.com")
+        self.youtube_cookies.save(self.youtube_cookies_txt)
+        self.youtube_cookies.save(self.youtube_cookies_pkl)
+        return self.youtube_cookies_txt
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
-        self._extract_cookies_if_needed(video_url)
+        cookies = self._extract_cookies_if_needed(video_url)
         return fetch_channel_info_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
-        self._extract_cookies_if_needed(video_url)
+        cookies = self._extract_cookies_if_needed(video_url)
         return fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
-            cookies_txt=self.youtube_cookies_txt,
+            cookies_txt=cookies,
         )
 
     def fetch_channel_url(self, video_url: str) -> str:
-        self._extract_cookies_if_needed(video_url)
+        cookies = self._extract_cookies_if_needed(video_url)
         return fetch_channel_url_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
-        self._extract_cookies_if_needed(video_url)
+        cookies = self._extract_cookies_if_needed(video_url)
         return fetch_channel_id_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
