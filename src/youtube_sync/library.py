@@ -2,6 +2,7 @@
 
 """Library json module."""
 
+import _thread
 import os
 import traceback
 import warnings
@@ -269,6 +270,10 @@ class Library:
                     yt_dlp_uses_docker=yt_dlp_uses_docker,
                     ytdlp=self.ytdlp,
                 )
+            except KeyboardInterrupt:
+                warnings.warn("KeyboardInterrupt. Stopping download.")
+                _thread.interrupt_main()
+                break
             except Exception as e:  # pylint: disable=broad-except
                 stacktrace_str = traceback.format_exc()
                 print(f"Error downloading {next_url}: {e}")
