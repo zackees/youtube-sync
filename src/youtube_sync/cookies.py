@@ -85,6 +85,12 @@ class Cookies:
         # assert out_pickle_file.suffix == ".pkl"
         # self.to_pickle(out_pickle_file)
         suffix = out_file.suffix
+        if suffix not in {".pkl", ".txt"}:
+            raise ValueError(
+                f"Unsupported file extension: {suffix}, options are: '.pkl', '.txt'"
+            )
+        parent = out_file.parent
+        parent.mkdir(parents=True, exist_ok=True)
         if suffix == ".pkl":
             self.to_pickle(out_file)
         elif suffix == ".txt":
