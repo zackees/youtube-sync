@@ -90,7 +90,9 @@ def fetch_channel_info_ytdlp(
     return data
 
 
-def fetch_video_info(video_url: str, yt_exe: Path | None = None) -> dict:
+def fetch_video_info(
+    video_url: str, yt_exe: Path | None = None, cookies: Path | None = None
+) -> dict:
     if yt_exe is None:
         yt_or_error = yt_dlp_exe()
         if isinstance(yt_or_error, Exception):
@@ -103,6 +105,11 @@ def fetch_video_info(video_url: str, yt_exe: Path | None = None) -> dict:
         "-J",
         video_url,
     ]
+
+    # Add cookies parameter if provided
+    if cookies is not None:
+        cmd_list.insert(2, "--cookies")
+        cmd_list.insert(3, cookies.as_posix())
     completed_proc = subprocess.run(
         cmd_list, capture_output=True, text=True, shell=False, check=True
     )
@@ -243,7 +250,13 @@ class YtDlp:
 
     def fetch_video_info(self, video_url: str) -> dict:
         self._extract_cookies_if_needed(video_url)
-        return fetch_video_info(video_url, yt_exe=self.yt_exe)
+        return fetch_video_info(
+            video_url,
+            yt_exe=self.yt_exe,
+            cookies=(
+                self.youtube_cookies_txt if self.youtube_cookies is not None else None
+            ),
+        )
 
     def fetch_channel_url(self, video_url: str) -> str:
         self._extract_cookies_if_needed(video_url)
