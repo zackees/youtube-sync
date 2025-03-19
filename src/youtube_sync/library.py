@@ -273,7 +273,7 @@ class Library:
             except KeyboardInterrupt:
                 warnings.warn("KeyboardInterrupt. Stopping download.")
                 _thread.interrupt_main()
-                break
+                raise
             except Exception as e:  # pylint: disable=broad-except
                 stacktrace_str = traceback.format_exc()
                 print(f"Error downloading {next_url}: {e}")
