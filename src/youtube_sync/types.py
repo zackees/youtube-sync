@@ -79,6 +79,8 @@ class VidEntry:
             self.file_path = clean_filename(f"{title}.mp3")
         else:
             self.file_path = clean_filename(file_path)
+        if date is None:
+            self.date = datetime.now()
         self.error = error
 
     # needed for set membership
