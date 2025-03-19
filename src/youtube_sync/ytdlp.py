@@ -301,6 +301,7 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
+            current_proc: subprocess.Popen | None = None
             try:
                 cmd_list: list[str] = _get_ytdlp_command_mp3_download(
                     yt_exe=yt_exe,
@@ -313,12 +314,34 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 cmd_str = subprocess.list2cmdline(cmd_list)
                 print(f"Running: {cmd_str}")
                 # subprocess.run(cmd_list, check=True)
-                proc = subprocess.Popen(cmd_list)
-                while True:
-                    # proc.wait(timeout=.1)
-                    if proc.poll() is not None:
-                        break
-                    time.sleep(0.1)
+
+                # On Windows, detach the process from the parent's console.
+                if os.name == "nt":
+                    current_proc = subprocess.Popen(
+                        cmd_list, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+                    )
+                else:
+                    # On Unix-like systems, ignore SIGINT in the child.
+                    current_proc = subprocess.Popen(
+                        cmd_list,
+                        preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN),
+                    )
+
+                try:
+                    while True:
+                        # proc.wait(timeout=.1)
+                        rtn = current_proc.poll()
+                        if rtn is not None:
+                            if rtn != 0:
+                                raise subprocess.CalledProcessError(rtn, cmd_str)
+                            break
+                        time.sleep(0.1)
+                    current_proc = None
+                except KeyboardInterrupt:
+                    if current_proc is not None:
+                        current_proc.terminate()
+                        current_proc.wait()
+                    raise
 
                 shutil.copy(temp_file, outmp3)
                 return
