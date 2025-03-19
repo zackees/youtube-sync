@@ -313,15 +313,19 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 )
                 cmd_str = subprocess.list2cmdline(cmd_list)
                 print(f"Running: {cmd_str}")
-                # subprocess.run(cmd_list, check=True)
 
-                # On Windows, detach the process from the parent's console.
+                # This allows the process to ignore SIGINT (Ctrl+C)
                 if os.name == "nt":
+                    # On Windows, combine flags to detach the child from the console.
+                    DETACHED_PROCESS = 0x00000008
+                    creation_flags = (
+                        subprocess.CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS
+                    )
                     current_proc = subprocess.Popen(
-                        cmd_list, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+                        cmd_list, creationflags=creation_flags
                     )
                 else:
-                    # On Unix-like systems, ignore SIGINT in the child.
+                    # On Unix, tell the child to ignore SIGINT.
                     current_proc = subprocess.Popen(
                         cmd_list,
                         preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN),
