@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 import tempfile
+import time
 import warnings
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -311,7 +312,14 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 )
                 cmd_str = subprocess.list2cmdline(cmd_list)
                 print(f"Running: {cmd_str}")
-                subprocess.run(cmd_list, check=True)
+                # subprocess.run(cmd_list, check=True)
+                proc = subprocess.Popen(cmd_list)
+                while True:
+                    # proc.wait(timeout=.1)
+                    if proc.poll() is not None:
+                        break
+                    time.sleep(0.1)
+
                 shutil.copy(temp_file, outmp3)
                 return
             except KeyboardInterrupt as kee:
