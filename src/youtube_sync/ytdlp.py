@@ -334,7 +334,11 @@ _YOUTUBE_COOKIES_LOCK = FileLock(_YOUTUBE_COOKIES_LOCK_PATH)
 
 
 def _get_or_refresh_cookies(
-    url: str, cookies_pkl: Path, refresh_time: int, cookies: Cookies | None
+    url: str,
+    cookies_pkl: Path,
+    cookie_txt: Path,
+    refresh_time: int,
+    cookies: Cookies | None,
 ) -> Cookies:
     with _YOUTUBE_COOKIES_LOCK:
         now = datetime.now()
@@ -351,7 +355,10 @@ def _get_or_refresh_cookies(
                 return yt_cookies
         # refresh
         yt_cookies = Cookies.from_browser(url)
+        assert cookies_pkl.suffix == ".pkl"
+        assert cookie_txt.suffix == ".txt"
         yt_cookies.save(cookies_pkl)
+        yt_cookies.save(cookie_txt)
         return yt_cookies
 
 
@@ -372,6 +379,7 @@ class YtDlp:
         self.youtube_cookies = _get_or_refresh_cookies(
             url="https://www.youtube.com",
             cookies_pkl=self.youtube_cookies_pkl,
+            cookie_txt=self.youtube_cookies_txt,
             refresh_time=_COOKIE_REFRESH_HOURS,
             cookies=self.youtube_cookies,
         )
