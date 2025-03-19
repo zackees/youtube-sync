@@ -1,13 +1,16 @@
 import json
+import os
 import re
 import shutil
 import subprocess
+import tempfile
 import warnings
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from filelock import FileLock
+from static_ffmpeg import add_paths
 
 from .cookies import Cookies
 from .types import ChannelId, VideoId
@@ -18,6 +21,7 @@ from .types import ChannelId, VideoId
 
 
 _COOKIE_REFRESH_HOURS = 2
+_FFMPEG_PATH_ADDED = False
 
 
 def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
@@ -231,6 +235,95 @@ def _fetch_videos_from_channel(
     return out_channel_ids
 
 
+def add_ffmpeg_paths_once() -> None:
+    global _FFMPEG_PATH_ADDED  # pylint: disable=global-statement
+    if not _FFMPEG_PATH_ADDED:
+        add_paths()
+        _FFMPEG_PATH_ADDED = True
+
+
+def _get_ytdlp_command_mp3_download(
+    yt_exe: Path,
+    url: str,
+    out_file: Path,
+    update: bool,
+    no_geo_bypass: bool,
+    cookies_txt: Path | None,
+) -> list[str]:
+    add_ffmpeg_paths_once()
+    is_youtube = "youtube.com" in url or "youtu.be" in url
+    if is_youtube:
+        assert cookies_txt is not None, "cookies_txt must be provided for youtube.com"
+    if cookies_txt is not None:
+        assert cookies_txt.exists(), f"cookies_txt does not exist: {cookies_txt}"
+    cmd_list: list[str] = []
+    cmd_list += [
+        yt_exe.as_posix(),
+        url,
+    ]
+    if is_youtube:
+        cmd_list += [
+            "-f",
+            "bestaudio",
+        ]
+    cmd_list += [
+        "--extract-audio",
+        "--audio-format",
+        "mp3",
+        "--output",
+        out_file.as_posix(),
+    ]
+    if update:
+        cmd_list.append("--update")
+    if no_geo_bypass:
+        cmd_list.append("--no-geo-bypass")
+    if cookies_txt:
+        cmd_list.append("--cookies")
+        cmd_list.append(cookies_txt.as_posix())
+    return cmd_list
+
+
+def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> None:
+    """Download the youtube video as an mp3."""
+    add_ffmpeg_paths_once()
+    par_dir = os.path.dirname(str(outmp3))
+    if par_dir:
+        os.makedirs(par_dir, exist_ok=True)
+
+    yt_exe = yt_dlp_exe()
+    if isinstance(yt_exe, Exception):
+        raise yt_exe
+
+    # yt_exe_str = yt_exe.as_posix()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = os.path.join(temp_dir, "temp.mp3")
+        for _ in range(3):
+            try:
+                cmd_list: list[str] = _get_ytdlp_command_mp3_download(
+                    yt_exe=yt_exe,
+                    url=url,
+                    out_file=Path(temp_file),
+                    no_geo_bypass=True,
+                    update=False,
+                    cookies_txt=cookies_txt,
+                )
+                cmd_str = subprocess.list2cmdline(cmd_list)
+                print(f"Running: {cmd_str}")
+                subprocess.run(cmd_list, check=True)
+                shutil.copy(temp_file, outmp3)
+                return
+            except KeyboardInterrupt:
+                import _thread
+
+                _thread.interrupt_main()
+                raise
+            except subprocess.CalledProcessError as cpe:
+                print(f"Failed to download {url} as mp3: {cpe}")
+                continue
+        warnings.warn(f"Failed all attempts to download {url} as mp3.")
+
+
 def _is_youtube(url: str) -> bool:
     return "youtube.com" in url or "youtu.be" in url
 
@@ -315,3 +408,7 @@ class YtDlp:
         return _fetch_videos_from_channel(
             channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
+
+    def download_mp3(self, url: str, outmp3: Path) -> None:
+        cookies = self._extract_cookies_if_needed(url)
+        yt_dlp_download_mp3(url, outmp3, cookies)
