@@ -1,4 +1,3 @@
-import _thread
 import json
 import os
 import re
@@ -302,7 +301,6 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
-            current_proc: subprocess.Popen | None = None
             try:
                 cmd_list: list[str] = _get_ytdlp_command_mp3_download(
                     yt_exe=yt_exe,
@@ -314,49 +312,23 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 )
                 cmd_str = subprocess.list2cmdline(cmd_list)
                 print(f"Running: {cmd_str}")
-
-                # This allows the process to ignore SIGINT (Ctrl+C)
-                if os.name == "nt":
-                    # On Windows, combine flags to detach the child from the console.
-                    DETACHED_PROCESS = 0x00000008
-                    creation_flags = (
-                        subprocess.CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS
-                    )
-                    current_proc = subprocess.Popen(
-                        cmd_list, creationflags=creation_flags
-                    )
+                # subprocess.run(cmd_list, check=True)
+                proc = subprocess.Popen(cmd_list)
+                while True:
+                    # proc.wait(timeout=.1)
+                    if proc.poll() is not None:
+                        break
+                    time.sleep(0.1)
+                if proc.returncode == 0:
+                    shutil.copy(temp_file, outmp3)
                 else:
-                    # On Unix, tell the child to ignore SIGINT.
-                    current_proc = subprocess.Popen(
-                        cmd_list,
-                        preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN),
+                    raise subprocess.CalledProcessError(
+                        returncode=proc.returncode, cmd=cmd_list
                     )
-                try:
-                    while True:
-                        # proc.wait(timeout=.1)
-                        rtn = current_proc.poll()
-                        if rtn is not None:
-                            if rtn != 0:
-                                raise subprocess.CalledProcessError(rtn, cmd_str)
-                            break
-                        time.sleep(0.1)
-                    current_proc = None
-                except KeyboardInterrupt:
-                    if current_proc is not None:
-                        current_proc.terminate()
-                        current_proc.wait()
-
-                    _thread.interrupt_main()
-                    raise
-                except Exception:
-                    if current_proc is not None:
-                        current_proc.terminate()
-                        current_proc.wait()
-                    raise
-
-                shutil.copy(temp_file, outmp3)
                 return
             except KeyboardInterrupt as kee:
+                import _thread
+
                 _thread.interrupt_main()
                 ke = kee
                 break
