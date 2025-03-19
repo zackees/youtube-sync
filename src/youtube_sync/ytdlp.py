@@ -44,9 +44,18 @@ def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
 
 
 def fetch_channel_info_ytdlp(
-    video_url: str, yt_exe: Path | None = None
+    video_url: str, yt_exe: Path | None = None, cookies: Path | None = None
 ) -> dict[Any, Any]:
-    """Fetch the info."""
+    """Fetch the info.
+
+    Args:
+        video_url: The URL of the video
+        yt_exe: Optional path to yt-dlp executable
+        cookies: Optional path to cookies file
+
+    Returns:
+        Dictionary containing channel information
+    """
     # yt-dlp -J "VIDEO_URL" > video_info.json
 
     if yt_exe is None:
@@ -58,8 +67,13 @@ def fetch_channel_info_ytdlp(
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
-        video_url,
     ]
+
+    # Add cookies parameter if provided
+    if cookies is not None:
+        cmd_list.extend(["--cookies", cookies.as_posix()])
+
+    cmd_list.append(video_url)
     completed_proc = subprocess.run(
         cmd_list, capture_output=True, text=True, shell=False, check=True
     )
@@ -202,17 +216,30 @@ class YtDlp:
             raise yt_exe
         self.yt_exe: Path = yt_exe
         self.youtube_cookies: Cookies | None = None
-        self.youtube_cookies_txt: Path | None = None
+        self.youtube_cookies_txt: Path = Path("cookies") / "youtube" / "cookies.txt"
+        self.youtube_cookies_pkl: Path = Path("cookies") / "youtube" / "cookies.pkl"
 
     def _extract_cookies_if_needed(self, url: str) -> None:
         if self.youtube_cookies is None and _is_youtube(url):
-            self.youtube_cookies = Cookies.from_browser("https://www.youtube.com")
-            self.youtube_cookies_txt = Path("cookies") / "youtube" / "cookies.txt"
-            self.youtube_cookies.save(self.youtube_cookies_txt)
+            if self.youtube_cookies_pkl.exists():
+                yt_cookies = Cookies.load(self.youtube_cookies_pkl)
+                hours_old = (
+                    yt_cookies.creation_time - yt_cookies.creation_time
+                ).seconds / 3600
+                if hours_old < 24:
+                    self.youtube_cookies = yt_cookies
+                else:
+                    self.youtube_cookies = Cookies.from_browser(
+                        "https://www.youtube.com"
+                    )
+                    self.youtube_cookies.save(self.youtube_cookies_txt)
+                    self.youtube_cookies.save(self.youtube_cookies_pkl)
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
         self._extract_cookies_if_needed(video_url)
-        return fetch_channel_info_ytdlp(video_url, yt_exe=self.yt_exe)
+        return fetch_channel_info_ytdlp(
+            video_url, yt_exe=self.yt_exe, cookies=self.youtube_cookies_txt
+        )
 
     def fetch_video_info(self, video_url: str) -> dict:
         self._extract_cookies_if_needed(video_url)
