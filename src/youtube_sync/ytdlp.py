@@ -112,8 +112,8 @@ def fetch_video_info(
 
     # Add cookies parameter if provided
     if cookies_txt is not None:
-        cmd_list.insert(2, "--cookies")
-        cmd_list.insert(3, cookies_txt.as_posix())
+        cmd_list.append("--cookies")
+        cmd_list.append(cookies_txt.as_posix())
     completed_proc = subprocess.run(
         cmd_list, capture_output=True, text=True, shell=False, check=True
     )
@@ -147,14 +147,18 @@ def fetch_channel_url_ytdlp(
         video_url,
     ]
     if cookies_txt is not None:
-        cmd_list.insert(2, "--cookies")
-        cmd_list.insert(3, cookies_txt.as_posix())
+        cmd_list.append("--cookies")
+        cmd_list.append(cookies_txt.as_posix())
+    cmd_str = subprocess.list2cmdline(cmd_list)
+    print(f"Running: {cmd_str}")
     completed_proc = subprocess.run(
-        cmd_list, capture_output=True, text=True, timeout=10, shell=False, check=True
+        cmd_list, capture_output=True, text=True, timeout=10, shell=False, check=False
     )
     if completed_proc.returncode != 0:
-        stderr = completed_proc.stderr
-        warnings.warn(f"Failed to run yt-dlp with args: {cmd_list}, stderr: {stderr}")
+        stdout = completed_proc.stdout + completed_proc.stderr
+        msg = f"Failed to run yt-dlp with args: {cmd_str}\n  Return code: {completed_proc.returncode}\n  out: {stdout}"
+        warnings.warn(msg)
+        raise RuntimeError(msg)
     lines = completed_proc.stdout.splitlines()
     out_lines: list[str] = []
     for line in lines:
