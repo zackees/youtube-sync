@@ -184,7 +184,7 @@ def fetch_channel_id_ytdlp(
 
 
 def fetch_videos_from_channel(
-    channel_url: str, yt_exe: Path | None = None
+    channel_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> list[VideoId]:
     """Fetch the videos from a channel."""
     # yt-dlp -J "CHANNEL_URL" > channel_info.json
@@ -195,6 +195,9 @@ def fetch_videos_from_channel(
             raise yt_or_error
         yt_exe = yt_or_error
     cmd_list = [yt_exe.as_posix(), "--print", "id", channel_url]
+    if cookies_txt is not None:
+        cmd_list.append("--cookies")
+        cmd_list.append(cookies_txt.as_posix())
     cms_str = subprocess.list2cmdline(cmd_list)
     print(f"Running: {cms_str}")
     completed_proc = subprocess.run(
@@ -297,4 +300,10 @@ class YtDlp:
         cookies = self._extract_cookies_if_needed(video_url)
         return fetch_channel_id_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies
+        )
+
+    def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
+        cookies = self._extract_cookies_if_needed(channel_url)
+        return fetch_videos_from_channel(
+            channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
