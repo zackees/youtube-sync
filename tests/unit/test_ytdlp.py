@@ -3,34 +3,24 @@ Unit test file.
 """
 
 import unittest
-from pathlib import Path
+from typing import Any
 
-from youtube_sync.ytdlp import yt_dlp_exe, yt_dlp_verbose
-from youtube_sync.ytdlp_plugins import yt_dlp_install_plugins, yt_dlp_plugin_dir
+from youtube_sync.ytdlp import YtDlp
 
-HERE = Path(__file__).parent
-TEST_DATA = HERE / "test_data" / "test_sync"
+VID_URL = "https://www.youtube.com/watch?v=XfELJU1mRMg"
 
 
 class YtDlpTester(unittest.TestCase):
     """Main tester class."""
 
-    def test_simple(self) -> None:
-        exe = yt_dlp_exe()
-        print(exe)
-        print("done")
-
-    def test_get_plugin_dir(self) -> None:
-        plugin_dir = yt_dlp_plugin_dir()
-        print(plugin_dir)
-        print("done")
-
-    def test_install_plugin(self) -> None:
-        errors = yt_dlp_install_plugins(verbose=True)
-        self.assertIsNone(errors)
-        stdout = yt_dlp_verbose()
-        print(stdout)
-        print("done")
+    def test_ytdlp(self) -> None:
+        ytdlp = YtDlp()
+        info: Any = ytdlp.fetch_channel_url(VID_URL)
+        print(info)
+        info = ytdlp.fetch_video_info(VID_URL)
+        print(info)
+        info = ytdlp.fetch_channel_id(VID_URL)
+        print(info)
 
 
 if __name__ == "__main__":

@@ -148,13 +148,19 @@ def _fetch_channel_url_ytdlp(
         "channel_url",
         video_url,
     ]
+    timeout = 10
     if cookies_txt is not None:
         cmd_list.append("--cookies")
         cmd_list.append(cookies_txt.as_posix())
     cmd_str = subprocess.list2cmdline(cmd_list)
     print(f"Running: {cmd_str}")
     completed_proc = subprocess.run(
-        cmd_list, capture_output=True, text=True, timeout=10, shell=False, check=False
+        cmd_list,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        shell=False,
+        check=False,
     )
     if completed_proc.returncode != 0:
         stdout = completed_proc.stdout + completed_proc.stderr
