@@ -340,13 +340,15 @@ def _get_or_refresh_cookies(
     refresh_time: int,
     cookies: Cookies | None,
 ) -> Cookies:
+    assert cookies_pkl.suffix == ".pkl"
+    assert cookie_txt.suffix == ".txt"
     with _YOUTUBE_COOKIES_LOCK:
         now = datetime.now()
         if cookies is not None:
             expire_time = cookies.creation_time + timedelta(hours=refresh_time)
             if now < expire_time:
                 return cookies
-        elif cookies_pkl.exists():
+        elif cookies_pkl.exists() and cookie_txt.exists():
             yt_cookies = Cookies.load(cookies_pkl)
             hours_old = (
                 yt_cookies.creation_time - yt_cookies.creation_time
@@ -355,8 +357,6 @@ def _get_or_refresh_cookies(
                 return yt_cookies
         # refresh
         yt_cookies = Cookies.from_browser(url)
-        assert cookies_pkl.suffix == ".pkl"
-        assert cookie_txt.suffix == ".txt"
         yt_cookies.save(cookies_pkl)
         yt_cookies.save(cookie_txt)
         return yt_cookies
