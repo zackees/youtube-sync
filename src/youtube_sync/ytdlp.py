@@ -2,6 +2,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import warnings
@@ -320,6 +321,8 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 ke = kee
                 break
             except subprocess.CalledProcessError as cpe:
+                if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
+                    raise KeyboardInterrupt("KeyboardInterrupt")
                 print(f"Failed to download {url} as mp3: {cpe}")
                 continue
         warnings.warn(f"Failed all attempts to download {url} as mp3.")
