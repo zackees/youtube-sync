@@ -18,7 +18,7 @@ from youtube_sync.date import iso_fmt, now_local, timestamp_to_iso8601
 from youtube_sync.fetch_html import FetchResult
 from youtube_sync.fetch_html import fetch_html_using_curl as fetch_html
 from youtube_sync.video_info import VideoInfo
-from youtube_sync.ytdlp import fetch_video_info
+from youtube_sync.ytdlp import _fetch_video_info as fetch_video_info
 
 
 @dataclass

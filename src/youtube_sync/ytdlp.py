@@ -47,7 +47,7 @@ def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
     return stdout
 
 
-def fetch_channel_info_ytdlp(
+def _fetch_channel_info_ytdlp(
     video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> dict[Any, Any]:
     """Fetch the info.
@@ -94,7 +94,7 @@ def fetch_channel_info_ytdlp(
     return data
 
 
-def fetch_video_info(
+def _fetch_video_info(
     video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> dict:
     if yt_exe is None:
@@ -130,7 +130,7 @@ def fetch_video_info(
     return data
 
 
-def fetch_channel_url_ytdlp(
+def _fetch_channel_url_ytdlp(
     video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> str:
     """Fetch the info."""
@@ -169,11 +169,11 @@ def fetch_channel_url_ytdlp(
     return out
 
 
-def fetch_channel_id_ytdlp(
+def _fetch_channel_id_ytdlp(
     video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> ChannelId:
     """Fetch the info."""
-    url = fetch_channel_url_ytdlp(
+    url = _fetch_channel_url_ytdlp(
         video_url=video_url, yt_exe=yt_exe, cookies_txt=cookies_txt
     )
     match = re.search(r"/channel/([^/]+)/?", url)
@@ -183,7 +183,7 @@ def fetch_channel_id_ytdlp(
     raise RuntimeError(f"Could not find channel id in: {video_url} using yt-dlp.")
 
 
-def fetch_videos_from_channel(
+def _fetch_videos_from_channel(
     channel_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> list[VideoId]:
     """Fetch the videos from a channel."""
@@ -221,14 +221,6 @@ def fetch_videos_from_channel(
             continue
         out_channel_ids.append(VideoId(line))
     return out_channel_ids
-
-
-def fetch_videos_from_youtube_channel(
-    channel_id: str, yt_exe: Path | None = None
-) -> list[VideoId]:
-    """Fetch the videos from a youtube channel."""
-    channel_url = f"https://www.youtube.com/channel/{channel_id}"
-    return fetch_videos_from_channel(channel_url, yt_exe)
 
 
 def _is_youtube(url: str) -> bool:
@@ -278,13 +270,13 @@ class YtDlp:
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
         cookies = self._extract_cookies_if_needed(video_url)
-        return fetch_channel_info_ytdlp(
+        return _fetch_channel_info_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
         cookies = self._extract_cookies_if_needed(video_url)
-        return fetch_video_info(
+        return _fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
             cookies_txt=cookies,
@@ -292,18 +284,18 @@ class YtDlp:
 
     def fetch_channel_url(self, video_url: str) -> str:
         cookies = self._extract_cookies_if_needed(video_url)
-        return fetch_channel_url_ytdlp(
+        return _fetch_channel_url_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
         cookies = self._extract_cookies_if_needed(video_url)
-        return fetch_channel_id_ytdlp(
+        return _fetch_channel_id_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
     def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
         cookies = self._extract_cookies_if_needed(channel_url)
-        return fetch_videos_from_channel(
+        return _fetch_videos_from_channel(
             channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
