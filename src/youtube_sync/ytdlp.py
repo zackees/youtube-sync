@@ -295,7 +295,7 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
         raise yt_exe
 
     # yt_exe_str = yt_exe.as_posix()
-
+    ke: KeyboardInterrupt | None = None
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_file = os.path.join(temp_dir, "temp.mp3")
         for _ in range(3):
@@ -313,15 +313,18 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                 subprocess.run(cmd_list, check=True)
                 shutil.copy(temp_file, outmp3)
                 return
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as kee:
                 import _thread
 
                 _thread.interrupt_main()
-                raise
+                ke = kee
+                break
             except subprocess.CalledProcessError as cpe:
                 print(f"Failed to download {url} as mp3: {cpe}")
                 continue
         warnings.warn(f"Failed all attempts to download {url} as mp3.")
+        if ke is not None:
+            raise ke
 
 
 def _is_youtube(url: str) -> bool:
