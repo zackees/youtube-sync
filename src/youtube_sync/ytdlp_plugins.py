@@ -4,11 +4,9 @@ Unit test file.
 
 import ast
 import subprocess
-import sys
-import warnings
 from pathlib import Path
 
-_CHROME_COOKIES_PLUGIN_ZIP = "https://github.com/zackees/youtube-sync/raw/refs/heads/main/yt-plugins/yt-dlp-ChromeCookieUnlock.zip"
+# _CHROME_COOKIES_PLUGIN_ZIP = "https://github.com/zackees/youtube-sync/raw/refs/heads/main/yt-plugins/yt-dlp-ChromeCookieUnlock.zip"
 
 
 def _install_yt_dlp_plugin_from_url(
@@ -126,20 +124,19 @@ def yt_dlp_plugin_dir() -> Path | Exception:
 
 def yt_dlp_install_plugins(verbose: bool = False) -> dict[str, Exception] | None:
     """Install yt-dlp plugins."""
-    urls: list[str] = []
-    if sys.platform == "win32":
-        urls.append(_CHROME_COOKIES_PLUGIN_ZIP)
-    exceptions: dict[str, Exception] = {}
-    for url in urls:
-        try:
-            err = _install_yt_dlp_plugin_from_url(url, verbose=verbose)
-            if err is not None:
-                exceptions[url] = err
-        except Exception as e:
-            warnings.warn(f"Unexpected error installing plugin: {e}")
-            exceptions[url] = e
-    if exceptions and verbose:
-        print("One or more exceptions occurred:")
-        for url, err in exceptions.items():
-            print(f"URL: {url}, Error: {err}")
-    return exceptions if exceptions else None
+    # urls: list[str] = []
+    # exceptions: dict[str, Exception] = {}
+    # for url in urls:
+    #     try:
+    #         err = _install_yt_dlp_plugin_from_url(url, verbose=verbose)
+    #         if err is not None:
+    #             exceptions[url] = err
+    #     except Exception as e:
+    #         warnings.warn(f"Unexpected error installing plugin: {e}")
+    #         exceptions[url] = e
+    # if exceptions and verbose:
+    #     print("One or more exceptions occurred:")
+    #     for url, err in exceptions.items():
+    #         print(f"URL: {url}, Error: {err}")
+    # return exceptions if exceptions else None
+    return None
