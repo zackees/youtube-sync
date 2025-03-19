@@ -44,7 +44,7 @@ def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
 
 
 def fetch_channel_info_ytdlp(
-    video_url: str, yt_exe: Path | None = None, cookies: Path | None = None
+    video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> dict[Any, Any]:
     """Fetch the info.
 
@@ -70,8 +70,8 @@ def fetch_channel_info_ytdlp(
     ]
 
     # Add cookies parameter if provided
-    if cookies is not None:
-        cmd_list.extend(["--cookies", cookies.as_posix()])
+    if cookies_txt is not None:
+        cmd_list.extend(["--cookies", cookies_txt.as_posix()])
 
     cmd_list.append(video_url)
     completed_proc = subprocess.run(
@@ -91,7 +91,7 @@ def fetch_channel_info_ytdlp(
 
 
 def fetch_video_info(
-    video_url: str, yt_exe: Path | None = None, cookies: Path | None = None
+    video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
 ) -> dict:
     if yt_exe is None:
         yt_or_error = yt_dlp_exe()
@@ -107,9 +107,9 @@ def fetch_video_info(
     ]
 
     # Add cookies parameter if provided
-    if cookies is not None:
+    if cookies_txt is not None:
         cmd_list.insert(2, "--cookies")
-        cmd_list.insert(3, cookies.as_posix())
+        cmd_list.insert(3, cookies_txt.as_posix())
     completed_proc = subprocess.run(
         cmd_list, capture_output=True, text=True, shell=False, check=True
     )
@@ -126,7 +126,9 @@ def fetch_video_info(
     return data
 
 
-def fetch_channel_url_ytdlp(video_url: str, yt_exe: Path | None = None) -> str:
+def fetch_channel_url_ytdlp(
+    video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
+) -> str:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
     if yt_exe is None:
@@ -140,6 +142,9 @@ def fetch_channel_url_ytdlp(video_url: str, yt_exe: Path | None = None) -> str:
         "channel_url",
         video_url,
     ]
+    if cookies_txt is not None:
+        cmd_list.insert(2, "--cookies")
+        cmd_list.insert(3, cookies_txt.as_posix())
     completed_proc = subprocess.run(
         cmd_list, capture_output=True, text=True, timeout=10, shell=False, check=True
     )
@@ -156,9 +161,13 @@ def fetch_channel_url_ytdlp(video_url: str, yt_exe: Path | None = None) -> str:
     return out
 
 
-def fetch_channel_id_ytdlp(video_url: str, yt_exe: Path | None = None) -> ChannelId:
+def fetch_channel_id_ytdlp(
+    video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
+) -> ChannelId:
     """Fetch the info."""
-    url = fetch_channel_url_ytdlp(video_url, yt_exe)
+    url = fetch_channel_url_ytdlp(
+        video_url=video_url, yt_exe=yt_exe, cookies_txt=cookies_txt
+    )
     match = re.search(r"/channel/([^/]+)/?", url)
     if match:
         out: str = str(match.group(1))
@@ -245,7 +254,7 @@ class YtDlp:
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
         self._extract_cookies_if_needed(video_url)
         return fetch_channel_info_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies=self.youtube_cookies_txt
+            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
@@ -253,15 +262,17 @@ class YtDlp:
         return fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
-            cookies=(
-                self.youtube_cookies_txt if self.youtube_cookies is not None else None
-            ),
+            cookies_txt=self.youtube_cookies_txt,
         )
 
     def fetch_channel_url(self, video_url: str) -> str:
         self._extract_cookies_if_needed(video_url)
-        return fetch_channel_url_ytdlp(video_url, yt_exe=self.yt_exe)
+        return fetch_channel_url_ytdlp(
+            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
+        )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
         self._extract_cookies_if_needed(video_url)
-        return fetch_channel_id_ytdlp(video_url, yt_exe=self.yt_exe)
+        return fetch_channel_id_ytdlp(
+            video_url, yt_exe=self.yt_exe, cookies_txt=self.youtube_cookies_txt
+        )
