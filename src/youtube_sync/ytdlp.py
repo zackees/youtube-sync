@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+from .cookies import Cookies
 from .types import ChannelId, VideoId
 
 # yt-dlp-ChromeCookieUnlock
@@ -189,6 +190,10 @@ def fetch_videos_from_youtube_channel(
     return fetch_videos_from_channel(channel_url, yt_exe)
 
 
+def _is_youtube(url: str) -> bool:
+    return "youtube.com" in url or "youtu.be" in url
+
+
 class YtDlp:
 
     def __init__(self) -> None:
@@ -196,15 +201,27 @@ class YtDlp:
         if isinstance(yt_exe, Exception):
             raise yt_exe
         self.yt_exe: Path = yt_exe
+        self.youtube_cookies: Cookies | None = None
+        self.youtube_cookies_txt: Path | None = None
+
+    def _extract_cookies_if_needed(self, url: str) -> None:
+        if self.youtube_cookies is None and _is_youtube(url):
+            self.youtube_cookies = Cookies.from_browser("https://www.youtube.com")
+            self.youtube_cookies_txt = Path("cookies") / "youtube" / "cookies.txt"
+            self.youtube_cookies.save(self.youtube_cookies_txt)
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
+        self._extract_cookies_if_needed(video_url)
         return fetch_channel_info_ytdlp(video_url, yt_exe=self.yt_exe)
 
     def fetch_video_info(self, video_url: str) -> dict:
+        self._extract_cookies_if_needed(video_url)
         return fetch_video_info(video_url, yt_exe=self.yt_exe)
 
     def fetch_channel_url(self, video_url: str) -> str:
+        self._extract_cookies_if_needed(video_url)
         return fetch_channel_url_ytdlp(video_url, yt_exe=self.yt_exe)
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
+        self._extract_cookies_if_needed(video_url)
         return fetch_channel_id_ytdlp(video_url, yt_exe=self.yt_exe)
