@@ -1,3 +1,4 @@
+import _thread
 import json
 import os
 import re
@@ -330,7 +331,6 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                         cmd_list,
                         preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN),
                     )
-
                 try:
                     while True:
                         # proc.wait(timeout=.1)
@@ -345,13 +345,18 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
                     if current_proc is not None:
                         current_proc.terminate()
                         current_proc.wait()
+
+                    _thread.interrupt_main()
+                    raise
+                except Exception:
+                    if current_proc is not None:
+                        current_proc.terminate()
+                        current_proc.wait()
                     raise
 
                 shutil.copy(temp_file, outmp3)
                 return
             except KeyboardInterrupt as kee:
-                import _thread
-
                 _thread.interrupt_main()
                 ke = kee
                 break
