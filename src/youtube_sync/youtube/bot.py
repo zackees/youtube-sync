@@ -76,6 +76,22 @@ def sanitize_filepath(path: str, replacement_char: str = "_") -> str:
     return path
 
 
+def _parse_vid_entry(div_str: str) -> VidEntry:
+    """Parse a single video entry."""
+    soup = BeautifulSoup(div_str, "html.parser")
+    title_link = soup.find("a", id="video-title-link")
+    title = title_link.get("title")  # type: ignore
+    href = title_link.get("href")  # type: ignore
+    assert title is not None
+    assert href is not None
+    href = str(href)
+    title = str(title)
+    assert href.startswith("/")  # type: ignore
+    href = URL_BASE + href
+    title = sanitize_filepath(title.strip())
+    return VidEntry(title=title, url=href)
+
+
 def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
     """Div containing the youtube video, which has a title and an href."""
     global _ERRORS
@@ -83,18 +99,9 @@ def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
         return []
     out: list[VidEntry] = []
     for div_str in div_strs:
-        soup = BeautifulSoup(div_str, "html.parser")
-        title_link = soup.find("a", id="video-title-link")
         try:
-            title = title_link.get("title")  # type: ignore
-            href = title_link.get("href")  # type: ignore
-            assert title is not None
-            assert href is not None
-            href = str(href)
-            title = str(title)
-            assert href.startswith("/")  # type: ignore
-            href = URL_BASE + href
-            # title = sanitize_filepath(title.strip())
+            vid = _parse_vid_entry(div_str)
+            out.append(vid)
         except KeyboardInterrupt:
             _ERRORS = True
             _thread.interrupt_main()
@@ -105,7 +112,7 @@ def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
             stack_trace = traceback.format_exc()
             warnings.warn(f"Error, could not scrape video: {err} {stack_trace}")
             continue
-        out.append(VidEntry(title=title, url=href))
+
     return out
 
 
