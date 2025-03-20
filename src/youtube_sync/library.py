@@ -371,8 +371,6 @@ class Library:
             # Ensure pools are shut down properly
             print("Shutting down download pool...")
             download_pool.shutdown(wait=False, cancel_futures=True)
-            print("Shutting down conversion pool...")
-            convert_pool.shutdown(wait=False, cancel_futures=True)
 
             # Re-raise KeyboardInterrupt to notify the main thread
             if sys.exc_info()[0] is KeyboardInterrupt:
