@@ -42,7 +42,10 @@ def integration_test(args: Args) -> None:
     )
 
     if not args.skip_scan:
-        yt.scan_for_vids(args.limit_scroll_pages)
+        vids = yt.scan_for_vids(args.limit_scroll_pages)
+        if not vids:
+            print("No new videos found.")
+            raise SystemExit(1)
 
     if not args.skip_download:
         yt.download(args.download_limit)
