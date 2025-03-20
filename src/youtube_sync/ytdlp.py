@@ -376,11 +376,27 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 class YtDlpDownloader:
     """Class for downloading and converting YouTube videos to MP3."""
 
-    def __init__(self):
-        """Initialize the downloader with a temporary directory."""
+    def __init__(self, url: str, outmp3: Path, cookies_txt: Path | None = None):
+        """Initialize the downloader with a temporary directory and download parameters.
+
+        Args:
+            url: The URL to download from
+            outmp3: Path to save the final MP3 file
+            cookies_txt: Path to cookies.txt file or None
+        """
         add_ffmpeg_paths_once()
         self._temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = Path(self._temp_dir.name)
+        self.url = url
+        self.outmp3 = outmp3
+        self.cookies_txt = cookies_txt
+        self.downloaded_file: Path | None = None
+        self.temp_mp3: Path | None = None
+
+        # Ensure output directory exists
+        par_dir = os.path.dirname(str(outmp3))
+        if par_dir:
+            os.makedirs(par_dir, exist_ok=True)
 
     def __enter__(self):
         """Support for context manager."""
@@ -396,12 +412,8 @@ class YtDlpDownloader:
             self._temp_dir.cleanup()
             self._temp_dir = None
 
-    def download(self, url: str, cookies_txt: Path | None) -> Path | Exception:
-        """Download the best audio from a URL.
-
-        Args:
-            url: The URL to download from
-            cookies_txt: Path to cookies.txt file or None
+    def download(self) -> Path | Exception:
+        """Download the best audio from the URL.
 
         Returns:
             Path to the downloaded audio file or Exception if download failed
@@ -410,60 +422,46 @@ class YtDlpDownloader:
         if isinstance(yt_exe, Exception):
             return yt_exe
 
-        return yt_dlp_download_best_audio(
-            url=url,
+        result = yt_dlp_download_best_audio(
+            url=self.url,
             temp_dir=self.temp_dir_path,
-            cookies_txt=cookies_txt,
+            cookies_txt=self.cookies_txt,
             yt_exe=yt_exe,
             no_geo_bypass=True,
             retries=3,
         )
 
-    def convert_to_mp3(self, audio_file: Path, output_file: Path) -> Path | Exception:
-        """Convert audio file to MP3 format.
+        if not isinstance(result, Exception):
+            self.downloaded_file = result
 
-        Args:
-            audio_file: Path to the input audio file
-            output_file: Path to save the output MP3 file
+        return result
+
+    def convert_to_mp3(self) -> Path | Exception:
+        """Convert downloaded audio file to MP3 format.
 
         Returns:
             Path to the output MP3 file or Exception if conversion failed
-        """
-        return convert_audio_to_mp3(audio_file, output_file)
-
-    def download_and_convert(
-        self, url: str, outmp3: Path, cookies_txt: Path | None
-    ) -> None:
-        """Download and convert a YouTube video to MP3.
-
-        Args:
-            url: The URL to download from
-            outmp3: Path to save the final MP3 file
-            cookies_txt: Path to cookies.txt file or None
 
         Raises:
-            Exception: If download or conversion fails
+            ValueError: If download() has not been called or failed
         """
-        # Ensure output directory exists
-        par_dir = os.path.dirname(str(outmp3))
-        if par_dir:
-            os.makedirs(par_dir, exist_ok=True)
+        if self.downloaded_file is None:
+            raise ValueError("No downloaded file available. Call download() first.")
 
-        # Step 1: Download the best audio
-        audio_file = self.download(url, cookies_txt)
-        if isinstance(audio_file, Exception):
-            warnings.warn(f"Failed all attempts to download {url} as mp3.")
-            raise audio_file
+        self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
+        return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
 
-        # Step 2: Convert to MP3
-        temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
-        result = self.convert_to_mp3(audio_file, temp_mp3)
-        if isinstance(result, Exception):
-            raise result
+    def copy_to_destination(self) -> None:
+        """Copy the converted MP3 to the final destination.
 
-        # Step 3: Copy to final destination
-        print(f"Copying {temp_mp3} -> {outmp3}")
-        shutil.copy(str(temp_mp3), str(outmp3))
+        Raises:
+            ValueError: If convert_to_mp3() has not been called or failed
+        """
+        if self.temp_mp3 is None:
+            raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
+
+        print(f"Copying {self.temp_mp3} -> {self.outmp3}")
+        shutil.copy(str(self.temp_mp3), str(self.outmp3))
 
 
 def _is_youtube(url: str) -> bool:
@@ -559,7 +557,54 @@ class YtDlp:
             channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
+    def download_mp3s(
+        self, downloads: list[tuple[str, Path]]
+    ) -> list[tuple[str, Path, Exception | None]]:
+        """Download multiple YouTube videos as MP3s.
+
+        Args:
+            downloads: List of tuples containing (url, output_path)
+
+        Returns:
+            List of tuples containing (url, output_path, exception_or_none)
+            where exception_or_none is None if download was successful,
+            or the exception that occurred during download
+        """
+        results: list[tuple[str, Path, Exception | None]] = []
+
+        for url, outmp3 in downloads:
+            cookies = self._extract_cookies_if_needed(url)
+            try:
+                with YtDlpDownloader(url, outmp3, cookies) as downloader:
+                    # Step 1: Download
+                    download_result = downloader.download()
+                    if isinstance(download_result, Exception):
+                        raise download_result
+
+                    # Step 2: Convert
+                    convert_result = downloader.convert_to_mp3()
+                    if isinstance(convert_result, Exception):
+                        raise convert_result
+
+                    # Step 3: Copy to destination
+                    downloader.copy_to_destination()
+
+                results.append((url, outmp3, None))  # Success
+            except Exception as e:
+                results.append((url, outmp3, e))  # Failure
+
+        return results
+
     def download_mp3(self, url: str, outmp3: Path) -> None:
-        cookies = self._extract_cookies_if_needed(url)
-        with YtDlpDownloader() as downloader:
-            downloader.download_and_convert(url, outmp3, cookies)
+        """Download a single YouTube video as MP3.
+
+        Args:
+            url: The URL to download from
+            outmp3: Path to save the final MP3 file
+
+        Raises:
+            Exception: If download or conversion fails
+        """
+        results = self.download_mp3s([(url, outmp3)])
+        if results[0][2] is not None:
+            raise results[0][2]
