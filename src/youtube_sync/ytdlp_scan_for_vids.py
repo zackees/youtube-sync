@@ -11,10 +11,6 @@ import warnings
 from youtube_sync import json_util
 from youtube_sync.library import VidEntry
 
-BASE_URL = "https://www.brighteon.com"
-
-INSTALLED = False
-
 # Set up module logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.ERROR)

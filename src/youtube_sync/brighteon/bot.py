@@ -20,7 +20,7 @@ def scan_for_vids(
     limit: int | None,
 ) -> list[VidEntry]:
     """Scan for videos on the channel."""
-    from youtube_sync.generic import scan_for_vids
+    from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
 
     out: list[VidEntry] = scan_for_vids(
         channel_url=channel_url,
