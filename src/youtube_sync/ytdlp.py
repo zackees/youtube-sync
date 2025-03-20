@@ -589,7 +589,7 @@ class YtDlp:
         downloads: list[tuple[str, Path]],
         download_pool: ThreadPoolExecutor,
         convert_pool: ThreadPoolExecutor,
-    ) -> list[tuple[str, Path, Exception | None]]:
+    ) -> list[Future[tuple[str, Path, Exception | None]]]:
         """Download multiple YouTube videos as MP3s using thread pools.
 
         Args:
@@ -598,42 +598,71 @@ class YtDlp:
             convert_pool: Thread pool for conversions
 
         Returns:
-            List of tuples containing (url, output_path, exception_or_none)
+            List of futures that will resolve to tuples of (url, output_path, exception_or_none)
             where exception_or_none is None if download was successful,
             or the exception that occurred during download
         """
-        results: list[tuple[str, Path, Exception | None]] = []
-        downloaders: list[YtDlpDownloader] = []
-        download_futures: list[tuple[YtDlpDownloader, Future[Path | Exception]]] = []
+        result_futures: list[Future[tuple[str, Path, Exception | None]]] = []
 
-        # Step 1: Start all downloads in parallel
+        # Process each download
         for url, outmp3 in downloads:
+            # Create a future that will represent the final result for this download
+            result_future: Future[tuple[str, Path, Exception | None]] = Future()
+            result_futures.append(result_future)
+
+            # Extract cookies if needed
             cookies = self._extract_cookies_if_needed(url)
+
+            # Create downloader
             downloader = YtDlpDownloader(url, outmp3, cookies)
-            downloaders.append(downloader)
-            future: Future[Path | Exception] = download_pool.submit(downloader.download)
-            download_futures.append((downloader, future))
 
-        # Step 2: Process downloads as they complete and start conversions
-        for downloader, future in download_futures:
-            try:
-                download_result = future.result()
-                if isinstance(download_result, Exception):
-                    results.append((downloader.url, downloader.outmp3, download_result))
-                    downloader.dispose()
-                else:
-                    # Submit conversion task to conversion pool
-                    convert_future: Future[tuple[str, Path, Exception | None]] = (
-                        convert_pool.submit(self._process_conversion, downloader)
+            # Define callback for when download completes
+            def on_download_complete(
+                download_future: Future[Path | Exception],
+                current_downloader: YtDlpDownloader,
+                current_result_future: Future[tuple[str, Path, Exception | None]],
+            ) -> None:
+                try:
+                    download_result = download_future.result()
+                    if isinstance(download_result, Exception):
+                        # Download failed
+                        current_result_future.set_result(
+                            (
+                                current_downloader.url,
+                                current_downloader.outmp3,
+                                download_result,
+                            )
+                        )
+                        current_downloader.dispose()
+                    else:
+                        # Download succeeded, submit conversion task
+                        convert_future = convert_pool.submit(
+                            self._process_conversion, current_downloader
+                        )
+                        # Add callback for when conversion completes
+                        convert_future.add_done_callback(
+                            lambda f: current_result_future.set_result(f.result())
+                        )
+                except Exception as e:
+                    # Handle any exceptions during callback execution
+                    current_result_future.set_result(
+                        (current_downloader.url, current_downloader.outmp3, e)
                     )
-                    # Wait for conversion to complete
-                    result = convert_future.result()
-                    results.append(result)
-            except Exception as e:
-                results.append((downloader.url, downloader.outmp3, e))
-                downloader.dispose()
+                    current_downloader.dispose()
 
-        return results
+            # Submit download task
+            download_future = download_pool.submit(downloader.download)
+
+            # Add callback for when download completes
+            download_future.add_done_callback(
+                lambda f: on_download_complete(
+                    download_future=f,
+                    current_downloader=downloader,
+                    current_result_future=result_future,
+                )
+            )
+
+        return result_futures
 
     def download_mp3(self, url: str, outmp3: Path) -> None:
         """Download a single YouTube video as MP3.
@@ -647,12 +676,19 @@ class YtDlp:
         """
         # Create a single thread pool and use it for both download and conversion
         # to maintain sequential processing for a single file
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            results = self.download_mp3s(
-                [(url, outmp3)], download_pool=executor, convert_pool=executor
+        with (
+            ThreadPoolExecutor(max_workers=1) as download_pool,
+            ThreadPoolExecutor(max_workers=1) as convert_pool,
+        ):
+            futures = self.download_mp3s(
+                [(url, outmp3)], download_pool=download_pool, convert_pool=convert_pool
             )
 
-        assert len(results) == 1
-        _, _, error = results[0]
-        if error is not None:
-            raise error
+            # Wait for the single future to complete
+            assert len(futures) == 1
+            future = futures[0]
+
+            # Get the result and raise any exception
+            _, _, error = future.result()
+            if error is not None:
+                raise error
