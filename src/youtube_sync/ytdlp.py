@@ -250,6 +250,7 @@ def yt_dlp_download_best_audio(
     cookies_txt: Path | None,
     yt_exe: Path | None = None,
     no_geo_bypass: bool = True,
+    retries: int = 1,
 ) -> Path | Exception:
     """Download the best audio from a URL to a temporary directory without conversion.
 
@@ -259,6 +260,7 @@ def yt_dlp_download_best_audio(
         cookies_txt: Path to cookies.txt file or None
         yt_exe: Path to yt-dlp executable or None to auto-detect
         no_geo_bypass: Whether to disable geo-bypass
+        retries: Number of download attempts to make before giving up
 
     Returns:
         Path to the downloaded audio file or Exception if download failed
@@ -289,21 +291,51 @@ def yt_dlp_download_best_audio(
     if cookies_txt is not None:
         cmd_list.extend(["--cookies", cookies_txt.as_posix()])
 
-    proc = subprocess.Popen(cmd_list)
-    while True:
-        if proc.poll() is not None:
+    ke: KeyboardInterrupt | None = None
+    last_error: Exception | None = None
+
+    for attempt in range(retries):
+        try:
+            proc = subprocess.Popen(cmd_list)
+            while True:
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.1)
+
+            if proc.returncode == 0:
+                # Find the downloaded file (with whatever extension yt-dlp used)
+                downloaded_files = list(temp_dir.glob("temp_audio.*"))
+                if not downloaded_files:
+                    last_error = FileNotFoundError(
+                        f"No audio file was downloaded to {temp_dir}"
+                    )
+                    continue
+                return downloaded_files[0]
+            else:
+                last_error = subprocess.CalledProcessError(
+                    returncode=proc.returncode, cmd=cmd_list
+                )
+                print(f"Download attempt {attempt+1}/{retries} failed: {last_error}")
+
+        except KeyboardInterrupt as kee:
+            import _thread
+
+            _thread.interrupt_main()
+            ke = kee
             break
-        time.sleep(0.1)
+        except subprocess.CalledProcessError as cpe:
+            if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
+                raise KeyboardInterrupt("KeyboardInterrupt")
+            print(f"Failed to download {url}: {cpe}")
+            last_error = cpe
+            continue
 
-    if proc.returncode != 0:
-        return subprocess.CalledProcessError(returncode=proc.returncode, cmd=cmd_list)
+    if ke is not None:
+        raise ke
 
-    # Find the downloaded file (with whatever extension yt-dlp used)
-    downloaded_files = list(temp_dir.glob("temp_audio.*"))
-    if not downloaded_files:
-        return FileNotFoundError(f"No audio file was downloaded to {temp_dir}")
-
-    return downloaded_files[0]
+    return last_error or RuntimeError(
+        f"Failed to download {url} after {retries} attempts"
+    )
 
 
 def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exception:
@@ -352,50 +384,34 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
     if isinstance(yt_exe, Exception):
         raise yt_exe
 
-    ke: KeyboardInterrupt | None = None
+    # Create a temporary directory for the download and conversion
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir_path = Path(temp_dir)
 
-    for _ in range(3):
-        try:
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_dir_path = Path(temp_dir)
+        # Step 1: Download the best audio with retries
+        audio_file = yt_dlp_download_best_audio(
+            url=url,
+            temp_dir=temp_dir_path,
+            cookies_txt=cookies_txt,
+            yt_exe=yt_exe,
+            no_geo_bypass=True,
+            retries=3,
+        )
 
-                # Step 1: Download the best audio
-                audio_file = yt_dlp_download_best_audio(
-                    url=url,
-                    temp_dir=temp_dir_path,
-                    cookies_txt=cookies_txt,
-                    yt_exe=yt_exe,
-                    no_geo_bypass=True,
-                )
+        if isinstance(audio_file, Exception):
+            warnings.warn(f"Failed all attempts to download {url} as mp3.")
+            raise audio_file
 
-                if isinstance(audio_file, Exception):
-                    raise audio_file
+        # Step 2: Convert to MP3 (no retry needed)
+        temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
+        result = convert_audio_to_mp3(audio_file, temp_mp3)
 
-                # Step 2: Convert to MP3
-                temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
-                result = convert_audio_to_mp3(audio_file, temp_mp3)
+        if isinstance(result, Exception):
+            raise result
 
-                if isinstance(result, Exception):
-                    raise result
-
-                # Step 3: Copy to final destination
-                print(f"Copying {temp_mp3} -> {outmp3}")
-                shutil.copy(str(temp_mp3), str(outmp3))
-                return
-        except KeyboardInterrupt as kee:
-            import _thread
-
-            _thread.interrupt_main()
-            ke = kee
-            break
-        except subprocess.CalledProcessError as cpe:
-            if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
-                raise KeyboardInterrupt("KeyboardInterrupt")
-            print(f"Failed to download {url} as mp3: {cpe}")
-            continue
-    warnings.warn(f"Failed all attempts to download {url} as mp3.")
-    if ke is not None:
-        raise ke
+        # Step 3: Copy to final destination
+        print(f"Copying {temp_mp3} -> {outmp3}")
+        shutil.copy(str(temp_mp3), str(outmp3))
 
 
 def _is_youtube(url: str) -> bool:
