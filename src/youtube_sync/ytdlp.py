@@ -704,11 +704,12 @@ class YtDlp:
         # Process each download
         for i, (url, outmp3) in enumerate(downloads):
             # Create a future that will represent the final result for this download
+            def on_done_task(count=i) -> None:
+                print(f"Download {count+1}/{len(downloads)} complete")
+
             result_future: Future[tuple[str, Path, Exception | None]] = Future()
             result_futures.append(result_future)
-            result_future.add_done_callback(
-                lambda _: print(f"Download {i+1}/{len(downloads)} complete")
-            )
+            result_future.add_done_callback(lambda _: on_done_task)
 
             # Extract cookies if needed
             cookies = self._extract_cookies_if_needed(url)
