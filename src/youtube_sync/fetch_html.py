@@ -8,7 +8,7 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+from .http_session import http_session
 
 try:
     subprocess.check_output("curl --version", shell=True)
@@ -36,7 +36,8 @@ def fetch_html_using_request_lib(
     # headers = {"Connection": "close"}
     if user_agent:
         headers["User-Agent"] = user_agent
-    resp = requests.get(url, timeout=timeout, params={}, headers=headers)
+    session = http_session()
+    resp = session.get(url, timeout=timeout, params={}, headers=headers)
     resp.raise_for_status()
     return FetchResult(html=resp.text, status_code=resp.status_code)
 

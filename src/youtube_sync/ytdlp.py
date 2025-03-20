@@ -421,7 +421,11 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 
     try:
         print(f"Convert {input_file} -> {output_file}")
-        proc = subprocess.Popen(cmd_list)
+        # proc = subprocess.Popen(cmd_list)
+        # pipe to devnull to suppress output
+        proc = subprocess.Popen(
+            cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
         # Monitor the process and check for interrupts
         while proc.poll() is None:
@@ -433,6 +437,11 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
             time.sleep(0.1)
 
         if proc.returncode != 0:
+            rtn = proc.returncode
+            if 3221225786 == rtn or rtn == -signal.SIGINT:
+                set_keyboard_interrupt()
+                raise KeyboardInterrupt("KeyboardInterrupt")
+
             return subprocess.CalledProcessError(proc.returncode, cmd_list)
 
         return output_file
