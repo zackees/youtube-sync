@@ -19,6 +19,11 @@ from static_ffmpeg import add_paths
 from .cookies import Cookies
 from .types import ChannelId, VideoId
 
+# Thread pool for resolving futures
+_FUTURE_RESOLVER_POOL = ThreadPoolExecutor(
+    max_workers=16, thread_name_prefix="future_resolver"
+)
+
 
 class KeyboardInterruptException(Exception):
     """Exception raised when a keyboard interrupt is detected."""
@@ -681,9 +686,6 @@ class YtDlp:
             or the exception that occurred during download
         """
         result_futures: list[Future[tuple[str, Path, Exception | None]]] = []
-        downloaders: list[YtDlpDownloader] = (
-            []
-        )  # Keep track of all downloaders for cleanup
 
         # Process each download
         for url, outmp3 in downloads:
@@ -694,161 +696,95 @@ class YtDlp:
             # Extract cookies if needed
             cookies = self._extract_cookies_if_needed(url)
 
-            # Create downloader
-            downloader = YtDlpDownloader(url, outmp3, cookies)
-            downloaders.append(downloader)  # Track for cleanup
-
-            # Define callback for when download completes
-            def on_download_complete(
-                download_future: Future[Path | Exception],
-                current_downloader: YtDlpDownloader,
-                current_result_future: Future[tuple[str, Path, Exception | None]],
-            ) -> None:
-                try:
-                    # Check if keyboard interrupt happened
-                    if check_keyboard_interrupt():
-                        current_result_future.set_exception(
-                            KeyboardInterruptException(
-                                "Download aborted due to previous keyboard interrupt"
-                            )
-                        )
-                        current_downloader.dispose()
-                        return
-
-                    # Check if future was cancelled due to interrupt
-                    if download_future.cancelled():
-                        set_keyboard_interrupt()
-                        current_result_future.set_exception(
-                            KeyboardInterruptException("Download cancelled")
-                        )
-                        current_downloader.dispose()
-                        return
-
-                    download_result = download_future.result()
-                    if isinstance(download_result, Exception):
-                        # If it's a keyboard interrupt, propagate it
-                        if isinstance(download_result, KeyboardInterruptException):
-                            set_keyboard_interrupt()
-                            current_result_future.set_exception(download_result)
-                            current_downloader.dispose()
-                            _thread.interrupt_main()
-                            return
-
-                        # Download failed
-                        current_result_future.set_result(
-                            (
-                                current_downloader.url,
-                                current_downloader.outmp3,
-                                download_result,
-                            )
-                        )
-                        current_downloader.dispose()
-                    else:
-                        # Download succeeded, submit conversion task
-                        try:
-                            # Check again for keyboard interrupt
-                            if check_keyboard_interrupt():
-                                current_result_future.set_exception(
-                                    KeyboardInterruptException(
-                                        "Conversion aborted due to previous keyboard interrupt"
-                                    )
-                                )
-                                current_downloader.dispose()
-                                return
-
-                            convert_future = convert_pool.submit(
-                                self._process_conversion, current_downloader
-                            )
-                            # Add callback for when conversion completes
-                            convert_future.add_done_callback(
-                                lambda f: self._handle_conversion_complete(
-                                    f, current_result_future, current_downloader
-                                )
-                            )
-                        except RuntimeError:  # Pool is shutdown
-                            current_result_future.set_exception(
-                                KeyboardInterruptException("Conversion pool shutdown")
-                            )
-                            current_downloader.dispose()
-                except KeyboardInterrupt as e:
-                    # Propagate keyboard interrupt
-                    set_keyboard_interrupt()
-                    current_result_future.set_exception(e)
-                    current_downloader.dispose()
-                    _thread.interrupt_main()
-                except Exception as e:
-                    # Handle any exceptions during callback execution
-                    current_result_future.set_result(
-                        (current_downloader.url, current_downloader.outmp3, e)
-                    )
-                    current_downloader.dispose()
-
-            # Submit download task
-            try:
-                download_future = download_pool.submit(downloader.download)
-
-                # Add callback for when download completes
-                download_future.add_done_callback(
-                    lambda f: on_download_complete(
-                        download_future=f,
-                        current_downloader=downloader,
-                        current_result_future=result_future,
-                    )
-                )
-            except RuntimeError:  # Pool is shutdown
-                result_future.set_exception(
-                    KeyboardInterruptException("Download pool shutdown")
-                )
-                downloader.dispose()
+            # Submit the entire download and conversion process as a single task
+            _FUTURE_RESOLVER_POOL.submit(
+                self._process_download_and_convert,
+                url,
+                outmp3,
+                cookies,
+                download_pool,
+                convert_pool,
+                result_future,
+            )
 
         return result_futures
 
-    def _handle_conversion_complete(
+    def _process_download_and_convert(
         self,
-        future: Future[tuple[str, Path, Exception | None]],
+        url: str,
+        outmp3: Path,
+        cookies: Path | None,
+        download_pool: ThreadPoolExecutor,
+        convert_pool: ThreadPoolExecutor,
         result_future: Future[tuple[str, Path, Exception | None]],
-        downloader: YtDlpDownloader,
     ) -> None:
-        """Handle completion of conversion task.
+        """Process the download and conversion for a single URL.
 
         Args:
-            future: The completed conversion future
-            result_future: The future to set with the final result
-            downloader: The downloader instance
+            url: The URL to download
+            outmp3: Path to save the final MP3 file
+            cookies: Path to cookies file or None
+            download_pool: Thread pool for downloads
+            convert_pool: Thread pool for conversions
+            result_future: Future to set with the final result
         """
+        # Create downloader
+        downloader = YtDlpDownloader(url, outmp3, cookies)
+
         try:
-            # Check if keyboard interrupt happened
+            # Check for keyboard interrupt
             if check_keyboard_interrupt():
-                result_future.set_exception(
-                    KeyboardInterruptException(
-                        "Conversion aborted due to previous keyboard interrupt"
+                result_future.set_result(
+                    (
+                        url,
+                        outmp3,
+                        KeyboardInterruptException(
+                            "Download aborted due to previous keyboard interrupt"
+                        ),
                     )
                 )
                 return
 
-            if future.cancelled():
-                set_keyboard_interrupt()
-                result_future.set_exception(
-                    KeyboardInterruptException("Conversion cancelled")
+            # Submit download task and wait for it to complete
+            download_future = download_pool.submit(downloader.download)
+            download_result = download_future.result()
+
+            # If download failed, set the result and return
+            if isinstance(download_result, Exception):
+                result_future.set_result((url, outmp3, download_result))
+                return
+
+            # Check for keyboard interrupt again before conversion
+            if check_keyboard_interrupt():
+                result_future.set_result(
+                    (
+                        url,
+                        outmp3,
+                        KeyboardInterruptException(
+                            "Conversion aborted due to previous keyboard interrupt"
+                        ),
+                    )
                 )
-            else:
-                result = future.result()
-                # Check if the result contains a KeyboardInterrupt
-                if isinstance(result[2], KeyboardInterruptException):
-                    set_keyboard_interrupt()
-                    result_future.set_exception(result[2])
-                    _thread.interrupt_main()
-                else:
-                    result_future.set_result(result)
+                return
+
+            # Submit conversion task and wait for it to complete
+            convert_future = convert_pool.submit(self._process_conversion, downloader)
+            conversion_result = convert_future.result()
+
+            # Set the final result
+            result_future.set_result(conversion_result)
+
         except KeyboardInterrupt as e:
+            # Handle keyboard interrupt
             set_keyboard_interrupt()
-            result_future.set_exception(e)
+            result_future.set_result((url, outmp3, KeyboardInterruptException(str(e))))
             _thread.interrupt_main()
         except Exception as e:
-            result_future.set_result((downloader.url, downloader.outmp3, e))
+            # Handle any other exceptions
+            result_future.set_result((url, outmp3, e))
         finally:
-            # No need to dispose here as _process_conversion already does it
-            pass
+            # Clean up resources
+            downloader.dispose()
 
     def download_mp3(self, url: str, outmp3: Path) -> None:
         """Download a single YouTube video as MP3.
