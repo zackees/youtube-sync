@@ -13,7 +13,7 @@ classifiers = ["Programming Language :: Python :: 3"]
 
 dependencies = [
     "filelock",
-    "static-ffmpeg",
+    "static-ffmpeg>=2.10",
     "pytest-playwright",
     "beautifulsoup4>=4.13.3",
     "ytdlp-brighteon>=2023.10.3",
@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 # Change this with the version number bump.
-version = "1.0.24"
+version = "1.0.25"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
