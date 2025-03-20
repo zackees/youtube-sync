@@ -1,3 +1,4 @@
+import _thread
 import json
 import os
 import re
@@ -17,6 +18,33 @@ from static_ffmpeg import add_paths
 
 from .cookies import Cookies
 from .types import ChannelId, VideoId
+
+
+class KeyboardInterruptException(Exception):
+    """Exception raised when a keyboard interrupt is detected."""
+
+    pass
+
+
+# Global flag to track keyboard interrupts
+_KEYBOARD_INTERRUPT_HAPPENED = False
+
+
+# Function to check and set the interrupt flag
+def set_keyboard_interrupt():
+    """Set the global keyboard interrupt flag."""
+    global _KEYBOARD_INTERRUPT_HAPPENED
+    _KEYBOARD_INTERRUPT_HAPPENED = True
+
+
+def check_keyboard_interrupt():
+    """Check if a keyboard interrupt has happened.
+
+    Returns:
+        bool: True if a keyboard interrupt has happened
+    """
+    return _KEYBOARD_INTERRUPT_HAPPENED
+
 
 # yt-dlp-ChromeCookieUnlock
 
@@ -266,6 +294,11 @@ def yt_dlp_download_best_audio(
     Returns:
         Path to the downloaded audio file or Exception if download failed
     """
+    if check_keyboard_interrupt():
+        return KeyboardInterruptException(
+            "Download aborted due to previous keyboard interrupt"
+        )
+
     if yt_exe is None:
         yt_exe_result = yt_dlp_exe()
         if isinstance(yt_exe_result, Exception):
@@ -296,11 +329,21 @@ def yt_dlp_download_best_audio(
     last_error: Exception | None = None
 
     for attempt in range(retries):
+        if check_keyboard_interrupt():
+            return KeyboardInterruptException(
+                "Download aborted due to previous keyboard interrupt"
+            )
+
         try:
             proc = subprocess.Popen(cmd_list)
             while True:
                 if proc.poll() is not None:
                     break
+                if check_keyboard_interrupt():
+                    proc.terminate()
+                    return KeyboardInterruptException(
+                        "Download aborted due to previous keyboard interrupt"
+                    )
                 time.sleep(0.1)
 
             if proc.returncode == 0:
@@ -319,13 +362,13 @@ def yt_dlp_download_best_audio(
                 print(f"Download attempt {attempt+1}/{retries} failed: {last_error}")
 
         except KeyboardInterrupt as kee:
-            import _thread
-
+            set_keyboard_interrupt()
             _thread.interrupt_main()
             ke = kee
             break
         except subprocess.CalledProcessError as cpe:
             if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
+                set_keyboard_interrupt()
                 raise KeyboardInterrupt("KeyboardInterrupt")
             print(f"Failed to download {url}: {cpe}")
             last_error = cpe
@@ -349,6 +392,11 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
     Returns:
         Path to the output MP3 file or Exception if conversion failed
     """
+    if check_keyboard_interrupt():
+        return KeyboardInterruptException(
+            "Conversion aborted due to previous keyboard interrupt"
+        )
+
     add_ffmpeg_paths_once()
 
     # Ensure the output directory exists
@@ -368,8 +416,27 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 
     try:
         print(f"Convert {input_file} -> {output_file}")
-        _ = subprocess.run(cmd_list, capture_output=True, check=True)
+        proc = subprocess.Popen(
+            cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        # Monitor the process and check for interrupts
+        while proc.poll() is None:
+            if check_keyboard_interrupt():
+                proc.terminate()
+                return KeyboardInterruptException(
+                    "Conversion aborted due to previous keyboard interrupt"
+                )
+            time.sleep(0.1)
+
+        if proc.returncode != 0:
+            return subprocess.CalledProcessError(proc.returncode, cmd_list)
+
         return output_file
+    except KeyboardInterrupt:
+        set_keyboard_interrupt()
+        _thread.interrupt_main()
+        raise
     except subprocess.CalledProcessError as e:
         return e
 
@@ -419,6 +486,11 @@ class YtDlpDownloader:
         Returns:
             Path to the downloaded audio file or Exception if download failed
         """
+        if check_keyboard_interrupt():
+            return KeyboardInterruptException(
+                "Download aborted due to previous keyboard interrupt"
+            )
+
         yt_exe = yt_dlp_exe()
         if isinstance(yt_exe, Exception):
             return yt_exe
@@ -446,6 +518,11 @@ class YtDlpDownloader:
         Raises:
             ValueError: If download() has not been called or failed
         """
+        if check_keyboard_interrupt():
+            return KeyboardInterruptException(
+                "Conversion aborted due to previous keyboard interrupt"
+            )
+
         if self.downloaded_file is None:
             raise ValueError("No downloaded file available. Call download() first.")
 
@@ -458,6 +535,9 @@ class YtDlpDownloader:
         Raises:
             ValueError: If convert_to_mp3() has not been called or failed
         """
+        if check_keyboard_interrupt():
+            raise KeyboardInterrupt("Copy aborted due to previous keyboard interrupt")
+
         if self.temp_mp3 is None:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
 
@@ -603,6 +683,9 @@ class YtDlp:
             or the exception that occurred during download
         """
         result_futures: list[Future[tuple[str, Path, Exception | None]]] = []
+        downloaders: list[YtDlpDownloader] = (
+            []
+        )  # Keep track of all downloaders for cleanup
 
         # Process each download
         for url, outmp3 in downloads:
@@ -615,6 +698,7 @@ class YtDlp:
 
             # Create downloader
             downloader = YtDlpDownloader(url, outmp3, cookies)
+            downloaders.append(downloader)  # Track for cleanup
 
             # Define callback for when download completes
             def on_download_complete(
@@ -623,8 +707,35 @@ class YtDlp:
                 current_result_future: Future[tuple[str, Path, Exception | None]],
             ) -> None:
                 try:
+                    # Check if keyboard interrupt happened
+                    if check_keyboard_interrupt():
+                        current_result_future.set_exception(
+                            KeyboardInterruptException(
+                                "Download aborted due to previous keyboard interrupt"
+                            )
+                        )
+                        current_downloader.dispose()
+                        return
+
+                    # Check if future was cancelled due to interrupt
+                    if download_future.cancelled():
+                        set_keyboard_interrupt()
+                        current_result_future.set_exception(
+                            KeyboardInterruptException("Download cancelled")
+                        )
+                        current_downloader.dispose()
+                        return
+
                     download_result = download_future.result()
                     if isinstance(download_result, Exception):
+                        # If it's a keyboard interrupt, propagate it
+                        if isinstance(download_result, KeyboardInterruptException):
+                            set_keyboard_interrupt()
+                            current_result_future.set_exception(download_result)
+                            current_downloader.dispose()
+                            _thread.interrupt_main()
+                            return
+
                         # Download failed
                         current_result_future.set_result(
                             (
@@ -636,13 +747,37 @@ class YtDlp:
                         current_downloader.dispose()
                     else:
                         # Download succeeded, submit conversion task
-                        convert_future = convert_pool.submit(
-                            self._process_conversion, current_downloader
-                        )
-                        # Add callback for when conversion completes
-                        convert_future.add_done_callback(
-                            lambda f: current_result_future.set_result(f.result())
-                        )
+                        try:
+                            # Check again for keyboard interrupt
+                            if check_keyboard_interrupt():
+                                current_result_future.set_exception(
+                                    KeyboardInterruptException(
+                                        "Conversion aborted due to previous keyboard interrupt"
+                                    )
+                                )
+                                current_downloader.dispose()
+                                return
+
+                            convert_future = convert_pool.submit(
+                                self._process_conversion, current_downloader
+                            )
+                            # Add callback for when conversion completes
+                            convert_future.add_done_callback(
+                                lambda f: self._handle_conversion_complete(
+                                    f, current_result_future, current_downloader
+                                )
+                            )
+                        except RuntimeError:  # Pool is shutdown
+                            current_result_future.set_exception(
+                                KeyboardInterruptException("Conversion pool shutdown")
+                            )
+                            current_downloader.dispose()
+                except KeyboardInterrupt as e:
+                    # Propagate keyboard interrupt
+                    set_keyboard_interrupt()
+                    current_result_future.set_exception(e)
+                    current_downloader.dispose()
+                    _thread.interrupt_main()
                 except Exception as e:
                     # Handle any exceptions during callback execution
                     current_result_future.set_result(
@@ -651,18 +786,71 @@ class YtDlp:
                     current_downloader.dispose()
 
             # Submit download task
-            download_future = download_pool.submit(downloader.download)
+            try:
+                download_future = download_pool.submit(downloader.download)
 
-            # Add callback for when download completes
-            download_future.add_done_callback(
-                lambda f: on_download_complete(
-                    download_future=f,
-                    current_downloader=downloader,
-                    current_result_future=result_future,
+                # Add callback for when download completes
+                download_future.add_done_callback(
+                    lambda f: on_download_complete(
+                        download_future=f,
+                        current_downloader=downloader,
+                        current_result_future=result_future,
+                    )
                 )
-            )
+            except RuntimeError:  # Pool is shutdown
+                result_future.set_exception(
+                    KeyboardInterruptException("Download pool shutdown")
+                )
+                downloader.dispose()
 
         return result_futures
+
+    def _handle_conversion_complete(
+        self,
+        future: Future[tuple[str, Path, Exception | None]],
+        result_future: Future[tuple[str, Path, Exception | None]],
+        downloader: YtDlpDownloader,
+    ) -> None:
+        """Handle completion of conversion task.
+
+        Args:
+            future: The completed conversion future
+            result_future: The future to set with the final result
+            downloader: The downloader instance
+        """
+        try:
+            # Check if keyboard interrupt happened
+            if check_keyboard_interrupt():
+                result_future.set_exception(
+                    KeyboardInterruptException(
+                        "Conversion aborted due to previous keyboard interrupt"
+                    )
+                )
+                return
+
+            if future.cancelled():
+                set_keyboard_interrupt()
+                result_future.set_exception(
+                    KeyboardInterruptException("Conversion cancelled")
+                )
+            else:
+                result = future.result()
+                # Check if the result contains a KeyboardInterrupt
+                if isinstance(result[2], KeyboardInterruptException):
+                    set_keyboard_interrupt()
+                    result_future.set_exception(result[2])
+                    _thread.interrupt_main()
+                else:
+                    result_future.set_result(result)
+        except KeyboardInterrupt as e:
+            set_keyboard_interrupt()
+            result_future.set_exception(e)
+            _thread.interrupt_main()
+        except Exception as e:
+            result_future.set_result((downloader.url, downloader.outmp3, e))
+        finally:
+            # No need to dispose here as _process_conversion already does it
+            pass
 
     def download_mp3(self, url: str, outmp3: Path) -> None:
         """Download a single YouTube video as MP3.

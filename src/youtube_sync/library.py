@@ -4,6 +4,7 @@
 
 import _thread
 import os
+import sys
 import traceback
 import warnings
 from concurrent.futures import ThreadPoolExecutor
@@ -245,21 +246,35 @@ class Library:
             self.save(overwrite=True)
 
     def download_missing(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool
+        self,
+        download_limit: int | None,
+        yt_dlp_uses_docker: bool,
+        max_concurrent_downloads: int = 1,
+        max_concurrent_conversions: int = 4,
     ) -> None:
         """Download the missing files using thread pools.
 
         Args:
             download_limit: Maximum number of files to download or None for unlimited
             yt_dlp_uses_docker: Whether to use Docker for yt-dlp
+            max_concurrent_downloads: Maximum number of concurrent downloads
+            max_concurrent_conversions: Maximum number of concurrent conversions
         """
+        from youtube_sync.ytdlp import check_keyboard_interrupt, set_keyboard_interrupt
+
+        assert yt_dlp_uses_docker is False, "Docker not supported yet."
         # Create thread pools with appropriate sizes
-        with (
-            ThreadPoolExecutor(max_workers=1) as download_pool,
-            ThreadPoolExecutor(max_workers=4) as convert_pool,
-        ):
+        download_pool = ThreadPoolExecutor(max_workers=max_concurrent_downloads)
+        convert_pool = ThreadPoolExecutor(max_workers=max_concurrent_conversions)
+
+        try:
             download_count = 0
             while True:
+                # Check for keyboard interrupt
+                if check_keyboard_interrupt():
+                    print("Detected previous keyboard interrupt. Aborting downloads.")
+                    break
+
                 if (download_limit is not None) and (download_count >= download_limit):
                     break
 
@@ -304,6 +319,13 @@ class Library:
 
                     # Process results as they complete
                     for i, future in enumerate(futures):
+                        # Check for keyboard interrupt
+                        if check_keyboard_interrupt():
+                            print(
+                                "Detected keyboard interrupt. Skipping remaining results."
+                            )
+                            break
+
                         vid = missing_downloads[i]
                         try:
                             _, _, error = future.result()
@@ -313,9 +335,11 @@ class Library:
                             else:
                                 print(f"Successfully downloaded {vid.url}")
                         except KeyboardInterrupt:
-                            warnings.warn("KeyboardInterrupt. Stopping download.")
-                            _thread.interrupt_main()
-                            raise
+                            print(
+                                "KeyboardInterrupt detected while processing results. Stopping download."
+                            )
+                            set_keyboard_interrupt()
+                            break
                         except Exception as e:  # pylint: disable=broad-except
                             stacktrace_str = traceback.format_exc()
                             print(f"Error downloading {vid.url}: {e}")
@@ -325,10 +349,35 @@ class Library:
                     # Update download count
                     download_count += batch_size
 
+                    # Check for keyboard interrupt after batch
+                    if check_keyboard_interrupt():
+                        print(
+                            "Detected keyboard interrupt after batch. Stopping downloads."
+                        )
+                        break
+
                 except KeyboardInterrupt:
-                    warnings.warn("KeyboardInterrupt. Stopping download.")
-                    _thread.interrupt_main()
-                    raise
+                    print(
+                        "KeyboardInterrupt detected. Stopping download and shutting down thread pools."
+                    )
+                    set_keyboard_interrupt()
+                    # Don't raise here, let the outer try/finally handle cleanup
+                    break
+
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt detected. Shutting down thread pools.")
+            set_keyboard_interrupt()
+        finally:
+            # Ensure pools are shut down properly
+            print("Shutting down download pool...")
+            download_pool.shutdown(wait=False, cancel_futures=True)
+            print("Shutting down conversion pool...")
+            convert_pool.shutdown(wait=False, cancel_futures=True)
+
+            # Re-raise KeyboardInterrupt to notify the main thread
+            if sys.exc_info()[0] is KeyboardInterrupt:
+                _thread.interrupt_main()
+                raise
 
     def mark_error(self, vid: VidEntry) -> None:
         """Mark the vid as an error."""
