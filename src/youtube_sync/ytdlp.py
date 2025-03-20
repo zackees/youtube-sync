@@ -361,6 +361,10 @@ def yt_dlp_download_best_audio(
                     continue
                 return downloaded_files[0]
             else:
+                rtn = proc.returncode
+                if 3221225786 == rtn or rtn == -signal.SIGINT:
+                    set_keyboard_interrupt()
+                    raise KeyboardInterrupt("KeyboardInterrupt")
                 last_error = subprocess.CalledProcessError(
                     returncode=proc.returncode, cmd=cmd_list
                 )
@@ -371,13 +375,9 @@ def yt_dlp_download_best_audio(
             _thread.interrupt_main()
             ke = kee
             break
-        except subprocess.CalledProcessError as cpe:
-            if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
-                set_keyboard_interrupt()
-                raise KeyboardInterrupt("KeyboardInterrupt")
-            print(f"Failed to download {url}: {cpe}")
-            last_error = cpe
-            continue
+        except Exception as e:
+            last_error = e
+            print(f"Download attempt {attempt+1}/{retries} failed: {e}")
 
     if ke is not None:
         raise ke
@@ -421,11 +421,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 
     try:
         print(f"Convert {input_file} -> {output_file}")
-        # proc = subprocess.Popen(cmd_list)
-        # drop all input/output to /dev/null
-        proc = subprocess.Popen(
-            cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+        proc = subprocess.Popen(cmd_list)
 
         # Monitor the process and check for interrupts
         while proc.poll() is None:
@@ -438,7 +434,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 
         if proc.returncode != 0:
             return subprocess.CalledProcessError(proc.returncode, cmd_list)
-        print(f"Converted {input_file} -> {output_file}")
+
         return output_file
     except KeyboardInterrupt:
         set_keyboard_interrupt()
