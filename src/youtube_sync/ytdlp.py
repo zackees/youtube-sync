@@ -244,47 +244,6 @@ def add_ffmpeg_paths_once() -> None:
         _FFMPEG_PATH_ADDED = True
 
 
-def _get_ytdlp_command_mp3_download(
-    yt_exe: Path,
-    url: str,
-    out_file: Path,
-    update: bool,
-    no_geo_bypass: bool,
-    cookies_txt: Path | None,
-) -> list[str]:
-    add_ffmpeg_paths_once()
-    is_youtube = "youtube.com" in url or "youtu.be" in url
-    if is_youtube:
-        assert cookies_txt is not None, "cookies_txt must be provided for youtube.com"
-    if cookies_txt is not None:
-        assert cookies_txt.exists(), f"cookies_txt does not exist: {cookies_txt}"
-    cmd_list: list[str] = []
-    cmd_list += [
-        yt_exe.as_posix(),
-        url,
-    ]
-    if is_youtube:
-        cmd_list += [
-            "-f",
-            "bestaudio",
-        ]
-    cmd_list += [
-        "--extract-audio",
-        "--audio-format",
-        "mp3",
-        "--output",
-        out_file.as_posix(),
-    ]
-    if update:
-        cmd_list.append("--update")
-    if no_geo_bypass:
-        cmd_list.append("--no-geo-bypass")
-    if cookies_txt:
-        cmd_list.append("--cookies")
-        cmd_list.append(cookies_txt.as_posix())
-    return cmd_list
-
-
 def yt_dlp_download_best_audio(
     url: str,
     temp_dir: Path,
@@ -380,42 +339,6 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
         return output_file
     except subprocess.CalledProcessError as e:
         return e
-
-
-def _task_download_and_turn_into_mp3(
-    yt_exe: Path,
-    url: str,
-    out_file: Path,
-    no_geo_bypass: bool,
-    update: bool,
-    cookies_txt: Path | None,
-) -> Exception | None:
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir_path = Path(temp_dir)
-        # Step 1: Download best audio
-        result = yt_dlp_download_best_audio(
-            url=url,
-            temp_dir=temp_dir_path,
-            cookies_txt=cookies_txt,
-            yt_exe=yt_exe,
-            no_geo_bypass=no_geo_bypass,
-        )
-
-        if isinstance(result, Exception):
-            return result
-
-        # Step 2: Convert to MP3
-        temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
-        mp3_result = convert_audio_to_mp3(result, temp_mp3)
-
-        if isinstance(mp3_result, Exception):
-            return mp3_result
-
-        # Step 3: Copy to final destination
-        print(f"Copying {mp3_result} -> {out_file}")
-        shutil.copy(str(mp3_result), str(out_file))
-        return None
 
 
 def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> None:
