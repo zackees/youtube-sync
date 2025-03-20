@@ -420,7 +420,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
     ]
 
     try:
-        print(f"Convert {input_file} -> {output_file}")
+        print(f"Begin {input_file} -> {output_file}")
         # proc = subprocess.Popen(cmd_list)
         # pipe to devnull to suppress output
         proc = subprocess.Popen(
@@ -443,7 +443,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
                 raise KeyboardInterrupt("KeyboardInterrupt")
 
             return subprocess.CalledProcessError(proc.returncode, cmd_list)
-
+        print(f"Conversion successful: {input_file} -> {output_file}")
         return output_file
     except KeyboardInterrupt:
         set_keyboard_interrupt()

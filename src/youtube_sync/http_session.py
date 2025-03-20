@@ -14,6 +14,9 @@ from urllib3.util.retry import Retry
 _SESSION = None
 _SESSION_LOCK = Lock()
 
+_MAX_POOL_CONNECTIONS = 10
+_MAX_POOL_SIZE = 30
+
 
 def http_session() -> requests.Session:
     """Get or create a requests session with proper connection pooling."""
@@ -23,8 +26,8 @@ def http_session() -> requests.Session:
             _SESSION = requests.Session()
             # Configure connection pooling
             adapter = HTTPAdapter(
-                pool_connections=10,  # Number of connection pools
-                pool_maxsize=10,  # Connections per pool
+                pool_connections=_MAX_POOL_CONNECTIONS,  # Number of connection pools
+                pool_maxsize=_MAX_POOL_SIZE,  # Connections per pool
                 max_retries=Retry(
                     total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504]
                 ),
