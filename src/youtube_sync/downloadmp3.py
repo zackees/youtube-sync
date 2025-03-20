@@ -18,42 +18,35 @@ def _add_ffmpeg_paths_once() -> None:
 
 
 def docker_yt_dlp_download_mp3(url: str, outmp3: Path, ytdlp: YtDlp) -> None:
-    """Download the youtube video as an mp3."""
-    raise NotImplementedError("docker_yt_dlp_download_mp3")
-    # here = os.path.abspath(os.path.dirname(__file__))
-    # dockerfile = os.path.join(here, "Dockerfile")
-    # dockerfile = os.path.abspath(dockerfile)
-    # assert os.path.exists(dockerfile), f"dockerfile {dockerfile} does not exist"
-    # with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
-    #     # cmd_args = [
-    #     #     url,
-    #     #     "-f",
-    #     #     "bestaudio",
-    #     #     "--extract-audio",
-    #     #     "--audio-format",
-    #     #     "mp3",
-    #     #     "--output",
-    #     #     "/host_dir/temp.mp3",
-    #     #     "--update",
-    #     #     "--no-geo-bypass",
-    #     # ]
-    #     cmd_args: list[str] = _get_ytdlp_command_mp3_download(
-    #         yt_exe=Path("DELETE_THIS"),
-    #         url=url,
-    #         out_file=Path("/host_dir/temp.mp3"),
-    #         update=True,
-    #         no_geo_bypass=True,
-    #         cookies_txt=ytdlp.youtube_cookies_txt,
-    #     )
-    #     # remove first element for docker cmd
-    #     cmd_args.pop(0)
-    #     docker_run(
-    #         name="yt-dlp",
-    #         dockerfile_or_url=dockerfile,
-    #         cwd=Path(temp_dir),
-    #         cmd_list=cmd_args,
-    #     )
-    #     shutil.copy(os.path.join(temp_dir, "temp.mp3"), str(outmp3))
+    """Download the youtube video as an mp3 using Docker."""
+    import shutil
+    import tempfile
+
+    from youtube_sync.ytdlp import convert_audio_to_mp3, yt_dlp_download_best_audio
+
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temp_dir:
+        temp_dir_path = Path(temp_dir)
+
+        # Step 1: Download best audio
+        result = yt_dlp_download_best_audio(
+            url=url,
+            temp_dir=temp_dir_path,
+            cookies_txt=ytdlp.youtube_cookies_txt,
+            no_geo_bypass=True,
+        )
+
+        if isinstance(result, Exception):
+            raise result
+
+        # Step 2: Convert to MP3
+        temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
+        mp3_result = convert_audio_to_mp3(result, temp_mp3)
+
+        if isinstance(mp3_result, Exception):
+            raise mp3_result
+
+        # Step 3: Copy to final destination
+        shutil.copy(str(temp_mp3), str(outmp3))
 
 
 def download_mp3(

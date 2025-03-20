@@ -285,6 +285,103 @@ def _get_ytdlp_command_mp3_download(
     return cmd_list
 
 
+def yt_dlp_download_best_audio(
+    url: str,
+    temp_dir: Path,
+    cookies_txt: Path | None,
+    yt_exe: Path | None = None,
+    no_geo_bypass: bool = True,
+) -> Path | Exception:
+    """Download the best audio from a URL to a temporary directory without conversion.
+
+    Args:
+        url: The URL to download from
+        temp_dir: Directory to save the temporary file
+        cookies_txt: Path to cookies.txt file or None
+        yt_exe: Path to yt-dlp executable or None to auto-detect
+        no_geo_bypass: Whether to disable geo-bypass
+
+    Returns:
+        Path to the downloaded audio file or Exception if download failed
+    """
+    if yt_exe is None:
+        yt_exe_result = yt_dlp_exe()
+        if isinstance(yt_exe_result, Exception):
+            return yt_exe_result
+        yt_exe = yt_exe_result
+
+    # Use a generic name for the temporary file - let yt-dlp determine the extension
+    temp_file = Path(os.path.join(temp_dir, "temp_audio"))
+
+    # Command to download best audio format without any conversion
+    cmd_list = [
+        yt_exe.as_posix(),
+        url,
+        "-f",
+        "bestaudio",  # Select best audio format
+        "--no-playlist",  # Don't download playlists
+        "--output",
+        f"{temp_file.as_posix()}.%(ext)s",  # Output filename pattern
+    ]
+
+    if no_geo_bypass:
+        cmd_list.append("--no-geo-bypass")
+
+    if cookies_txt is not None:
+        cmd_list.extend(["--cookies", cookies_txt.as_posix()])
+
+    proc = subprocess.Popen(cmd_list)
+    while True:
+        if proc.poll() is not None:
+            break
+        time.sleep(0.1)
+
+    if proc.returncode != 0:
+        return subprocess.CalledProcessError(returncode=proc.returncode, cmd=cmd_list)
+
+    # Find the downloaded file (with whatever extension yt-dlp used)
+    downloaded_files = list(temp_dir.glob("temp_audio.*"))
+    if not downloaded_files:
+        return FileNotFoundError(f"No audio file was downloaded to {temp_dir}")
+
+    return downloaded_files[0]
+
+
+def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exception:
+    """Convert audio file to MP3 format using ffmpeg.
+
+    Args:
+        input_file: Path to the input audio file
+        output_file: Path to save the output MP3 file
+
+    Returns:
+        Path to the output MP3 file or Exception if conversion failed
+    """
+    add_ffmpeg_paths_once()
+
+    # Ensure the output directory exists
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd_list = [
+        "ffmpeg",
+        "-i",
+        str(input_file),
+        "-codec:a",
+        "libmp3lame",
+        "-qscale:a",
+        "2",  # High quality setting
+        "-y",  # Overwrite output file if it exists
+        str(output_file),
+    ]
+
+    try:
+        print(f"Convert {input_file} -> {output_file}")
+        _ = subprocess.run(cmd_list, capture_output=True, check=True)
+        return output_file
+    except subprocess.CalledProcessError as e:
+        return e
+
+
 def _task_download_and_turn_into_mp3(
     yt_exe: Path,
     url: str,
@@ -292,34 +389,32 @@ def _task_download_and_turn_into_mp3(
     no_geo_bypass: bool,
     update: bool,
     cookies_txt: Path | None,
-) -> subprocess.CalledProcessError | None:
+) -> Exception | None:
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file = Path(os.path.join(temp_dir, "temp.mp3"))
-
-        cmd_list: list[str] = _get_ytdlp_command_mp3_download(
-            yt_exe=yt_exe,
+        temp_dir_path = Path(temp_dir)
+        # Step 1: Download best audio
+        result = yt_dlp_download_best_audio(
             url=url,
-            out_file=temp_file,
-            no_geo_bypass=no_geo_bypass,
-            update=update,
+            temp_dir=temp_dir_path,
             cookies_txt=cookies_txt,
+            yt_exe=yt_exe,
+            no_geo_bypass=no_geo_bypass,
         )
-        # cmd_str = subprocess.list2cmdline(cmd_list)
-        # print(f"Running: {cmd_str}")
-        # subprocess.run(cmd_list, check=True)
-        proc = subprocess.Popen(cmd_list)
-        while True:
-            # proc.wait(timeout=.1)
-            if proc.poll() is not None:
-                break
-            time.sleep(0.1)
-        if proc.returncode != 0:
-            return subprocess.CalledProcessError(
-                returncode=proc.returncode, cmd=cmd_list
-            )
-        print(f"Copying {temp_file} -> {out_file}")
-        shutil.copy(str(temp_file), str(out_file))
+
+        if isinstance(result, Exception):
+            return result
+
+        # Step 2: Convert to MP3
+        temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
+        mp3_result = convert_audio_to_mp3(result, temp_mp3)
+
+        if isinstance(mp3_result, Exception):
+            return mp3_result
+
+        # Step 3: Copy to final destination
+        print(f"Copying {mp3_result} -> {out_file}")
+        shutil.copy(str(mp3_result), str(out_file))
         return None
 
 
@@ -334,33 +429,36 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
     if isinstance(yt_exe, Exception):
         raise yt_exe
 
-    # yt_exe_str = yt_exe.as_posix()
     ke: KeyboardInterrupt | None = None
 
     for _ in range(3):
         try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_dir_path = Path(temp_dir)
 
-            def _task(
-                yt_exe=yt_exe,
-                url=url,
-                out_file=outmp3,
-                no_geo_bypass=True,
-                update=False,
-                cookies_txt=cookies_txt,
-            ) -> subprocess.CalledProcessError | None:
-                return _task_download_and_turn_into_mp3(
-                    yt_exe=yt_exe,
+                # Step 1: Download the best audio
+                audio_file = yt_dlp_download_best_audio(
                     url=url,
-                    out_file=out_file,
-                    no_geo_bypass=no_geo_bypass,
-                    update=update,
+                    temp_dir=temp_dir_path,
                     cookies_txt=cookies_txt,
+                    yt_exe=yt_exe,
+                    no_geo_bypass=True,
                 )
 
-            err = _task()
-            if err is not None:
-                raise err
-            return
+                if isinstance(audio_file, Exception):
+                    raise audio_file
+
+                # Step 2: Convert to MP3
+                temp_mp3 = Path(os.path.join(temp_dir, "converted.mp3"))
+                result = convert_audio_to_mp3(audio_file, temp_mp3)
+
+                if isinstance(result, Exception):
+                    raise result
+
+                # Step 3: Copy to final destination
+                print(f"Copying {temp_mp3} -> {outmp3}")
+                shutil.copy(str(temp_mp3), str(outmp3))
+                return
         except KeyboardInterrupt as kee:
             import _thread
 
