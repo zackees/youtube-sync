@@ -82,6 +82,7 @@ def _make_library(
 
 
 _YT_DLP = YtDlp()
+_FFMPEG_EXECUTORS = ThreadPoolExecutor(max_workers=os.cpu_count())
 
 
 class Library:
@@ -250,7 +251,6 @@ class Library:
         download_limit: int | None,
         yt_dlp_uses_docker: bool,
         max_concurrent_downloads: int = 1,
-        max_concurrent_conversions: int = 4,
     ) -> None:
         """Download the missing files using thread pools.
 
@@ -265,7 +265,7 @@ class Library:
         assert yt_dlp_uses_docker is False, "Docker not supported yet."
         # Create thread pools with appropriate sizes
         download_pool = ThreadPoolExecutor(max_workers=max_concurrent_downloads)
-        convert_pool = ThreadPoolExecutor(max_workers=max_concurrent_conversions)
+        convert_pool = _FFMPEG_EXECUTORS
 
         try:
             download_count = 0
