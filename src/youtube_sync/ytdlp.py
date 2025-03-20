@@ -606,5 +606,7 @@ class YtDlp:
             Exception: If download or conversion fails
         """
         results = self.download_mp3s([(url, outmp3)])
-        if results[0][2] is not None:
-            raise results[0][2]
+        assert len(results) == 1
+        url, outmp3, error = results[0]
+        if error is not None:
+            raise error
