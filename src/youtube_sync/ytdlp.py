@@ -19,9 +19,15 @@ from static_ffmpeg import add_paths
 from .cookies import Cookies
 from .types import ChannelId, VideoId
 
+_MAX_CPU_WORKERS = max(1, os.cpu_count() or 0)
+
 # Thread pool for resolving futures
 _FUTURE_RESOLVER_POOL = ThreadPoolExecutor(
-    max_workers=16, thread_name_prefix="future_resolver"
+    max_workers=_MAX_CPU_WORKERS, thread_name_prefix="future_resolver"
+)
+
+_FFMPEG_EXECUTORS = ThreadPoolExecutor(
+    _MAX_CPU_WORKERS, thread_name_prefix="ffmpeg_executor"
 )
 
 
@@ -680,7 +686,6 @@ class YtDlp:
         self,
         downloads: list[tuple[str, Path]],
         download_pool: ThreadPoolExecutor,
-        convert_pool: ThreadPoolExecutor,
     ) -> list[Future[tuple[str, Path, Exception | None]]]:
         """Download multiple YouTube videos as MP3s using thread pools.
 
@@ -712,7 +717,6 @@ class YtDlp:
                 outmp3,
                 cookies,
                 download_pool,
-                convert_pool,
                 result_future,
             )
 
@@ -724,7 +728,6 @@ class YtDlp:
         outmp3: Path,
         cookies: Path | None,
         download_pool: ThreadPoolExecutor,
-        convert_pool: ThreadPoolExecutor,
         result_future: Future[tuple[str, Path, Exception | None]],
     ) -> None:
         """Process the download and conversion for a single URL.
@@ -777,7 +780,9 @@ class YtDlp:
                 return
 
             # Submit conversion task and wait for it to complete
-            convert_future = convert_pool.submit(self._process_conversion, downloader)
+            convert_future = _FFMPEG_EXECUTORS.submit(
+                self._process_conversion, downloader
+            )
             conversion_result = convert_future.result()
 
             # Set the final result
@@ -807,12 +812,10 @@ class YtDlp:
         """
         # Create a single thread pool and use it for both download and conversion
         # to maintain sequential processing for a single file
-        with (
-            ThreadPoolExecutor(max_workers=1) as download_pool,
-            ThreadPoolExecutor(max_workers=1) as convert_pool,
-        ):
+        with (ThreadPoolExecutor(max_workers=1) as download_pool,):
             futures = self.download_mp3s(
-                [(url, outmp3)], download_pool=download_pool, convert_pool=convert_pool
+                [(url, outmp3)],
+                download_pool=download_pool,
             )
 
             # Wait for the single future to complete

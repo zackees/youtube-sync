@@ -82,7 +82,6 @@ def _make_library(
 
 
 _YT_DLP = YtDlp()
-_FFMPEG_EXECUTORS = ThreadPoolExecutor(max_workers=os.cpu_count())
 
 
 class Library:
@@ -264,8 +263,9 @@ class Library:
 
         assert yt_dlp_uses_docker is False, "Docker not supported yet."
         # Create thread pools with appropriate sizes
-        download_pool = ThreadPoolExecutor(max_workers=max_concurrent_downloads)
-        convert_pool = _FFMPEG_EXECUTORS
+        download_pool = ThreadPoolExecutor(
+            max_workers=max_concurrent_downloads, thread_name_prefix="download"
+        )
 
         try:
             download_count = 0
@@ -312,9 +312,7 @@ class Library:
                 try:
                     # Submit downloads to thread pools
                     futures = self.ytdlp.download_mp3s(
-                        downloads=downloads_to_process,
-                        download_pool=download_pool,
-                        convert_pool=convert_pool,
+                        downloads=downloads_to_process, download_pool=download_pool
                     )
 
                     # Process results as they complete
