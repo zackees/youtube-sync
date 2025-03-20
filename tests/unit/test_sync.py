@@ -2,6 +2,7 @@
 Unit test file.
 """
 
+import shutil
 import unittest
 from pathlib import Path
 
@@ -15,6 +16,7 @@ class SyncTester(unittest.TestCase):
     """Main tester class."""
 
     def test_simple(self) -> None:
+        shutil.rmtree(TEST_DATA, ignore_errors=True)
         channel_name = "@silverguru"
         limit_scroll_pages = 1
         download_limit = 1
