@@ -416,9 +416,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 
     try:
         print(f"Convert {input_file} -> {output_file}")
-        proc = subprocess.Popen(
-            cmd_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        proc = subprocess.Popen(cmd_list)
 
         # Monitor the process and check for interrupts
         while proc.poll() is None:
