@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import warnings
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -557,13 +558,44 @@ class YtDlp:
             channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
         )
 
+    def _process_conversion(
+        self, downloader: YtDlpDownloader
+    ) -> tuple[str, Path, Exception | None]:
+        """Process conversion and copying for a downloaded file.
+
+        Args:
+            downloader: The YtDlpDownloader instance with a downloaded file
+
+        Returns:
+            Tuple of (url, output_path, exception_or_none)
+        """
+        try:
+            # Convert to MP3
+            convert_result = downloader.convert_to_mp3()
+            if isinstance(convert_result, Exception):
+                return (downloader.url, downloader.outmp3, convert_result)
+
+            # Copy to destination
+            downloader.copy_to_destination()
+            return (downloader.url, downloader.outmp3, None)
+        except Exception as e:
+            return (downloader.url, downloader.outmp3, e)
+        finally:
+            # Clean up resources
+            downloader.dispose()
+
     def download_mp3s(
-        self, downloads: list[tuple[str, Path]]
+        self,
+        downloads: list[tuple[str, Path]],
+        download_pool: ThreadPoolExecutor,
+        convert_pool: ThreadPoolExecutor,
     ) -> list[tuple[str, Path, Exception | None]]:
-        """Download multiple YouTube videos as MP3s.
+        """Download multiple YouTube videos as MP3s using thread pools.
 
         Args:
             downloads: List of tuples containing (url, output_path)
+            download_pool: Thread pool for downloads
+            convert_pool: Thread pool for conversions
 
         Returns:
             List of tuples containing (url, output_path, exception_or_none)
@@ -571,27 +603,35 @@ class YtDlp:
             or the exception that occurred during download
         """
         results: list[tuple[str, Path, Exception | None]] = []
+        downloaders: list[YtDlpDownloader] = []
+        download_futures: list[tuple[YtDlpDownloader, Future[Path | Exception]]] = []
 
+        # Step 1: Start all downloads in parallel
         for url, outmp3 in downloads:
             cookies = self._extract_cookies_if_needed(url)
+            downloader = YtDlpDownloader(url, outmp3, cookies)
+            downloaders.append(downloader)
+            future: Future[Path | Exception] = download_pool.submit(downloader.download)
+            download_futures.append((downloader, future))
+
+        # Step 2: Process downloads as they complete and start conversions
+        for downloader, future in download_futures:
             try:
-                with YtDlpDownloader(url, outmp3, cookies) as downloader:
-                    # Step 1: Download
-                    download_result = downloader.download()
-                    if isinstance(download_result, Exception):
-                        raise download_result
-
-                    # Step 2: Convert
-                    convert_result = downloader.convert_to_mp3()
-                    if isinstance(convert_result, Exception):
-                        raise convert_result
-
-                    # Step 3: Copy to destination
-                    downloader.copy_to_destination()
-
-                results.append((url, outmp3, None))  # Success
+                download_result = future.result()
+                if isinstance(download_result, Exception):
+                    results.append((downloader.url, downloader.outmp3, download_result))
+                    downloader.dispose()
+                else:
+                    # Submit conversion task to conversion pool
+                    convert_future: Future[tuple[str, Path, Exception | None]] = (
+                        convert_pool.submit(self._process_conversion, downloader)
+                    )
+                    # Wait for conversion to complete
+                    result = convert_future.result()
+                    results.append(result)
             except Exception as e:
-                results.append((url, outmp3, e))  # Failure
+                results.append((downloader.url, downloader.outmp3, e))
+                downloader.dispose()
 
         return results
 
@@ -605,8 +645,14 @@ class YtDlp:
         Raises:
             Exception: If download or conversion fails
         """
-        results = self.download_mp3s([(url, outmp3)])
+        # Create a single thread pool and use it for both download and conversion
+        # to maintain sequential processing for a single file
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            results = self.download_mp3s(
+                [(url, outmp3)], download_pool=executor, convert_pool=executor
+            )
+
         assert len(results) == 1
-        url, outmp3, error = results[0]
+        _, _, error = results[0]
         if error is not None:
             raise error
