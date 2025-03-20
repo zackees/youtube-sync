@@ -6,13 +6,13 @@ import _thread
 import os
 import traceback
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
 from appdirs import user_data_dir
 from filelock import FileLock
 
-from youtube_sync.downloadmp3 import download_mp3
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.types import VidEntry
 from youtube_sync.ytdlp import YtDlp
@@ -247,39 +247,88 @@ class Library:
     def download_missing(
         self, download_limit: int | None, yt_dlp_uses_docker: bool
     ) -> None:
-        """Download the missing files."""
-        download_count = 0
-        while True:
-            if (download_limit is not None) and (download_count >= download_limit):
-                break
-            missing_downloads = self.find_missing_downloads()
-            # make full paths
-            if not missing_downloads:
-                break
-            vid = missing_downloads[0]
-            next_url = vid.url
-            next_mp3_path = self.out_dir / vid.file_path
-            print(
-                f"\n#######################\n# Downloading missing file {next_url}: {next_mp3_path.absolute()}\n"
-                "###################"
-            )
-            try:
-                download_mp3(
-                    url=next_url,
-                    outmp3=next_mp3_path,
-                    yt_dlp_uses_docker=yt_dlp_uses_docker,
-                    ytdlp=self.ytdlp,
+        """Download the missing files using thread pools.
+
+        Args:
+            download_limit: Maximum number of files to download or None for unlimited
+            yt_dlp_uses_docker: Whether to use Docker for yt-dlp
+        """
+        # Create thread pools with appropriate sizes
+        with (
+            ThreadPoolExecutor(max_workers=1) as download_pool,
+            ThreadPoolExecutor(max_workers=4) as convert_pool,
+        ):
+            download_count = 0
+            while True:
+                if (download_limit is not None) and (download_count >= download_limit):
+                    break
+
+                # Find missing downloads
+                missing_downloads = self.find_missing_downloads()
+                if not missing_downloads:
+                    break
+
+                # Determine how many to download in this batch
+                remaining_limit = (
+                    None if download_limit is None else download_limit - download_count
                 )
-            except KeyboardInterrupt:
-                warnings.warn("KeyboardInterrupt. Stopping download.")
-                _thread.interrupt_main()
-                raise
-            except Exception as e:  # pylint: disable=broad-except
-                stacktrace_str = traceback.format_exc()
-                print(f"Error downloading {next_url}: {e}")
-                print(stacktrace_str)
-                self.mark_error(vid)
-            download_count += 1
+                batch_size = (
+                    len(missing_downloads)
+                    if remaining_limit is None
+                    else min(len(missing_downloads), remaining_limit)
+                )
+
+                if batch_size <= 0:
+                    break
+
+                # Prepare download list
+                downloads_to_process = []
+                for i in range(batch_size):
+                    vid = missing_downloads[i]
+                    next_url = vid.url
+                    next_mp3_path = self.out_dir / vid.file_path
+                    downloads_to_process.append((next_url, next_mp3_path))
+
+                print(
+                    f"\n#######################\n# Downloading {batch_size} missing files\n"
+                    "###################"
+                )
+
+                try:
+                    # Submit downloads to thread pools
+                    futures = self.ytdlp.download_mp3s(
+                        downloads=downloads_to_process,
+                        download_pool=download_pool,
+                        convert_pool=convert_pool,
+                    )
+
+                    # Process results as they complete
+                    for i, future in enumerate(futures):
+                        vid = missing_downloads[i]
+                        try:
+                            _, _, error = future.result()
+                            if error is not None:
+                                print(f"Error downloading {vid.url}: {error}")
+                                self.mark_error(vid)
+                            else:
+                                print(f"Successfully downloaded {vid.url}")
+                        except KeyboardInterrupt:
+                            warnings.warn("KeyboardInterrupt. Stopping download.")
+                            _thread.interrupt_main()
+                            raise
+                        except Exception as e:  # pylint: disable=broad-except
+                            stacktrace_str = traceback.format_exc()
+                            print(f"Error downloading {vid.url}: {e}")
+                            print(stacktrace_str)
+                            self.mark_error(vid)
+
+                    # Update download count
+                    download_count += batch_size
+
+                except KeyboardInterrupt:
+                    warnings.warn("KeyboardInterrupt. Stopping download.")
+                    _thread.interrupt_main()
+                    raise
 
     def mark_error(self, vid: VidEntry) -> None:
         """Mark the vid as an error."""
