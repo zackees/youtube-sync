@@ -6,7 +6,6 @@ Scrapes the brighteon website for video urls and downloads them.
 
 import _thread
 import argparse
-import json
 import logging
 import os
 import subprocess
@@ -16,6 +15,7 @@ from pathlib import Path
 
 from playwright.sync_api import Page
 
+from youtube_sync import json_util
 from youtube_sync.library import Library, VidEntry
 from youtube_sync.library_data import Source
 from youtube_sync.playwright_launcher import launch_playwright, set_headless
@@ -192,20 +192,6 @@ def _update_library(
     return library
 
 
-def json_load_dict(json_str: str) -> dict:
-    """Load a json string into a dictionary."""
-    out = json.loads(json_str)
-    assert isinstance(out, dict)
-    return out
-
-
-def json_dump(data: dict | list) -> str:
-    """Save a dictionary to a json string."""
-    out = json.dumps(data, indent=2)
-    assert isinstance(out, str)
-    return out
-
-
 def _json_to_vid_entry(data: dict) -> VidEntry:
     """Create a VidEntry from a dictionary."""
     title = data["title"]
@@ -247,7 +233,7 @@ def scan_for_vids(
         for line_bytes in stdout:
             # print(line)
             line = line_bytes.decode("utf-8")
-            data = json_load_dict(line)
+            data = json_util.load_dict(line)
             # data_str = json_dump(data)
             # print(data_str)
 
