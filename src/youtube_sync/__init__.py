@@ -39,13 +39,30 @@ class YouTubeSync:
     def source(self) -> Source:
         return self.api.source()
 
-    def downloaded_vids(self, refresh=True) -> list[VidEntry]:
-        out = self.library.downloaded_vids(load=refresh)
+    def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry]:
+        if refresh:
+            self.library.load()
+        out = self.library.find_missing_downloads()
+        return out
+
+    def known_vids(self, refresh=True) -> list[VidEntry]:
+        out = self.library.known_vids(load=refresh)
         return out
 
     def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         out: list[VidEntry] = self.api.scan_for_vids(limit_scroll_pages)
         self.library.merge(out, save=True)
+        return out
+
+    def find_vids_already_downloaded(self, refresh=True) -> list[VidEntry]:
+        known_vids = self.known_vids(refresh=refresh)
+        find_vids_missing_downloads = self.find_vids_missing_downloads()
+        # all_downloaded = list(set(find_vids_missing_downloads) - set(known_vids))
+        out: list[VidEntry] = []
+        missing_downloads: set[VidEntry] = set(find_vids_missing_downloads)
+        for vid in known_vids:
+            if vid not in missing_downloads:
+                out.append(vid)
         return out
 
     def download(

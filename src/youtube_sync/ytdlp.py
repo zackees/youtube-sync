@@ -293,26 +293,34 @@ def _task_download_and_turn_into_mp3(
     update: bool,
     cookies_txt: Path | None,
 ) -> subprocess.CalledProcessError | None:
-    cmd_list: list[str] = _get_ytdlp_command_mp3_download(
-        yt_exe=yt_exe,
-        url=url,
-        out_file=out_file,
-        no_geo_bypass=no_geo_bypass,
-        update=update,
-        cookies_txt=cookies_txt,
-    )
-    cmd_str = subprocess.list2cmdline(cmd_list)
-    print(f"Running: {cmd_str}")
-    # subprocess.run(cmd_list, check=True)
-    proc = subprocess.Popen(cmd_list)
-    while True:
-        # proc.wait(timeout=.1)
-        if proc.poll() is not None:
-            break
-        time.sleep(0.1)
-    if proc.returncode != 0:
-        return subprocess.CalledProcessError(returncode=proc.returncode, cmd=cmd_list)
-    return None
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_file = Path(os.path.join(temp_dir, "temp.mp3"))
+
+        cmd_list: list[str] = _get_ytdlp_command_mp3_download(
+            yt_exe=yt_exe,
+            url=url,
+            out_file=temp_file,
+            no_geo_bypass=no_geo_bypass,
+            update=update,
+            cookies_txt=cookies_txt,
+        )
+        # cmd_str = subprocess.list2cmdline(cmd_list)
+        # print(f"Running: {cmd_str}")
+        # subprocess.run(cmd_list, check=True)
+        proc = subprocess.Popen(cmd_list)
+        while True:
+            # proc.wait(timeout=.1)
+            if proc.poll() is not None:
+                break
+            time.sleep(0.1)
+        if proc.returncode != 0:
+            return subprocess.CalledProcessError(
+                returncode=proc.returncode, cmd=cmd_list
+            )
+        print(f"Copying {temp_file} -> {out_file}")
+        shutil.copy(str(temp_file), str(out_file))
+        return None
 
 
 def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> None:
@@ -328,46 +336,45 @@ def yt_dlp_download_mp3(url: str, outmp3: Path, cookies_txt: Path | None) -> Non
 
     # yt_exe_str = yt_exe.as_posix()
     ke: KeyboardInterrupt | None = None
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_file = os.path.join(temp_dir, "temp.mp3")
-        for _ in range(3):
-            try:
 
-                def _task(
+    for _ in range(3):
+        try:
+
+            def _task(
+                yt_exe=yt_exe,
+                url=url,
+                out_file=outmp3,
+                no_geo_bypass=True,
+                update=False,
+                cookies_txt=cookies_txt,
+            ) -> subprocess.CalledProcessError | None:
+                return _task_download_and_turn_into_mp3(
                     yt_exe=yt_exe,
                     url=url,
-                    out_file=Path(temp_file),
-                    no_geo_bypass=True,
-                    update=False,
+                    out_file=out_file,
+                    no_geo_bypass=no_geo_bypass,
+                    update=update,
                     cookies_txt=cookies_txt,
-                ) -> subprocess.CalledProcessError | None:
-                    return _task_download_and_turn_into_mp3(
-                        yt_exe=yt_exe,
-                        url=url,
-                        out_file=out_file,
-                        no_geo_bypass=no_geo_bypass,
-                        update=update,
-                        cookies_txt=cookies_txt,
-                    )
+                )
 
-                err = _task()
-                if err is not None:
-                    raise err
-                return
-            except KeyboardInterrupt as kee:
-                import _thread
+            err = _task()
+            if err is not None:
+                raise err
+            return
+        except KeyboardInterrupt as kee:
+            import _thread
 
-                _thread.interrupt_main()
-                ke = kee
-                break
-            except subprocess.CalledProcessError as cpe:
-                if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
-                    raise KeyboardInterrupt("KeyboardInterrupt")
-                print(f"Failed to download {url} as mp3: {cpe}")
-                continue
-        warnings.warn(f"Failed all attempts to download {url} as mp3.")
-        if ke is not None:
-            raise ke
+            _thread.interrupt_main()
+            ke = kee
+            break
+        except subprocess.CalledProcessError as cpe:
+            if 3221225786 == cpe.returncode or cpe.returncode == -signal.SIGINT:
+                raise KeyboardInterrupt("KeyboardInterrupt")
+            print(f"Failed to download {url} as mp3: {cpe}")
+            continue
+    warnings.warn(f"Failed all attempts to download {url} as mp3.")
+    if ke is not None:
+        raise ke
 
 
 def _is_youtube(url: str) -> bool:

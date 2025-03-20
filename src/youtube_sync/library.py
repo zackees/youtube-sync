@@ -104,6 +104,11 @@ class Library:
         self.load()
         assert isinstance(self.libdata, LibraryData)
 
+    @property
+    def path(self) -> Path:
+        """Get the path."""
+        return self.lib_path
+
     @staticmethod
     def create(
         channel_name: str,
@@ -185,17 +190,12 @@ class Library:
             vids=[],
         )
 
-    def downloaded_vids(self, load=True) -> list[VidEntry]:
+    def known_vids(self, load=True) -> list[VidEntry]:
         """Get the downloaded vids."""
         if load:
             self.load()
         assert self.libdata is not None
         return self.libdata.vids.copy()
-
-    @property
-    def path(self) -> Path:
-        """Get the path."""
-        return self.lib_path
 
     def find_missing_downloads(self) -> list[VidEntry]:
         """Find missing downloads."""
@@ -260,7 +260,7 @@ class Library:
             next_url = vid.url
             next_mp3_path = self.out_dir / vid.file_path
             print(
-                f"\n#######################\n# Downloading missing file {next_url}: {next_mp3_path}\n"
+                f"\n#######################\n# Downloading missing file {next_url}: {next_mp3_path.absolute()}\n"
                 "###################"
             )
             try:

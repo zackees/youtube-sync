@@ -23,8 +23,12 @@ class SyncTester(unittest.TestCase):
             channel_name=channel_name, media_output=media_output, source=Source.YOUTUBE
         )
         yt.scan_for_vids(limit_scroll_pages=limit_scroll_pages)
-        if len(yt.downloaded_vids()) < download_limit:
+        all_downloaded = yt.find_vids_already_downloaded()
+        if len(all_downloaded) < download_limit:
             yt.download(download_limit, yt_dlp_uses_docker=False)
+        total_downloaded = yt.find_vids_already_downloaded()
+        self.assertGreaterEqual(len(total_downloaded), download_limit)
+        print("Done")
 
 
 if __name__ == "__main__":
