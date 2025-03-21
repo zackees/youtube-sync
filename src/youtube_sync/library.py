@@ -251,6 +251,7 @@ class Library:
 
         try:
             download_count = 0
+            max_errors = 100
             while True:
                 # Check for keyboard interrupt
                 if check_keyboard_interrupt():
@@ -310,6 +311,13 @@ class Library:
                             if error is not None:
                                 print(f"Error downloading {vid.url}: {error}")
                                 self.mark_error(vid)
+                                max_errors -= 1
+                                if max_errors <= 0:
+                                    print("Too many errors, aborting downloads.")
+                                    download_pool.shutdown(
+                                        wait=False, cancel_futures=True
+                                    )
+                                    break
                             else:
                                 print(f"Successfully downloaded {vid.url}")
                         except KeyboardInterrupt:
