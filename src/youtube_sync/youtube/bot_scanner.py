@@ -196,7 +196,7 @@ def test_channel_url(channel_url: str) -> bool:
     return response.status_code == 200
 
 
-def fetch_all_vids(yt_channel_url: str, limit: int | None) -> list[VidEntry]:
+def scan_vids(yt_channel_url: str, limit: int | None) -> list[VidEntry]:
     """
     Open a web driver and navigate to Google. yt_channel_url should be
     of the form https://www.youtube.com/@silverguru/videos
@@ -232,7 +232,7 @@ def fetch_all_vids(yt_channel_url: str, limit: int | None) -> list[VidEntry]:
 
 
 def main() -> int:
-    vidlist = fetch_all_vids(URL, limit=1)
+    vidlist = scan_vids(URL, limit=1)
     print(f"Found {len(vidlist)} videos.")
     for vid in vidlist:
         print(f"  {vid.url}")

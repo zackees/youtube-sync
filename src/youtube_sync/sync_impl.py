@@ -11,6 +11,8 @@ from youtube_sync.library import Library
 from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
 
+_YOUTUBE_USE_BOT_SCANNER = True
+
 
 class BaseSync(ABC):
     """Abstract base class defining the interface for YouTube synchronization."""
@@ -102,6 +104,27 @@ class YouTubeSyncImpl(YtDlpSync):
 
     def channel_source(self) -> Source:
         return Source.YOUTUBE
+
+    def _bot_scan(self, limit: int | None) -> list[VidEntry]:
+        from youtube_sync.youtube.scan import youtube_scan
+
+        channel_url = self.to_channel_url(self.lib.channel_name)
+        limit_scroll_pages = max(1, limit // 10) if limit is not None else None
+        return youtube_scan(
+            channel_url=channel_url,
+            limit_scroll_pages=limit_scroll_pages,
+        )
+
+    # override
+    def scan_for_vids(
+        self,
+        limit: int | None,
+        stop_on_duplicate_vids: bool,
+    ) -> list[VidEntry]:
+        if _YOUTUBE_USE_BOT_SCANNER:
+            return self._bot_scan(limit)
+        else:
+            return super().scan_for_vids(limit, stop_on_duplicate_vids)
 
 
 class BrighteonSyncImpl(YtDlpSync):
