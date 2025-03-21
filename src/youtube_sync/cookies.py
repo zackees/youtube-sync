@@ -86,16 +86,8 @@ def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
 
 
 def _get_cookies_from_browser(url: str) -> list[dict]:
-    return _get_cookies_from_browser_using_webdriver(url=url)
-    # return _get_cookies_from_browser_using_playwright(url=url)
-
-
-def _get_cookie_paths(source: Source) -> tuple[Path, Path, Path]:
-    assert source == Source.YOUTUBE, f"Only YouTube is supported, got {source}"
-    cookies_pkl = Path("cookies") / "youtube" / "cookies.pkl"
-    cookie_txt = Path("cookies") / "youtube" / "cookies.txt"
-    cookies_lock = Path("cookies") / "youtube" / "cookies.lock"
-    return cookies_pkl, cookie_txt, cookies_lock
+    # return _get_cookies_from_browser_using_webdriver(url=url)
+    return _get_cookies_from_browser_using_playwright(url=url)
 
 
 def _get_platform_homepage_url(source: Source) -> str:
@@ -108,6 +100,14 @@ def _get_platform_homepage_url(source: Source) -> str:
     raise ValueError(f"Unknown source: {source}")
 
 
+_COOKIE_ROOT_PATH = Path("cookies")
+
+
+def set_cookie_root_path(path: Path):
+    global _COOKIE_ROOT_PATH
+    _COOKIE_ROOT_PATH = path
+
+
 @dataclass
 class CookiePaths:
     pkl: Path
@@ -116,7 +116,7 @@ class CookiePaths:
 
     @staticmethod
     def create(source: Source) -> "CookiePaths":
-        base_path = Path("cookies") / source.value
+        base_path = _COOKIE_ROOT_PATH / source.value
         out = CookiePaths(
             pkl=base_path / "cookies.pkl",
             txt=base_path / "cookies.txt",
@@ -125,14 +125,22 @@ class CookiePaths:
         return out
 
 
-_COOKIE_PATHS: dict[Source, CookiePaths] = {
-    Source.YOUTUBE: CookiePaths.create(Source.YOUTUBE),
-    Source.RUMBLE: CookiePaths.create(Source.RUMBLE),
-    Source.BRIGHTEON: CookiePaths.create(Source.BRIGHTEON),
-}
+_COOKIE_PATHS: dict[Source, CookiePaths] | None = None
+
+
+def _make_cookie_path_map() -> dict[Source, CookiePaths]:
+    out = {
+        Source.YOUTUBE: CookiePaths.create(Source.YOUTUBE),
+        Source.RUMBLE: CookiePaths.create(Source.RUMBLE),
+        Source.BRIGHTEON: CookiePaths.create(Source.BRIGHTEON),
+    }
+    return out
 
 
 def get_cookie_paths(source: Source) -> CookiePaths:
+    global _COOKIE_PATHS
+    if _COOKIE_PATHS is None:
+        _COOKIE_PATHS = _make_cookie_path_map()
     return _COOKIE_PATHS[source]
 
 
@@ -155,17 +163,21 @@ def get_or_refresh_cookies(
                 return cookies
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
         if cookies_pkl.exists() and cookies_txt.exists():
-            yt_cookies = Cookies.from_pickle(cookies_pkl)
-            if isinstance(yt_cookies, Cookies):
-                hours_old = (now - yt_cookies.creation_time).seconds / 3600
-                if hours_old < _COOKIE_REFRESH_HOURS:
-                    return yt_cookies
-            else:
-                logger.warning("Invalid cookies found at %s", cookies_pkl)
+            try:
+                yt_cookies = Cookies.from_pickle(cookies_pkl)
+                if isinstance(yt_cookies, Cookies):
+                    hours_old = (now - yt_cookies.creation_time).seconds / 3600
+                    if hours_old < _COOKIE_REFRESH_HOURS:
+                        # save the cookies to the new location
+                        yt_cookies.save(cookies_pkl)
+                        yt_cookies.save(cookies_txt)
+                        return yt_cookies
+                else:
+                    logger.warning("Invalid cookies found at %s", cookies_pkl)
+            except Exception as e:
+                logger.error("Error loading cookies from %s: %s", cookies_pkl, e)
         # case 3: we have no cookies, or they are expired, or they are the wrong type
-        yt_cookies = Cookies.from_browser(source)
-        yt_cookies.save(cookies_pkl)
-        yt_cookies.save(cookies_txt)
+        yt_cookies = Cookies.from_browser(source, save=True)
         return yt_cookies
 
 
@@ -177,19 +189,23 @@ class Cookies:
         return get_or_refresh_cookies(source=source, cookies=cookies)
 
     @staticmethod
-    def from_browser(source: Source) -> "Cookies":
+    def from_browser(source: Source, save=True) -> "Cookies":
         url: str = _get_platform_homepage_url(source)
         data = _get_cookies_from_browser(url=url)
-        return Cookies(source=source, data=data)
+        out = Cookies(source=source, data=data)
+        if save:
+            out.save(out.path_pkl)
+            out.save(out.path_txt)
+        return out
 
     def __init__(self, source: Source, data: list[dict]) -> None:
         self.version = "1"
         self.data = data
         self.source = source
-        pkl, txt, lock = _get_cookie_paths(source)
-        self.path_pkl = pkl
-        self.path_txt = txt
-        self.path_lock = lock
+        path: CookiePaths = get_cookie_paths(source)
+        self.path_pkl = path.pkl
+        self.path_txt = path.txt
+        self.path_lock = path.lck
         self.creation_time = datetime.now()
 
     @property
@@ -215,8 +231,10 @@ class Cookies:
         parent = out_file.parent
         parent.mkdir(parents=True, exist_ok=True)
         if suffix == ".pkl":
+            logger.debug("Saving cookies to %s", out_file)
             self.to_pickle(out_file)
         elif suffix == ".txt":
+            logger.debug("Saving cookies to %s", out_file)
             self.write_cookies_txt(out_file)
         else:
             raise ValueError(f"Unsupported file extension: {suffix}")

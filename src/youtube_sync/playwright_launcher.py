@@ -26,7 +26,11 @@ def install_playwright() -> None:
         global INSTALLED  # pylint: disable=global-statement
         if INSTALLED:
             return
-        rtn = os.system("playwright install")
+        # rtn = os.system("playwright install")
+        # if rtn != 0:
+        #     raise OSError("Failed to install Playwright.")
+        # change this to only install chromium
+        rtn = os.system("playwright install chromium")
         if rtn != 0:
             raise OSError("Failed to install Playwright.")
         INSTALLED = True
