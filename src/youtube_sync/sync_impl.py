@@ -13,21 +13,17 @@ from youtube_sync.types import Source, VidEntry
 class BaseSync(ABC):
     """Abstract base class defining the interface for YouTube synchronization."""
 
-    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        self.yt_dlp_uses_docker = yt_dlp_uses_docker
+    def __init__(self, library: Library):
         self.lib: Library = library
 
     def library(self) -> Library:
         """Return the library object."""
         return self.lib
 
-    def download(
-        self, download_limit: int | None, yt_dlp_uses_docker: bool | None
-    ) -> None:
-        """Download videos with optional limit and docker configuration."""
-        yt_dlp_uses_docker = bool(yt_dlp_uses_docker)
+    def download(self, download_limit: int | None) -> None:
+        """Download videos with optional limit."""
         self.lib.download_missing(
-            download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
+            download_limit=download_limit,
         )
 
     def source(self) -> Source:
@@ -44,8 +40,8 @@ class BaseSync(ABC):
 
 # BaseSync implementation that only needs the channel url conversion function.
 class GenericSyncImpl(BaseSync):
-    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        super().__init__(library, yt_dlp_uses_docker)
+    def __init__(self, library: Library):
+        super().__init__(library)
 
     @abstractmethod
     def channel_source(self) -> Source:
@@ -81,24 +77,24 @@ class GenericSyncImpl(BaseSync):
 
 
 class RumbleSyncImpl(GenericSyncImpl):
-    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        super().__init__(library, yt_dlp_uses_docker)
+    def __init__(self, library: Library):
+        super().__init__(library)
 
     def channel_source(self) -> Source:
         return Source.RUMBLE
 
 
 class YouTubeSyncImpl(GenericSyncImpl):
-    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        super().__init__(library, yt_dlp_uses_docker)
+    def __init__(self, library: Library):
+        super().__init__(library)
 
     def channel_source(self) -> Source:
         return Source.YOUTUBE
 
 
 class BrighteonSyncImpl(GenericSyncImpl):
-    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
-        super().__init__(library, yt_dlp_uses_docker)
+    def __init__(self, library: Library):
+        super().__init__(library)
 
     def channel_source(self) -> Source:
         return Source.BRIGHTEON

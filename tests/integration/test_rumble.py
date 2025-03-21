@@ -13,7 +13,6 @@ RUMBLE_PLANDEMIC = Args(
     skip_download=False,
     download_limit=1,
     skip_scan=False,
-    yt_dlp_uses_docker=False,
 )
 
 if __name__ == "__main__":

@@ -236,20 +236,17 @@ class Library:
     def download_missing(
         self,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool,
         max_concurrent_downloads: int = 1,
     ) -> None:
         """Download the missing files using thread pools.
 
         Args:
             download_limit: Maximum number of files to download or None for unlimited
-            yt_dlp_uses_docker: Whether to use Docker for yt-dlp
             max_concurrent_downloads: Maximum number of concurrent downloads
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
         from youtube_sync.ytdlp import check_keyboard_interrupt, set_keyboard_interrupt
 
-        assert yt_dlp_uses_docker is False, "Docker not supported yet."
         # Create thread pools with appropriate sizes
         download_pool = ThreadPoolExecutor(
             max_workers=max_concurrent_downloads, thread_name_prefix="download"

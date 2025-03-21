@@ -15,7 +15,6 @@ class YouTubeSync:
         source: Source = Source.YOUTUBE,
         library_path: Path | None = None,
         channel_url: str | None = None,
-        yt_dlp_uses_docker: bool = False,
     ) -> None:
         library = Library.get_or_create(
             channel_name=channel_name,
@@ -28,7 +27,6 @@ class YouTubeSync:
         self.api: BaseSync = create(
             source=source,
             library=library,
-            yt_dlp_uses_docker=yt_dlp_uses_docker,
         )
 
     @property
@@ -70,21 +68,17 @@ class YouTubeSync:
     def download(
         self,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool | None = None,
     ) -> None:
-        self.api.download(
-            download_limit=download_limit, yt_dlp_uses_docker=yt_dlp_uses_docker
-        )
+        self.api.download(download_limit=download_limit)
 
     def sync(
         self,
         limit_scan: int,
         download_limit: int | None,
-        yt_dlp_uses_docker: bool | None = None,
     ) -> None:
         vids: list[VidEntry] = self.scan_for_vids(limit_scan)
         self.library.merge(vids, save=True)
-        self.download(download_limit, yt_dlp_uses_docker)
+        self.download(download_limit)
 
 
 __all__ = ["YouTubeSync", "update_yt_dlp", "Source", "Library", "VidEntry"]

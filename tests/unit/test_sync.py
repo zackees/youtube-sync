@@ -27,7 +27,7 @@ class SyncTester(unittest.TestCase):
         yt.scan_for_vids(limit_scan=limit_scan)
         all_downloaded = yt.find_vids_already_downloaded()
         if len(all_downloaded) < download_limit:
-            yt.download(download_limit, yt_dlp_uses_docker=False)
+            yt.download(download_limit)
         total_downloaded = yt.find_vids_already_downloaded()
         self.assertGreaterEqual(len(total_downloaded), download_limit)
         print("Done")

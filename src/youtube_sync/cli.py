@@ -29,7 +29,6 @@ class Args:
     skip_download: bool
     download_limit: int
     skip_scan: bool
-    yt_dlp_uses_docker: bool
 
     def __post_init__(self) -> None:
         # check types
@@ -39,7 +38,6 @@ class Args:
         _check_type(self.skip_download, bool)
         _check_type(self.download_limit, int)
         _check_type(self.skip_scan, bool)
-        _check_type(self.yt_dlp_uses_docker, bool)
 
 
 def parse_args() -> Args:
@@ -75,11 +73,7 @@ def parse_args() -> Args:
         action="store_true",
         help="Skip the update of the library.json file",
     )
-    parser.add_argument(
-        "--yt-dlp-uses-docker",
-        action="store_true",
-        help="Use docker to run yt-dlp",
-    )
+
     tmp = parser.parse_args()
     args = Args(
         channel_name=tmp.channel_name,
@@ -88,7 +82,6 @@ def parse_args() -> Args:
         skip_download=tmp.skip_download,
         download_limit=tmp.download_limit,
         skip_scan=tmp.skip_scan,
-        yt_dlp_uses_docker=tmp.yt_dlp_uses_docker,
     )
     return args
 
@@ -100,7 +93,6 @@ def main() -> None:
         channel_name=args.channel_name,
         media_output=args.output,
         source=Source.YOUTUBE,
-        yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
 
     if not args.skip_scan:

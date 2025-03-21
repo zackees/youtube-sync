@@ -28,7 +28,6 @@ class Args:
     skip_download: bool
     download_limit: int
     skip_scan: bool
-    yt_dlp_uses_docker: bool
 
     def get_out_path(self) -> Path:
         output = TMP_DIR / self.channel_name / "youtube"
@@ -42,7 +41,6 @@ def integration_test(args: Args) -> None:
         channel_name=args.channel_name,
         media_output=args.get_out_path(),
         source=args.source,
-        yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
 
     if not args.skip_scan:
