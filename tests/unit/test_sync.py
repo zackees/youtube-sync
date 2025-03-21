@@ -24,7 +24,7 @@ class SyncTester(unittest.TestCase):
         yt = YouTubeSync(
             channel_name=channel_name, media_output=media_output, source=Source.YOUTUBE
         )
-        yt.scan_for_vids(limit_scan=limit_scan)
+        yt.scan_for_vids(limit=limit_scan)
         all_downloaded = yt.find_vids_already_downloaded()
         if len(all_downloaded) < download_limit:
             yt.download(download_limit)
