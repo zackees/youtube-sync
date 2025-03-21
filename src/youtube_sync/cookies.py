@@ -70,19 +70,25 @@ def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
         return driver.get_cookies()
 
 
-# def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
-#     from playwright.sync_api import sync_playwright
-#     with sync_playwright() as p:
-#         browser = p.chromium.launch()
-#         page = browser.new_page()
-#         page.goto(url)
-#         cookies = page.context.cookies()
-#         browser.close()
-#         return cookies
+def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
+    from playwright.sync_api import sync_playwright
+
+    out: list[dict] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.goto(url)
+        cookies = page.context.cookies()
+        # convert to list of dicts
+        out = [dict(c) for c in cookies]
+        browser.close()
+        return out
 
 
 def _get_cookies_from_browser(url: str) -> list[dict]:
     return _get_cookies_from_browser_using_webdriver(url=url)
+    # return _get_cookies_from_browser_using_playwright(url=url)
 
 
 def _get_cookie_paths(source: Source) -> tuple[Path, Path, Path]:
