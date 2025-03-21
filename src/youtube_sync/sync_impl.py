@@ -20,10 +20,10 @@ class BaseSync(ABC):
         """Return the library object."""
         return self.lib
 
-    def download(self, download_limit: int | None) -> None:
+    def download(self, limit: int | None) -> None:
         """Download videos with optional limit."""
         self.lib.download_missing(
-            download_limit=download_limit,
+            limit=limit,
         )
 
     def source(self) -> Source:

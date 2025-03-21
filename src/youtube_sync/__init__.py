@@ -69,16 +69,16 @@ class YouTubeSync:
 
     def download(
         self,
-        download_limit: int | None,
+        limit: int | None,
     ) -> None:
-        self.api.download(download_limit=download_limit)
+        self.api.download(limit=limit)
 
     def sync(
         self,
-        limit_scan: int,
+        scan_limit: int,
         download_limit: int | None,
     ) -> None:
-        vids: list[VidEntry] = self.scan_for_vids(limit_scan)
+        vids: list[VidEntry] = self.scan_for_vids(scan_limit)
         self.library.merge(vids, save=True)
         self.download(download_limit)
 

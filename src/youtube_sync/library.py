@@ -235,13 +235,13 @@ class Library:
 
     def download_missing(
         self,
-        download_limit: int | None,
+        limit: int | None,
         max_concurrent_downloads: int = 1,
     ) -> None:
         """Download the missing files using thread pools.
 
         Args:
-            download_limit: Maximum number of files to download or None for unlimited
+            limit: Maximum number of files to download or None for unlimited
             max_concurrent_downloads: Maximum number of concurrent downloads
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
@@ -260,7 +260,7 @@ class Library:
                     print("Detected previous keyboard interrupt. Aborting downloads.")
                     break
 
-                if (download_limit is not None) and (download_count >= download_limit):
+                if (limit is not None) and (download_count >= limit):
                     break
 
                 # Find missing downloads
@@ -269,9 +269,7 @@ class Library:
                     break
 
                 # Determine how many to download in this batch
-                remaining_limit = (
-                    None if download_limit is None else download_limit - download_count
-                )
+                remaining_limit = None if limit is None else limit - download_count
                 batch_size = (
                     len(missing_downloads)
                     if remaining_limit is None
