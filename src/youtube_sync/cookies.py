@@ -71,18 +71,17 @@ def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
 
 
 def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
-    from playwright.sync_api import sync_playwright
+    from .playwright_launcher import Page, launch_playwright, set_headless
 
+    set_headless(True)
     out: list[dict] = []
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+    page: Page
+    with launch_playwright() as (page, _):
         page.goto(url)
         cookies = page.context.cookies()
         # convert to list of dicts
         out = [dict(c) for c in cookies]
-        browser.close()
         return out
 
 
