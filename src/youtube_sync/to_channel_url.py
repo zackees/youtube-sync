@@ -5,6 +5,8 @@
 
 from youtube_sync.library_data import Source
 
+# f"https://www.brighteon.com/channels/{channel_name}"
+
 
 def to_channel_url(source: Source, channel_name: str) -> str:
     from .rumble.rumble_extra import to_channel_url as to_channel_url_rumble

@@ -13,7 +13,7 @@ from youtube_sync.library import VidEntry
 
 # Set up module logger
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 
 
 def _json_to_vid_entry(data: dict) -> VidEntry:
@@ -60,6 +60,7 @@ def scan_for_vids(
     assert stdout is not None
     # read the output
     out: list[VidEntry] = []
+    killed = False
     for line_bytes in stdout:
         line = line_bytes.decode("utf-8")
         data = json_util.load_dict(line)
@@ -71,6 +72,7 @@ def scan_for_vids(
             logger.debug(
                 f"Breaking out of loop because {vid} is already in the library"
             )
+            killed = True
             popen.kill()
             break
         out.append(vid)
@@ -83,7 +85,8 @@ def scan_for_vids(
         if rtn < 0 or rtn > 1000:  # win32 is much higher than 1000
             raise KeyboardInterrupt(f"yt-dlp failed with return code {rtn}")
         else:
-            warnings.warn(f"error on yt-dlp failed with return code {rtn}")
+            if not killed:
+                warnings.warn(f"error on yt-dlp failed with return code {rtn}")
     return out
 
 

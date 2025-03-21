@@ -35,7 +35,9 @@ class BaseSync(ABC):
         return self.lib.source
 
     @abstractmethod
-    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
+    def scan_for_vids(
+        self, limit_scroll_pages: int | None, stop_on_duplicate_vids: bool
+    ) -> list[VidEntry]:
         """Scan for videos with optional limit on scroll pages."""
         pass
 
@@ -56,12 +58,17 @@ class GenericSyncImpl(BaseSync):
         out = to_channel_url(source=source, channel_name=channel_name)
         return out
 
-    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
+    def scan_for_vids(
+        self, limit_scroll_pages: int | None, stop_on_duplicate_vids: bool
+    ) -> list[VidEntry]:
         from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
 
         channel_name = self.lib.channel_name
         channel_url = self.to_channel_url(channel_name)
-        stored_vids = self.lib.load()
+        if stop_on_duplicate_vids:
+            stored_vids = self.lib.load()
+        else:
+            stored_vids = []
         full_scan = limit_scroll_pages is None
         limit = limit_scroll_pages if limit_scroll_pages is not None else -1
         out: list[VidEntry] = scan_for_vids(

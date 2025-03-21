@@ -13,6 +13,10 @@ HERE = Path(__file__).parent
 PROJECT_ROOT = HERE.parent.parent
 TMP_DIR = PROJECT_ROOT / "tmp"
 
+# def set_global_logging_level(level: int) -> None:
+# set_global_logging_level("DEBUG")
+# set_global_logging_level(logging.DEBUG)
+
 
 @dataclass
 class Args:

@@ -49,8 +49,12 @@ class YouTubeSync:
         out = self.library.known_vids(load=refresh)
         return out
 
-    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
-        out: list[VidEntry] = self.api.scan_for_vids(limit_scroll_pages)
+    def scan_for_vids(
+        self, limit_scroll_pages: int | None, stop_on_duplicate_vids=False
+    ) -> list[VidEntry]:
+        out: list[VidEntry] = self.api.scan_for_vids(
+            limit_scroll_pages, stop_on_duplicate_vids
+        )
         self.library.merge(out, save=True)
         return out
 
