@@ -15,6 +15,7 @@ from appdirs import user_data_dir
 from filelock import FileLock
 
 from youtube_sync.library_data import LibraryData, Source
+from youtube_sync.to_channel_ur import to_channel_url
 from youtube_sync.types import VidEntry
 from youtube_sync.ytdlp import YtDlp
 
@@ -26,19 +27,6 @@ def _get_library_json_lock_path() -> str:
 
 
 _FILE_LOCK = FileLock(_get_library_json_lock_path())
-
-
-def _to_channel_url(source: Source, channel_name: str) -> str:
-    from .rumble.rumble_extra import to_channel_url as to_channel_url_rumble
-    from .youtube.youtube import to_channel_url as to_channel_url_youtube
-
-    if source == Source.YOUTUBE:
-        return to_channel_url_youtube(channel_name)
-    elif source == Source.RUMBLE:
-        return to_channel_url_rumble(channel_name)
-    elif source == Source.BRIGHTEON:
-        return f"https://www.brighteon.com/channels/{channel_name}"
-    raise ValueError(f"Unknown source: {source}")
 
 
 def _find_missing_downloads(
@@ -68,7 +56,7 @@ def _make_library(
     source: Source,
     library_path: Path,
 ) -> "Library":
-    url = channel_url or _to_channel_url(source=source, channel_name=channel_name)
+    url = channel_url or to_channel_url(source=source, channel_name=channel_name)
     if library_path.exists():
         raise FileExistsError(f"Library file already exists: {library_path}")
     library = Library(
