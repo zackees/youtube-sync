@@ -74,6 +74,7 @@ def scan_for_vids(
             killed = True
 
     vid: VidEntry | None = None
+    max_errors = 100
     for line_bytes in stdout:
         line: str | None = None
         try:
@@ -83,7 +84,17 @@ def scan_for_vids(
         except Exception as e:
             if isinstance(line, str):
                 logger.error("Error parsing line: %s", line)
+                if "try again later" in line:
+                    logger.error("Breaking out of loop because of 'try again later'")
+                    kill()
+                    break
             logger.error("Error: %s", e)
+            max_errors -= 1
+            if max_errors <= 0:
+                logger.error("Too many errors, breaking out of loop")
+                kill()
+                break
+
             continue
         assert isinstance(vid, VidEntry)
         logger.debug("Parsed video: %s", vid)
