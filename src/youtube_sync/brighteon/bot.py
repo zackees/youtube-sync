@@ -4,13 +4,8 @@
 Scrapes the brighteon website for video urls and downloads them.
 """
 
-import logging
 
 from youtube_sync.library import VidEntry
-
-# Set up module logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.FATAL)
 
 
 def scan_for_vids(
