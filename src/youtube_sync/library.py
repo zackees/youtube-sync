@@ -16,7 +16,7 @@ from filelock import FileLock
 
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
-from youtube_sync.types import VidEntry
+from youtube_sync.vid_entry import VidEntry
 from youtube_sync.ytdlp import YtDlp
 
 

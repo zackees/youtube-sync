@@ -6,7 +6,8 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from youtube_sync.types import Source, VidEntry
+from youtube_sync.types import Source
+from youtube_sync.vid_entry import VidEntry
 
 
 @dataclass
