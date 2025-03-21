@@ -201,6 +201,12 @@ class Cookies:
             out.save(out.path_txt)
         return out
 
+    def refresh(self) -> None:
+        new_self = Cookies.get_or_refresh(source=self.source, cookies=self)
+        if new_self != self:
+            self.data = new_self.data
+            self.creation_time = new_self.creation_time
+
     def __init__(self, source: Source, data: list[dict]) -> None:
         self.version = "1"
         self.data = data

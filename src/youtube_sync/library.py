@@ -262,6 +262,9 @@ class Library:
                     break
 
                 # Find missing downloads
+                print(
+                    "\n#######################\n# Scanning for missing files\n###################"
+                )
                 missing_downloads = self.find_missing_downloads()
                 if not missing_downloads:
                     break
@@ -295,6 +298,9 @@ class Library:
                     futures = self.ytdlp.download_mp3s(
                         downloads=downloads_to_process, download_pool=download_pool
                     )
+                    if not futures:
+                        print("No downloads to process. Exiting.")
+                        break
 
                     # Process results as they complete
                     for i, future in enumerate(futures):
