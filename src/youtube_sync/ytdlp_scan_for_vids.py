@@ -58,10 +58,27 @@ def scan_for_vids(
     # read the output
     out: list[VidEntry] = []
     killed = False
+
+    def kill() -> None:
+        """Kill the process."""
+        nonlocal killed
+        if not killed:
+            popen.kill()
+            killed = True
+
+    vid: VidEntry | None = None
     for line_bytes in stdout:
-        line = line_bytes.decode("utf-8")
-        data = json_util.load_dict(line)
-        vid: VidEntry = _json_to_vid_entry(data)
+        line: str | None = None
+        try:
+            line = line_bytes.decode("utf-8")
+            data = json_util.load_dict(line)
+            vid = _json_to_vid_entry(data)
+        except Exception as e:
+            if isinstance(line, str):
+                logger.error("Error parsing line: %s", line)
+            logger.error("Error: %s", e)
+            continue
+        assert isinstance(vid, VidEntry)
         logger.debug("Parsed video: %s", vid)
         # print(vid)
         logger.debug(vid)
@@ -69,8 +86,7 @@ def scan_for_vids(
             logger.debug(
                 f"Breaking out of loop because {vid} is already in the library"
             )
-            killed = True
-            popen.kill()
+            kill()
             break
         out.append(vid)
     # wait for the process to finish
