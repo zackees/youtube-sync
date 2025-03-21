@@ -324,7 +324,7 @@ def yt_dlp_download_best_audio(
         yt_exe.as_posix(),
         url,
         "-f",
-        "bestaudio",  # Select best audio format
+        "bestaudio/worst",  # Select best audio format
         "--no-playlist",  # Don't download playlists
         "--output",
         f"{temp_file.as_posix()}.%(ext)s",  # Output filename pattern

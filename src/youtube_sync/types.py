@@ -1,5 +1,4 @@
 import json
-from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -54,15 +53,8 @@ class Source(Enum):
             return False
 
 
-@dataclass
 class VidEntry:
     """Minimal information of a video on a channel."""
-
-    url: str
-    title: str
-    file_path: str
-    date: datetime | None
-    error: bool = False
 
     def __init__(
         self,
@@ -71,10 +63,12 @@ class VidEntry:
         file_path: str | None = None,
         date: datetime | None = None,
         error=False,
+        data: dict | None = None,
     ) -> None:
         self.url = url
         self.title = title
         self.date = date
+        self.data = data
         if file_path is None:
             self.file_path = clean_filename(f"{title}.mp3")
         else:

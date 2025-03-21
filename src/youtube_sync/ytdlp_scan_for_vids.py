@@ -20,7 +20,7 @@ def _json_to_vid_entry(data: dict) -> VidEntry:
     """Create a VidEntry from a dictionary."""
     title = data["title"]
     url = data["webpage_url"]
-    return VidEntry(title=title, url=url)
+    return VidEntry(title=title, url=url, data=data)
 
 
 def scan_for_vids(
