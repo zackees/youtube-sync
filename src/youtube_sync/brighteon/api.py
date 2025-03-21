@@ -15,7 +15,7 @@ class BrighteonSyncImpl(BaseSync):
         super().__init__(library, yt_dlp_uses_docker)
 
     def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
-        from youtube_sync.brighteon.bot import scan_for_vids
+        from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
 
         channel_name = self.lib.channel_name
         channel_url = f"https://www.brighteon.com/channels/{channel_name}"
