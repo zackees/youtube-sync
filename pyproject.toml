@@ -13,8 +13,6 @@ classifiers = ["Programming Language :: Python :: 3"]
 
 dependencies = [
     "filelock",
-    "pytest-playwright",
-    "beautifulsoup4>=4.13.3",
     "ytdlp-brighteon>=2023.10.3",
     "docker-run-cmd>=1.0.13",
     "Pillow",

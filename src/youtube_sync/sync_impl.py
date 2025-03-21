@@ -78,3 +78,27 @@ class GenericSyncImpl(BaseSync):
             full_scan=full_scan,
         )
         return out
+
+
+class RumbleSyncImpl(GenericSyncImpl):
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
+        super().__init__(library, yt_dlp_uses_docker)
+
+    def channel_source(self) -> Source:
+        return Source.RUMBLE
+
+
+class YouTubeSyncImpl(GenericSyncImpl):
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
+        super().__init__(library, yt_dlp_uses_docker)
+
+    def channel_source(self) -> Source:
+        return Source.YOUTUBE
+
+
+class BrighteonSyncImpl(GenericSyncImpl):
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
+        super().__init__(library, yt_dlp_uses_docker)
+
+    def channel_source(self) -> Source:
+        return Source.BRIGHTEON

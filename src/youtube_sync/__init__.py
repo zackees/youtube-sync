@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from .base_sync import BaseSync
 from .create import create
 from .downloadmp3 import update_yt_dlp
 from .library import Library
+from .sync_impl import BaseSync
 from .types import Source, VidEntry
 
 

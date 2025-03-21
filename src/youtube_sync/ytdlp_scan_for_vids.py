@@ -38,9 +38,6 @@ def scan_for_vids(
 
     stored_vids_set: set[VidEntry] = set(stored_vids)
 
-    # use yt-dlp --skip-download --playlist-end 1 --print-json https://www.brighteon.com/channels/hrreport
-    # to do the scanning instead.
-    # We are moving away from playwright because web scrapping sucks.
     cmd_list: list[str] = [
         "yt-dlp",
         "--skip-download",
