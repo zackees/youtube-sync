@@ -8,6 +8,7 @@ import sys
 import warnings
 from pathlib import Path
 
+from youtube_sync.types import Source
 from youtube_sync.ytdlp import YtDlp, yt_dlp_exe
 
 
@@ -55,7 +56,7 @@ def unit_test() -> None:
     """Run the tests."""
     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
     outmp3 = Path("tmp.mp3")
-    download_mp3(url=url, outmp3=outmp3, ytdlp=YtDlp())
+    download_mp3(url=url, outmp3=outmp3, ytdlp=YtDlp(source=Source.YOUTUBE))
     print(f"Downloaded {url} as {outmp3}")
     os.remove(outmp3)
 

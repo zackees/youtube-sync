@@ -69,9 +69,6 @@ def _make_library(
     return library
 
 
-_YT_DLP = YtDlp()
-
-
 class Library:
     """Represents the library"""
 
@@ -85,7 +82,7 @@ class Library:
         if isinstance(source, str):
             source = Source.from_str(source)
         self.source = source
-        self.ytdlp = _YT_DLP
+        self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
         self.channel_name = channel_name
         self.json_path = json_path

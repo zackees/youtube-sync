@@ -6,6 +6,7 @@ Command entry point.
 
 from abc import ABC, abstractmethod
 
+from youtube_sync.cookies import Cookies
 from youtube_sync.library import Library
 from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
@@ -43,6 +44,7 @@ class BaseSync(ABC):
 class GenericSyncImpl(BaseSync):
     def __init__(self, library: Library):
         super().__init__(library)
+        self.cookies: Cookies | None = None
 
     @abstractmethod
     def channel_source(self) -> Source:
@@ -56,9 +58,17 @@ class GenericSyncImpl(BaseSync):
         return out
 
     def scan_for_vids(
-        self, limit: int | None, stop_on_duplicate_vids: bool
+        self,
+        limit: int | None,
+        stop_on_duplicate_vids: bool,
     ) -> list[VidEntry]:
+        # get_cookies
+
         from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
+
+        self.cookies = Cookies.get_or_refresh(
+            source=self.channel_source(), cookies=self.cookies
+        )
 
         channel_name = self.lib.channel_name
         channel_url = self.to_channel_url(channel_name)
@@ -73,6 +83,7 @@ class GenericSyncImpl(BaseSync):
             limit=limit,
             stored_vids=stored_vids,
             full_scan=full_scan,
+            cookies_txt=self.cookies.path_txt,
         )
         return out
 

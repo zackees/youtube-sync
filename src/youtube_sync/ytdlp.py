@@ -9,12 +9,12 @@ import tempfile
 import time
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from filelock import FileLock
 from static_ffmpeg import add_paths
+
+from youtube_sync.types import Source
 
 from .cookies import Cookies
 from .types import ChannelId, VideoId
@@ -62,7 +62,6 @@ def check_keyboard_interrupt():
 # https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
 
 
-_COOKIE_REFRESH_HOURS = 2
 _FFMPEG_PATH_ADDED = False
 
 
@@ -567,93 +566,52 @@ def _is_youtube(url: str) -> bool:
     return "youtube.com" in url or "youtu.be" in url
 
 
-_YOUTUBE_COOKIES_LOCK_PATH = Path("cookies") / "youtube" / "cookies.lock"
-_YOUTUBE_COOKIES_LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
-_YOUTUBE_COOKIES_LOCK = FileLock(_YOUTUBE_COOKIES_LOCK_PATH)
-
-
-def _get_or_refresh_cookies(
-    url: str,
-    cookies_pkl: Path,
-    cookie_txt: Path,
-    refresh_time: int,
-    cookies: Cookies | None,
-) -> Cookies:
-    assert cookies_pkl.suffix == ".pkl"
-    assert cookie_txt.suffix == ".txt"
-    with _YOUTUBE_COOKIES_LOCK:
-        now = datetime.now()
-        if cookies is not None:
-            expire_time = cookies.creation_time + timedelta(hours=refresh_time)
-            if now < expire_time:
-                return cookies
-        elif cookies_pkl.exists() and cookie_txt.exists():
-            yt_cookies = Cookies.load(cookies_pkl)
-            hours_old = (
-                yt_cookies.creation_time - yt_cookies.creation_time
-            ).seconds / 3600
-            if hours_old < refresh_time:
-                return yt_cookies
-        # refresh
-        yt_cookies = Cookies.from_browser(url)
-        yt_cookies.save(cookies_pkl)
-        yt_cookies.save(cookie_txt)
-        return yt_cookies
-
-
 class YtDlp:
 
-    def __init__(self) -> None:
+    def __init__(self, source: Source) -> None:
+        self.source: Source = source
         yt_exe = yt_dlp_exe()
         if isinstance(yt_exe, Exception):
             raise yt_exe
         self.yt_exe: Path = yt_exe
-        self.youtube_cookies: Cookies | None = None
-        self.youtube_cookies_txt: Path = Path("cookies") / "youtube" / "cookies.txt"
-        self.youtube_cookies_pkl: Path = Path("cookies") / "youtube" / "cookies.pkl"
+        self.cookies: Cookies | None = None
 
-    def _extract_cookies_if_needed(self, url: str) -> Path | None:
-        if not _is_youtube(url):
-            return None
-        self.youtube_cookies = _get_or_refresh_cookies(
-            url="https://www.youtube.com",
-            cookies_pkl=self.youtube_cookies_pkl,
-            cookie_txt=self.youtube_cookies_txt,
-            refresh_time=_COOKIE_REFRESH_HOURS,
-            cookies=self.youtube_cookies,
-        )
-        return self.youtube_cookies_txt
+    def _extract_cookies_if_needed(self) -> Path | None:
+        if self.source == Source.YOUTUBE:
+            self.cookies = Cookies.load(self.source)
+            return self.cookies.path_txt
+        return None
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
-        cookies = self._extract_cookies_if_needed(video_url)
+        cookies_txt = self._extract_cookies_if_needed()
         return _fetch_channel_info_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
-        cookies = self._extract_cookies_if_needed(video_url)
+        cookies_txt = self._extract_cookies_if_needed()
         return _fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
-            cookies_txt=cookies,
+            cookies_txt=cookies_txt,
         )
 
     def fetch_channel_url(self, video_url: str) -> str:
-        cookies = self._extract_cookies_if_needed(video_url)
+        cookies_txt = self._extract_cookies_if_needed()
         return _fetch_channel_url_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
-        cookies = self._extract_cookies_if_needed(video_url)
+        cookies_txt = self._extract_cookies_if_needed()
         return _fetch_channel_id_ytdlp(
-            video_url, yt_exe=self.yt_exe, cookies_txt=cookies
+            video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
-        cookies = self._extract_cookies_if_needed(channel_url)
+        cookies_txt = self._extract_cookies_if_needed()
         return _fetch_videos_from_channel(
-            channel_url, yt_exe=self.yt_exe, cookies_txt=cookies
+            channel_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def _process_conversion(
@@ -712,7 +670,7 @@ class YtDlp:
             result_future.add_done_callback(lambda _: on_done_task)
 
             # Extract cookies if needed
-            cookies = self._extract_cookies_if_needed(url)
+            cookies = self._extract_cookies_if_needed()
 
             # Submit the entire download and conversion process as a single task
             _FUTURE_RESOLVER_POOL.submit(

@@ -1,9 +1,15 @@
 import pickle
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator
 
+from filelock import FileLock
 from open_webdriver import open_webdriver  # type: ignore
+
+from .types import Source
+
+_COOKIE_REFRESH_HOURS = 2
 
 
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
@@ -51,22 +57,127 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _get_cookies_from_browser(url: str) -> "Cookies":
+def _get_cookies_from_browser(url: str) -> list[dict]:
     with open_webdriver() as driver:
         # clear cookies
         driver.delete_all_cookies()
         driver.get(url)
-        return Cookies(driver.get_cookies())
+        return driver.get_cookies()
+
+
+def _get_cookie_paths(source: Source) -> tuple[Path, Path, Path]:
+    assert source == Source.YOUTUBE, f"Only YouTube is supported, got {source}"
+    cookies_pkl = Path("cookies") / "youtube" / "cookies.pkl"
+    cookie_txt = Path("cookies") / "youtube" / "cookies.txt"
+    cookies_lock = Path("cookies") / "youtube" / "cookies.lock"
+    return cookies_pkl, cookie_txt, cookies_lock
+
+
+def _get_platform_homepage_url(source: Source) -> str:
+    if source == Source.YOUTUBE:
+        return "https://www.youtube.com"
+    if source == Source.RUMBLE:
+        return "https://rumble.com"
+    if source == Source.BRIGHTEON:
+        return "https://www.brighteon.com"
+    raise ValueError(f"Unknown source: {source}")
+
+
+@dataclass
+class CookiePaths:
+    pkl: Path
+    txt: Path
+    lck: Path
+
+    @staticmethod
+    def create(source: Source) -> "CookiePaths":
+        base_path = Path("cookies") / source.value
+        out = CookiePaths(
+            pkl=base_path / "cookies.pkl",
+            txt=base_path / "cookies.txt",
+            lck=base_path / "cookies.lock",
+        )
+        return out
+
+
+_COOKIE_PATHS: dict[Source, CookiePaths] = {
+    Source.YOUTUBE: CookiePaths.create(Source.YOUTUBE),
+    Source.RUMBLE: CookiePaths.create(Source.RUMBLE),
+    Source.BRIGHTEON: CookiePaths.create(Source.BRIGHTEON),
+}
+
+
+def get_cookie_paths(source: Source) -> CookiePaths:
+    return _COOKIE_PATHS[source]
+
+
+def get_or_refresh_cookies(
+    source: Source,
+    cookies: "Cookies | None",
+) -> "Cookies":
+
+    paths = get_cookie_paths(source)
+
+    with FileLock(paths.lck):
+        now = datetime.now()
+        cookies_pkl = paths.pkl
+        cookies_txt = paths.txt
+        # case 1: we have cookies
+        if cookies is not None:
+            # and they are not expired
+            expire_time = cookies.creation_time + timedelta(hours=_COOKIE_REFRESH_HOURS)
+            if now < expire_time:
+                return cookies
+        # case 2: we have cookies on disk, but we must check to see that they are the right type.
+        if cookies_pkl.exists() and cookies_txt.exists():
+            yt_cookies = Cookies.from_pickle(cookies_pkl)
+            if isinstance(yt_cookies, Cookies):
+                hours_old = (now - yt_cookies.creation_time).seconds / 3600
+                if hours_old < _COOKIE_REFRESH_HOURS:
+                    return yt_cookies
+        # case 3: we have no cookies, or they are expired, or they are the wrong type
+        yt_cookies = Cookies.from_browser(source)
+        yt_cookies.save(cookies_pkl)
+        yt_cookies.save(cookies_txt)
+        return yt_cookies
 
 
 class Cookies:
 
     @staticmethod
-    def from_browser(url: str) -> "Cookies":
-        return _get_cookies_from_browser(url)
+    def get_or_refresh(source: Source, cookies: "Cookies | None") -> "Cookies":
 
-    def __init__(self, data: list[dict]) -> None:
+        return get_or_refresh_cookies(source=source, cookies=cookies)
+
+    @staticmethod
+    def global_pkl_path(source: Source) -> Path:
+        pkl, txt, lock = _get_cookie_paths(source)
+        return pkl
+
+    @staticmethod
+    def global_txt_path(source: Source) -> Path:
+        pkl, txt, lock = _get_cookie_paths(source)
+        return txt
+
+    @staticmethod
+    def global_lock_path(source: Source) -> Path:
+        pkl, txt, lock = _get_cookie_paths(source)
+        return lock
+
+    @staticmethod
+    def from_browser(source: Source) -> "Cookies":
+        url: str = _get_platform_homepage_url(source)
+        data = _get_cookies_from_browser(url=url)
+        return Cookies(source=source, data=data)
+
+    def __init__(self, source: Source, data: list[dict]) -> None:
+        self.version = "1"
         self.data = data
+        self.source = source
+        pkl, txt, lock = _get_cookie_paths(source)
+        self.path_pkl = pkl
+        self.path_txt = txt
+        self.path_lock = lock
         self.creation_time = datetime.now()
 
     @property
@@ -77,9 +188,9 @@ class Cookies:
         file_path.write_text(self.cookies_txt, encoding="utf-8")
 
     @staticmethod
-    def load(file_path: Path) -> "Cookies":
-        assert file_path.suffix == ".pkl"
-        return Cookies.from_pickle(file_path)
+    def load(source: Source) -> "Cookies":
+        cookies = Cookies.get_or_refresh(source=source, cookies=None)
+        return cookies
 
     def save(self, out_file: Path) -> None:
         # assert out_pickle_file.suffix == ".pkl"
@@ -118,7 +229,7 @@ class Cookies:
             file_path: Path where the pickle file will be saved
         """
         with open(file_path, "wb") as f:
-            pickle.dump(self.data, f)
+            pickle.dump(self, f)
 
     @staticmethod
     def from_pickle(file_path: Path) -> "Cookies":
@@ -136,5 +247,4 @@ class Cookies:
             pickle.UnpicklingError: If the file contains invalid pickle data
         """
         with open(file_path, "rb") as f:
-            data = pickle.load(f)
-        return Cookies(data)
+            return pickle.load(f)

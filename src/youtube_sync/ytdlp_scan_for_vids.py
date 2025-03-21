@@ -7,6 +7,7 @@ Scrapes the brighteon website for video urls and downloads them.
 import logging
 import subprocess
 import warnings
+from pathlib import Path
 
 from youtube_sync import json_util
 from youtube_sync.library import VidEntry
@@ -27,6 +28,7 @@ def scan_for_vids(
     channel_url: str,
     stored_vids: list[VidEntry],
     limit: int | None,
+    cookies_txt: Path | None,
     full_scan: bool | None = None,
 ) -> list[VidEntry]:
     """Scan for videos on the channel."""
@@ -43,6 +45,11 @@ def scan_for_vids(
         "--skip-download",
         "--print-json",
     ]
+
+    # Add cookies file if provided
+    if cookies_txt is not None:
+        cmd_list += ["--cookies", str(cookies_txt)]
+
     if limit is not None:
         cmd_list += ["--playlist-end", str(limit)]
     cmd_list += [channel_url]
@@ -111,6 +118,7 @@ def unit_test(limit=1) -> int:
         channel_url="https://www.brighteon.com/channels/hrreport",
         stored_vids=[],
         limit=limit,
+        cookies_txt=None,
     )
     print(vids)
     logger.info("Unit test completed")

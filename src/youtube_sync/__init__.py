@@ -13,7 +13,7 @@ class YouTubeSync:
         self,
         channel_name: str,
         media_output: Path,
-        source: Source = Source.YOUTUBE,
+        source: Source,
         library_path: Path | None = None,
         channel_url: str | None = None,
     ) -> None:
@@ -52,7 +52,8 @@ class YouTubeSync:
         self, limit: int | None, stop_on_duplicate_vids=False
     ) -> list[VidEntry]:
         out: list[VidEntry] = self.api.scan_for_vids(
-            limit=limit, stop_on_duplicate_vids=stop_on_duplicate_vids
+            limit=limit,
+            stop_on_duplicate_vids=stop_on_duplicate_vids,
         )
         self.library.merge(out, save=True)
         return out

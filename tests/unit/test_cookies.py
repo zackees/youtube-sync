@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from youtube_sync import Source
 from youtube_sync.cookies import Cookies
 
 
@@ -16,7 +17,7 @@ class CookiesTester(unittest.TestCase):
         """Test command line interface (CLI)."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
-            cookies = Cookies.from_browser("https://youtube.com")
+            cookies = Cookies.from_browser(source=Source.YOUTUBE)
             print(f"Found {len(cookies)} cookies.")
             for cookie in cookies:
                 print(cookie)
