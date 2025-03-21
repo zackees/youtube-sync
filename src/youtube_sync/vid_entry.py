@@ -1,8 +1,20 @@
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from youtube_sync.clean_filename import clean_filename
+
+_DBG_ENABLE_VID_DUMP = False
+
+
+def _dbg_vid_dump(data: dict | None) -> None:
+    if not _DBG_ENABLE_VID_DUMP:
+        return
+    assert data is not None
+
+    dbg_out_file = Path("sample.json")
+    dbg_out_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 class VidEntry:
@@ -17,6 +29,7 @@ class VidEntry:
         error=False,
         data: dict | None = None,
     ) -> None:
+        _dbg_vid_dump(data)
         self.url = url
         self.title = title
         self.date = date
