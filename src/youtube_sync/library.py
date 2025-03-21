@@ -88,7 +88,7 @@ class Library:
         self.ytdlp = _YT_DLP
         self.channel_url = channel_url
         self.channel_name = channel_name
-        self.lib_path = json_path
+        self.json_path = json_path
         self.out_dir = json_path.parent
         self.load()
         assert isinstance(self.libdata, LibraryData)
@@ -96,7 +96,7 @@ class Library:
     @property
     def path(self) -> Path:
         """Get the path."""
-        return self.lib_path
+        return self.json_path
 
     @staticmethod
     def create(
@@ -195,7 +195,7 @@ class Library:
         # self.libdata = _load_json(self.library_json_path)
         # return self.libdata.vids
         with _FILE_LOCK:
-            lib_or_err = LibraryData.from_json(self.lib_path)
+            lib_or_err = LibraryData.from_json(self.json_path)
         if isinstance(lib_or_err, FileNotFoundError):
             lib_or_err = self._empty_data()
             self.libdata = lib_or_err
@@ -219,10 +219,10 @@ class Library:
         data = self.libdata or self._empty_data()
         text = data.to_json_str()
         with _FILE_LOCK:
-            self.lib_path.parent.mkdir(parents=True, exist_ok=True)
-            if self.lib_path.exists() and not overwrite:
-                return FileExistsError(f"{self.lib_path} exists.")
-            self.lib_path.write_text(text, encoding="utf-8")
+            self.json_path.parent.mkdir(parents=True, exist_ok=True)
+            if self.json_path.exists() and not overwrite:
+                return FileExistsError(f"{self.json_path} exists.")
+            self.json_path.write_text(text, encoding="utf-8")
         return None
 
     def merge(self, vids: list[VidEntry], save: bool) -> None:
