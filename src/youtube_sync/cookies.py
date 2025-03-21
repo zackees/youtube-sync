@@ -62,12 +62,27 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _get_cookies_from_browser(url: str) -> list[dict]:
+def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
     with open_webdriver() as driver:
         # clear cookies
         driver.delete_all_cookies()
         driver.get(url)
         return driver.get_cookies()
+
+
+# def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
+#     from playwright.sync_api import sync_playwright
+#     with sync_playwright() as p:
+#         browser = p.chromium.launch()
+#         page = browser.new_page()
+#         page.goto(url)
+#         cookies = page.context.cookies()
+#         browser.close()
+#         return cookies
+
+
+def _get_cookies_from_browser(url: str) -> list[dict]:
+    return _get_cookies_from_browser_using_webdriver(url=url)
 
 
 def _get_cookie_paths(source: Source) -> tuple[Path, Path, Path]:
