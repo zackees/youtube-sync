@@ -25,7 +25,7 @@ class Args:
 
     channel_name: str
     output: Path
-    limit_scroll_pages: int
+    limit_scan: int
     skip_download: bool
     download_limit: int
     skip_scan: bool
@@ -35,7 +35,7 @@ class Args:
         # check types
         _check_type(self.channel_name, str)
         _check_type(self.output, Path)
-        _check_type(self.limit_scroll_pages, int)
+        _check_type(self.limit_scan, int)
         _check_type(self.skip_download, bool)
         _check_type(self.download_limit, int)
         _check_type(self.skip_scan, bool)
@@ -84,7 +84,7 @@ def parse_args() -> Args:
     args = Args(
         channel_name=tmp.channel_name,
         output=Path(tmp.output),
-        limit_scroll_pages=tmp.limit_scroll_pages,
+        limit_scan=tmp.limit_scan,
         skip_download=tmp.skip_download,
         download_limit=tmp.download_limit,
         skip_scan=tmp.skip_scan,
@@ -96,28 +96,15 @@ def parse_args() -> Args:
 def main() -> None:
     """Main function."""
     args = parse_args()
-    # youtube_sync(
-    #     channel_name=args.channel_name,
-    #     media_output=args.output,
-    #     limit_scroll_pages=args.limit_scroll_pages,
-    #     download=not args.skip_download,
-    #     download_limit=args.download_limit,
-    #     scan=not args.skip_scan,
-    #     yt_dlp_uses_docker=args.yt_dlp_uses_docker,
-    # )
     yt = YouTubeSync(
         channel_name=args.channel_name,
         media_output=args.output,
         source=Source.YOUTUBE,
-        # limit_scroll_pages=args.limit_scroll_pages,
-        # download=not args.skip_download,
-        # download_limit=args.download_limit,
-        # scan=not args.skip_scan,
         yt_dlp_uses_docker=args.yt_dlp_uses_docker,
     )
 
     if not args.skip_scan:
-        yt.scan_for_vids(args.limit_scroll_pages)
+        yt.scan_for_vids(args.limit_scan)
 
     if not args.skip_download:
         yt.download(args.download_limit)

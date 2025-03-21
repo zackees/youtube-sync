@@ -9,7 +9,7 @@ from youtube_sync import Source
 RUMBLE_PLANDEMIC = Args(
     source=Source.RUMBLE,
     channel_name="PlandemicSeriesOfficial",
-    limit_scroll_pages=1,
+    limit_scan=1,
     skip_download=False,
     download_limit=1,
     skip_scan=False,

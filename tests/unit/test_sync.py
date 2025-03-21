@@ -18,13 +18,13 @@ class SyncTester(unittest.TestCase):
     def test_simple(self) -> None:
         shutil.rmtree(TEST_DATA, ignore_errors=True)
         channel_name = "@silverguru"
-        limit_scroll_pages = 1
+        limit_scan = 1
         download_limit = 1
         media_output = TEST_DATA
         yt = YouTubeSync(
             channel_name=channel_name, media_output=media_output, source=Source.YOUTUBE
         )
-        yt.scan_for_vids(limit_scroll_pages=limit_scroll_pages)
+        yt.scan_for_vids(limit_scan=limit_scan)
         all_downloaded = yt.find_vids_already_downloaded()
         if len(all_downloaded) < download_limit:
             yt.download(download_limit, yt_dlp_uses_docker=False)

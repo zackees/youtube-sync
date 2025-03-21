@@ -50,11 +50,9 @@ class YouTubeSync:
         return out
 
     def scan_for_vids(
-        self, limit_scroll_pages: int | None, stop_on_duplicate_vids=False
+        self, limit_scan: int | None, stop_on_duplicate_vids=False
     ) -> list[VidEntry]:
-        out: list[VidEntry] = self.api.scan_for_vids(
-            limit_scroll_pages, stop_on_duplicate_vids
-        )
+        out: list[VidEntry] = self.api.scan_for_vids(limit_scan, stop_on_duplicate_vids)
         self.library.merge(out, save=True)
         return out
 
@@ -80,11 +78,11 @@ class YouTubeSync:
 
     def sync(
         self,
-        limit_scroll_pages: int,
+        limit_scan: int,
         download_limit: int | None,
         yt_dlp_uses_docker: bool | None = None,
     ) -> None:
-        vids: list[VidEntry] = self.scan_for_vids(limit_scroll_pages)
+        vids: list[VidEntry] = self.scan_for_vids(limit_scan)
         self.library.merge(vids, save=True)
         self.download(download_limit, yt_dlp_uses_docker)
 

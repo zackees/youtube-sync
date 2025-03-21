@@ -6,10 +6,18 @@
 from youtube_sync.fetch_html import fetch_html_using_curl as fetch_html
 from youtube_sync.library_data import Source
 
-# f"https://www.brighteon.com/channels/{channel_name}"
+
+def to_channel_url(source: Source, channel_name: str) -> str:
+    if source == Source.YOUTUBE:
+        return _to_channel_url_youtube(channel_name)
+    elif source == Source.RUMBLE:
+        return _to_channel_url_rumble(channel_name)
+    elif source == Source.BRIGHTEON:
+        return f"https://www.brighteon.com/channels/{channel_name}"
+    raise ValueError(f"Unknown source: {source}")
 
 
-def to_channel_url_youtube(channel: str) -> str:
+def _to_channel_url_youtube(channel: str) -> str:
     """Convert channel name to channel URL."""
     out = f"https://www.youtube.com/{channel}/videos"
     return out
@@ -27,7 +35,7 @@ def _get_channel_url_for_page(
     return base_url
 
 
-def to_channel_url_rumble(channel: str) -> str:
+def _to_channel_url_rumble(channel: str) -> str:
     test_url = _get_channel_url_for_page(
         channel=channel, page_num=1, is_user_channel=False
     )
@@ -41,13 +49,3 @@ def to_channel_url_rumble(channel: str) -> str:
     if fetch_response.ok:
         return test_url
     raise ValueError(f"Could not find channel or user {channel}")
-
-
-def to_channel_url(source: Source, channel_name: str) -> str:
-    if source == Source.YOUTUBE:
-        return to_channel_url_youtube(channel_name)
-    elif source == Source.RUMBLE:
-        return to_channel_url_rumble(channel_name)
-    elif source == Source.BRIGHTEON:
-        return f"https://www.brighteon.com/channels/{channel_name}"
-    raise ValueError(f"Unknown source: {source}")

@@ -24,7 +24,7 @@ class Args:
 
     source: Source
     channel_name: str
-    limit_scroll_pages: int
+    limit_scan: int
     skip_download: bool
     download_limit: int
     skip_scan: bool
@@ -46,7 +46,7 @@ def integration_test(args: Args) -> None:
     )
 
     if not args.skip_scan:
-        vids = yt.scan_for_vids(args.limit_scroll_pages)
+        vids = yt.scan_for_vids(args.limit_scan)
         if not vids:
             print("No new videos found.")
             raise SystemExit(1)

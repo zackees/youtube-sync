@@ -9,7 +9,7 @@ from youtube_sync import Source
 YOURTUBE_SILVER_GURU = Args(
     source=Source.YOUTUBE,
     channel_name="@silverguru",
-    limit_scroll_pages=1,
+    limit_scan=1,
     skip_download=False,
     download_limit=1,
     skip_scan=False,
