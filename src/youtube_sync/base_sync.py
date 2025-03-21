@@ -38,3 +38,29 @@ class BaseSync(ABC):
     def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         """Scan for videos with optional limit on scroll pages."""
         pass
+
+
+# BaseSync implementation that only needs the channel url conversion function.
+class GenericSyncImpl(BaseSync):
+    def __init__(self, library: Library, yt_dlp_uses_docker: bool = False):
+        super().__init__(library, yt_dlp_uses_docker)
+
+    @abstractmethod
+    def to_channel_url(self, channel_name: str) -> str:
+        pass
+
+    def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
+        from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
+
+        channel_name = self.lib.channel_name
+        channel_url = self.to_channel_url(channel_name)
+        stored_vids = self.lib.load()
+        full_scan = limit_scroll_pages is None
+        limit = limit_scroll_pages if limit_scroll_pages is not None else -1
+        out: list[VidEntry] = scan_for_vids(
+            channel_url=channel_url,
+            limit=limit,
+            stored_vids=stored_vids,
+            full_scan=full_scan,
+        )
+        return out
