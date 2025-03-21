@@ -40,8 +40,8 @@ class BaseSync(ABC):
         pass
 
 
-# BaseSync implementation that only needs the channel url conversion function.
-class GenericSyncImpl(BaseSync):
+# A generic implementation of the BaseSync interface using yt-dlp
+class YtDlpSync(BaseSync):
     def __init__(self, library: Library):
         super().__init__(library)
         self.cookies: Cookies | None = None
@@ -88,7 +88,7 @@ class GenericSyncImpl(BaseSync):
         return out
 
 
-class RumbleSyncImpl(GenericSyncImpl):
+class RumbleSyncImpl(YtDlpSync):
     def __init__(self, library: Library):
         super().__init__(library)
 
@@ -96,7 +96,7 @@ class RumbleSyncImpl(GenericSyncImpl):
         return Source.RUMBLE
 
 
-class YouTubeSyncImpl(GenericSyncImpl):
+class YouTubeSyncImpl(YtDlpSync):
     def __init__(self, library: Library):
         super().__init__(library)
 
@@ -104,7 +104,7 @@ class YouTubeSyncImpl(GenericSyncImpl):
         return Source.YOUTUBE
 
 
-class BrighteonSyncImpl(GenericSyncImpl):
+class BrighteonSyncImpl(YtDlpSync):
     def __init__(self, library: Library):
         super().__init__(library)
 
