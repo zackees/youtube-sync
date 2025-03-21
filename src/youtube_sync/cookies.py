@@ -190,6 +190,9 @@ class Cookies:
 
     @staticmethod
     def from_browser(source: Source, save=True) -> "Cookies":
+        print("\n############################")
+        print(f"# Getting cookies for {source}")
+        print("#############################\n")
         url: str = _get_platform_homepage_url(source)
         data = _get_cookies_from_browser(url=url)
         out = Cookies(source=source, data=data)
