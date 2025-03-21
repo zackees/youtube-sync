@@ -46,8 +46,15 @@ class GenericSyncImpl(BaseSync):
         super().__init__(library, yt_dlp_uses_docker)
 
     @abstractmethod
-    def to_channel_url(self, channel_name: str) -> str:
+    def channel_source(self) -> Source:
         pass
+
+    def to_channel_url(self, channel_name: str) -> str:
+        from youtube_sync.to_channel_url import to_channel_url
+
+        source = self.channel_source()
+        out = to_channel_url(source=source, channel_name=channel_name)
+        return out
 
     def scan_for_vids(self, limit_scroll_pages: int | None) -> list[VidEntry]:
         from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
