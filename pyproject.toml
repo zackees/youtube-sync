@@ -24,6 +24,7 @@ dependencies = [
     "feedparser",
     "download",
     "static-ffmpeg>=2.12",
+    "pytest-playwright",
 ]
 
 # Change this with the version number bump.
