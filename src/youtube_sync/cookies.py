@@ -1,3 +1,4 @@
+import logging
 import pickle
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -10,6 +11,10 @@ from open_webdriver import open_webdriver  # type: ignore
 from .types import Source
 
 _COOKIE_REFRESH_HOURS = 2
+
+# Set up module logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
 
 
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
@@ -135,6 +140,8 @@ def get_or_refresh_cookies(
                 hours_old = (now - yt_cookies.creation_time).seconds / 3600
                 if hours_old < _COOKIE_REFRESH_HOURS:
                     return yt_cookies
+            else:
+                logger.warning("Invalid cookies found at %s", cookies_pkl)
         # case 3: we have no cookies, or they are expired, or they are the wrong type
         yt_cookies = Cookies.from_browser(source)
         yt_cookies.save(cookies_pkl)
@@ -148,21 +155,6 @@ class Cookies:
     def get_or_refresh(source: Source, cookies: "Cookies | None") -> "Cookies":
 
         return get_or_refresh_cookies(source=source, cookies=cookies)
-
-    @staticmethod
-    def global_pkl_path(source: Source) -> Path:
-        pkl, txt, lock = _get_cookie_paths(source)
-        return pkl
-
-    @staticmethod
-    def global_txt_path(source: Source) -> Path:
-        pkl, txt, lock = _get_cookie_paths(source)
-        return txt
-
-    @staticmethod
-    def global_lock_path(source: Source) -> Path:
-        pkl, txt, lock = _get_cookie_paths(source)
-        return lock
 
     @staticmethod
     def from_browser(source: Source) -> "Cookies":
