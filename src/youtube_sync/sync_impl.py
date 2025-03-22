@@ -66,7 +66,7 @@ class YtDlpSync(BaseSync):
     ) -> list[VidEntry]:
         # get_cookies
 
-        from youtube_sync.ytdlp_scan_for_vids import scan_for_vids
+        from youtube_sync.ytdlp.ytdlp_scan_for_vids import scan_for_vids
 
         self.cookies = Cookies.get_or_refresh(
             source=self.channel_source(), cookies=self.cookies

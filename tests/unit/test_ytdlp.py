@@ -6,7 +6,7 @@ import unittest
 from typing import Any
 
 from youtube_sync import Source
-from youtube_sync.ytdlp import YtDlp
+from youtube_sync.ytdlp.ytdlp import YtDlp
 
 VID_URL = "https://www.youtube.com/watch?v=XfELJU1mRMg"
 

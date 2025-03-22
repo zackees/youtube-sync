@@ -12,7 +12,7 @@ import warnings
 
 
 def update_yt_dlp(check: bool) -> bool:
-    from youtube_sync.ytdlp import yt_dlp_exe
+    from youtube_sync.ytdlp.ytdlp import yt_dlp_exe
 
     yt_exe = yt_dlp_exe()
     if isinstance(yt_exe, Exception):

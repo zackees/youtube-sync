@@ -14,11 +14,9 @@ from typing import Any
 
 from static_ffmpeg import add_paths
 
-from youtube_sync.types import Source
+from youtube_sync.cookies import Cookies
+from youtube_sync.types import ChannelId, Source, VideoId
 from youtube_sync.uploader import Uploader
-
-from .cookies import Cookies
-from .types import ChannelId, VideoId
 
 _MAX_CPU_WORKERS = max(1, os.cpu_count() or 0)
 
@@ -71,7 +69,7 @@ def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
     if yt_exe is None:
         return FileNotFoundError("yt-dlp not found")
     if install_missing_plugins:
-        from youtube_sync.ytdlp_plugins import yt_dlp_install_plugins
+        from youtube_sync.ytdlp.ytdlp_plugins import yt_dlp_install_plugins
 
         errors: dict[str, Exception] | None = yt_dlp_install_plugins()
         if errors:

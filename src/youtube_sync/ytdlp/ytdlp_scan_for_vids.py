@@ -50,7 +50,7 @@ def scan_for_vids(
     # ]
 
     # yt_dlp_exe()
-    from youtube_sync.ytdlp import yt_dlp_exe
+    from youtube_sync.ytdlp.ytdlp import yt_dlp_exe
 
     exe = yt_dlp_exe()
     if isinstance(exe, Exception):

@@ -18,7 +18,7 @@ from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.uploader import FileUploader, Uploader
 from youtube_sync.vid_entry import VidEntry
-from youtube_sync.ytdlp import YtDlp
+from youtube_sync.ytdlp.ytdlp import YtDlp
 
 
 def _get_library_json_lock_path() -> str:
@@ -245,7 +245,10 @@ class Library:
             max_concurrent_downloads: Maximum number of concurrent downloads
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
-        from youtube_sync.ytdlp import check_keyboard_interrupt, set_keyboard_interrupt
+        from youtube_sync.ytdlp.ytdlp import (
+            check_keyboard_interrupt,
+            set_keyboard_interrupt,
+        )
 
         # Create thread pools with appropriate sizes
         download_pool = ThreadPoolExecutor(

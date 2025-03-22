@@ -1,5 +1,5 @@
 from youtube_sync import Source
-from youtube_sync.ytdlp import YtDlp
+from youtube_sync.ytdlp.ytdlp import YtDlp
 
 yt = YtDlp(source=Source.YOUTUBE)
 info = yt.fetch_channel_url("https://www.youtube.com/@supirorguy5086")
