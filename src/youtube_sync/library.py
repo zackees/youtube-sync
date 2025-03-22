@@ -245,7 +245,7 @@ class Library:
             max_concurrent_downloads: Maximum number of concurrent downloads
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
-        from youtube_sync.ytdlp.ytdlp import (
+        from youtube_sync.ytdlp.error import (
             check_keyboard_interrupt,
             set_keyboard_interrupt,
         )

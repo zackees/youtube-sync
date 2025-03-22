@@ -54,7 +54,8 @@ class YtDlpDownloader:
         Returns:
             Path to the downloaded audio file or Exception if download failed
         """
-        from .ytdlp import yt_dlp_download_best_audio, yt_dlp_exe
+        from .download_best_audio import yt_dlp_download_best_audio
+        from .ytdlp import yt_dlp_exe
 
         if check_keyboard_interrupt():
             return KeyboardInterruptException(
