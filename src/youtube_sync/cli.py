@@ -5,9 +5,7 @@ Command entry point.
 # pylint: disable=consider-using-f-string
 
 import argparse
-import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from youtube_sync import FSPath, RealFS, Source, YouTubeSync
@@ -33,7 +31,7 @@ class Args:
     def __post_init__(self) -> None:
         # check types
         _check_type(self.channel_name, str)
-        _check_type(self.output, Path)
+        _check_type(self.output, FSPath)
         _check_type(self.limit_scan, int)
         _check_type(self.skip_download, bool)
         _check_type(self.download_limit, int)
@@ -52,7 +50,7 @@ def parse_args() -> Args:
     )
     parser.add_argument("--output", type=str, help="Output directory", required=True)
     parser.add_argument(
-        "--limit-scroll-pages",
+        "--limit-scan",
         type=int,
         default=1000,
         help="Limit the number of the number of pages to scroll down",
@@ -103,15 +101,29 @@ def main() -> None:
         yt.download(args.download_limit)
 
 
-if __name__ == "__main__":
-    import sys
+def _get_test_dst_fsfile() -> FSPath:
+    cwd = RealFS().cwd() / "tmp" / "@silverguru" / "youtube"
+    return cwd
 
-    sys.argv.append("--channel-name")
-    sys.argv.append("@silverguru")
-    sys.argv.append("--output")
-    sys.argv.append(os.path.join(os.getcwd(), "tmp", "@silverguru", "youtube"))
-    sys.argv.append("--limit-scroll-pages")
-    sys.argv.append("1")
-    sys.argv.append("--download-limit")
-    sys.argv.append("1")
-    main()
+
+def unit_test() -> None:
+    """Unit test."""
+    args = Args(
+        channel_name="@silverguru",
+        output=_get_test_dst_fsfile(),
+        limit_scan=1,
+        skip_download=False,
+        download_limit=1,
+        skip_scan=False,
+    )
+    yt = YouTubeSync(
+        channel_name=args.channel_name,
+        media_output=args.output,
+        source=Source.YOUTUBE,
+    )
+    yt.scan_for_vids(args.limit_scan)
+    yt.download(args.download_limit)
+
+
+if __name__ == "__main__":
+    unit_test()
