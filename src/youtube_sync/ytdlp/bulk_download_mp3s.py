@@ -57,6 +57,9 @@ def download_mp3s(
         where exception_or_none is None if download was successful,
         or the exception that occurred during download
     """
+    from youtube_sync.ytdlp.ytdlp import YtDlp
+
+    assert isinstance(self, YtDlp)
     result_futures: list[Future[tuple[str, str, Exception | None]]] = []
 
     # Process each download
