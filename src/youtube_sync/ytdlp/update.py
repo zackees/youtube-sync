@@ -18,8 +18,10 @@ def update_yt_dlp(check: bool) -> bool:
     if isinstance(yt_exe, Exception):
         warnings.warn(f"can't update because yt-dlp not found: {yt_exe}")
         return False
-    cmd_list = [yt_exe.exe.as_posix(), "--update"]
-    cp = subprocess.run(cmd_list, check=False, capture_output=True)
+    # cmd_list = [yt_exe.exe.as_posix(), "--update"]
+    cmd_list = ["--version"]
+    cp = yt_exe.run(cmd_list, check=False, capture_output=True)
+    # cp = subprocess.run(cmd_list, check=False, capture_output=True)
     cps = [cp]
     if cp.returncode != 0:
         python_exe = sys.executable
