@@ -30,15 +30,38 @@ def _get_library_json_lock_path() -> str:
 _FILE_LOCK = FileLock(_get_library_json_lock_path())
 
 
+class FSPathCache:
+    """Cache for FSPath objects."""
+
+    def __init__(self) -> None:
+        self.cache: dict[FSPath, bool] = {}
+
+    def get(self, path: FSPath) -> bool:
+        """Get the FSPath."""
+        if path in self.cache:
+            return self.cache[path]
+        item = self.cache.get(path)
+        if item:
+            return item
+        exists = path.exists()
+        if exists:
+            self.cache[path] = True
+        return exists
+
+
 def _find_missing_downloads(
-    vids: list[VidEntry], dst_video_path: FSPath
+    vids: list[VidEntry],
+    dst_video_path: FSPath,
+    filecache: FSPathCache,
 ) -> list[VidEntry]:
     """Find missing downloads."""
     out: list[VidEntry] = []
     for vid in vids:
         file_path = vid.file_path
         full_path = dst_video_path / file_path
-        if not full_path.exists():
+        # exists = _file_exists(full_path)
+        exists = filecache.get(full_path)
+        if not exists:
             # if error
             if not vid.error:
                 out.append(vid)
@@ -85,6 +108,7 @@ class Library:
         if isinstance(json_path, Path):
             json_path = RealFileSystem.get_real_path(json_path)
         self.filesystem = json_path.fs
+        self.filecache = FSPathCache()
         self.source = source
         self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
@@ -189,7 +213,7 @@ class Library:
 
     def find_missing_downloads(self) -> list[VidEntry]:
         """Find missing downloads."""
-        return _find_missing_downloads(self.libdata.vids, self.out_dir)
+        return _find_missing_downloads(self.libdata.vids, self.out_dir, self.filecache)
 
     def load(self) -> list[VidEntry]:
         """Load json from file."""
