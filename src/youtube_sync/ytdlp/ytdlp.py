@@ -5,63 +5,26 @@ import re
 import shutil
 import signal
 import subprocess
-import tempfile
 import time
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from static_ffmpeg import add_paths
-
 from youtube_sync.cookies import Cookies
 from youtube_sync.types import ChannelId, Source, VideoId
 from youtube_sync.uploader import Uploader
 
-_MAX_CPU_WORKERS = max(1, os.cpu_count() or 0)
-
-# Thread pool for resolving futures
-_FUTURE_RESOLVER_POOL = ThreadPoolExecutor(
-    max_workers=_MAX_CPU_WORKERS, thread_name_prefix="future_resolver"
+from .downloader import YtDlpDownloader
+from .error import (
+    KeyboardInterruptException,
+    check_keyboard_interrupt,
+    set_keyboard_interrupt,
 )
-
-_FFMPEG_EXECUTORS = ThreadPoolExecutor(
-    _MAX_CPU_WORKERS, thread_name_prefix="ffmpeg_executor"
-)
-
-
-class KeyboardInterruptException(Exception):
-    """Exception raised when a keyboard interrupt is detected."""
-
-    pass
-
-
-# Global flag to track keyboard interrupts
-_KEYBOARD_INTERRUPT_HAPPENED = False
-
-
-# Function to check and set the interrupt flag
-def set_keyboard_interrupt():
-    """Set the global keyboard interrupt flag."""
-    global _KEYBOARD_INTERRUPT_HAPPENED
-    _KEYBOARD_INTERRUPT_HAPPENED = True
-
-
-def check_keyboard_interrupt():
-    """Check if a keyboard interrupt has happened.
-
-    Returns:
-        bool: True if a keyboard interrupt has happened
-    """
-    return _KEYBOARD_INTERRUPT_HAPPENED
-
 
 # yt-dlp-ChromeCookieUnlock
 
 # https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
-
-
-_FFMPEG_PATH_ADDED = False
 
 
 def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
@@ -275,18 +238,11 @@ def _fetch_videos_from_channel(
     return out_channel_ids
 
 
-def add_ffmpeg_paths_once() -> None:
-    global _FFMPEG_PATH_ADDED  # pylint: disable=global-statement
-    if not _FFMPEG_PATH_ADDED:
-        add_paths()
-        _FFMPEG_PATH_ADDED = True
-
-
 def yt_dlp_download_best_audio(
+    yt_exe: Path,
     url: str,
     temp_dir: Path,
     cookies_txt: Path | None,
-    yt_exe: Path | None = None,
     no_geo_bypass: bool = True,
     retries: int = 1,
 ) -> Path | Exception:
@@ -307,12 +263,6 @@ def yt_dlp_download_best_audio(
         return KeyboardInterruptException(
             "Download aborted due to previous keyboard interrupt"
         )
-
-    if yt_exe is None:
-        yt_exe_result = yt_dlp_exe()
-        if isinstance(yt_exe_result, Exception):
-            return yt_exe_result
-        yt_exe = yt_exe_result
 
     # Use a generic name for the temporary file - let yt-dlp determine the extension
     temp_file = Path(os.path.join(temp_dir, "temp_audio"))
@@ -389,180 +339,6 @@ def yt_dlp_download_best_audio(
     return last_error or RuntimeError(
         f"Failed to download {url} after {retries} attempts"
     )
-
-
-def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exception:
-    """Convert audio file to MP3 format using ffmpeg.
-
-    Args:
-        input_file: Path to the input audio file
-        output_file: Path to save the output MP3 file
-
-    Returns:
-        Path to the output MP3 file or Exception if conversion failed
-    """
-    if check_keyboard_interrupt():
-        return KeyboardInterruptException(
-            "Conversion aborted due to previous keyboard interrupt"
-        )
-
-    add_ffmpeg_paths_once()
-
-    # Ensure the output directory exists
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    cmd_list = [
-        "ffmpeg",
-        "-i",
-        str(input_file),
-        "-codec:a",
-        "libmp3lame",
-        "-qscale:a",
-        "2",  # High quality setting
-        "-y",  # Overwrite output file if it exists
-        str(output_file),
-    ]
-
-    try:
-        print(f"Begin {input_file} -> {output_file}")
-        # proc = subprocess.Popen(cmd_list)
-        # pipe to devnull to suppress output
-        proc = subprocess.Popen(
-            cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
-
-        # Monitor the process and check for interrupts
-        while proc.poll() is None:
-            if check_keyboard_interrupt():
-                proc.terminate()
-                return KeyboardInterruptException(
-                    "Conversion aborted due to previous keyboard interrupt"
-                )
-            time.sleep(0.1)
-
-        if proc.returncode != 0:
-            rtn = proc.returncode
-            if 3221225786 == rtn or rtn == -signal.SIGINT:
-                set_keyboard_interrupt()
-                raise KeyboardInterrupt("KeyboardInterrupt")
-
-            return subprocess.CalledProcessError(proc.returncode, cmd_list)
-        print(f"Conversion successful: {input_file} -> {output_file}")
-        return output_file
-    except KeyboardInterrupt:
-        set_keyboard_interrupt()
-        _thread.interrupt_main()
-        raise
-    except subprocess.CalledProcessError as e:
-        return e
-
-
-class YtDlpDownloader:
-    """Class for downloading and converting YouTube videos to MP3."""
-
-    def __init__(self, url: str, outmp3: str, cookies_txt: Path | None = None):
-        """Initialize the downloader with a temporary directory and download parameters.
-
-        Args:
-            url: The URL to download from
-            outmp3: Path to save the final MP3 file
-            cookies_txt: Path to cookies.txt file or None
-        """
-        add_ffmpeg_paths_once()
-        self._temp_dir = tempfile.TemporaryDirectory()
-        self.temp_dir_path = Path(self._temp_dir.name)
-        self.url = url
-        self.outmp3 = outmp3
-        self.cookies_txt = cookies_txt
-        self.downloaded_file: Path | None = None
-        self.temp_mp3: Path | None = None
-
-        # Ensure output directory exists
-        par_dir = os.path.dirname(str(outmp3))
-        if par_dir:
-            os.makedirs(par_dir, exist_ok=True)
-
-    def __enter__(self):
-        """Support for context manager."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Clean up resources when exiting context."""
-        self.dispose()
-
-    def dispose(self):
-        """Clean up the temporary directory."""
-        if hasattr(self, "_temp_dir") and self._temp_dir:
-            self._temp_dir.cleanup()
-            self._temp_dir = None
-
-    def download(self) -> Path | Exception:
-        """Download the best audio from the URL.
-
-        Returns:
-            Path to the downloaded audio file or Exception if download failed
-        """
-        if check_keyboard_interrupt():
-            return KeyboardInterruptException(
-                "Download aborted due to previous keyboard interrupt"
-            )
-
-        yt_exe = yt_dlp_exe()
-        if isinstance(yt_exe, Exception):
-            return yt_exe
-
-        result = yt_dlp_download_best_audio(
-            url=self.url,
-            temp_dir=self.temp_dir_path,
-            cookies_txt=self.cookies_txt,
-            yt_exe=yt_exe,
-            no_geo_bypass=True,
-            retries=3,
-        )
-
-        if not isinstance(result, Exception):
-            self.downloaded_file = result
-
-        return result
-
-    def convert_to_mp3(self) -> Path | Exception:
-        """Convert downloaded audio file to MP3 format.
-
-        Returns:
-            Path to the output MP3 file or Exception if conversion failed
-
-        Raises:
-            ValueError: If download() has not been called or failed
-        """
-        if check_keyboard_interrupt():
-            return KeyboardInterruptException(
-                "Conversion aborted due to previous keyboard interrupt"
-            )
-
-        if self.downloaded_file is None:
-            raise ValueError("No downloaded file available. Call download() first.")
-
-        self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
-        return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
-
-    def copy_to_destination(self, uploader: Uploader) -> None:
-        """Copy the converted MP3 to the final destination.
-
-        Raises:
-            ValueError: If convert_to_mp3() has not been called or failed
-        """
-        if check_keyboard_interrupt():
-            raise KeyboardInterrupt("Copy aborted due to previous keyboard interrupt")
-
-        if self.temp_mp3 is None:
-            raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
-
-        print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-        uploader.upload(self.temp_mp3, self.outmp3)
-
-
-def _is_youtube(url: str) -> bool:
-    return "youtube.com" in url or "youtu.be" in url
 
 
 class YtDlp:
@@ -645,124 +421,14 @@ class YtDlp:
         download_pool: ThreadPoolExecutor,
         uploader: Uploader,
     ) -> list[Future[tuple[str, str, Exception | None]]]:
-        """Download multiple YouTube videos as MP3s using thread pools.
+        from youtube_sync.ytdlp.bulk_download_mp3s import download_mp3s
 
-        Args:
-            downloads: List of tuples containing (url, output_path)
-            download_pool: Thread pool for downloads
-            convert_pool: Thread pool for conversions
-
-        Returns:
-            List of futures that will resolve to tuples of (url, output_path, exception_or_none)
-            where exception_or_none is None if download was successful,
-            or the exception that occurred during download
-        """
-        result_futures: list[Future[tuple[str, str, Exception | None]]] = []
-
-        # Process each download
-        for i, (url, outmp3) in enumerate(downloads):
-            # Create a future that will represent the final result for this download
-            def on_done_task(count=i) -> None:
-                print(f"Download {count+1}/{len(downloads)} complete")
-
-            result_future: Future[tuple[str, str, Exception | None]] = Future()
-            result_futures.append(result_future)
-            result_future.add_done_callback(lambda _: on_done_task)
-
-            # Extract cookies if needed
-            cookies = self._extract_cookies_if_needed()
-
-            # Submit the entire download and conversion process as a single task
-            _FUTURE_RESOLVER_POOL.submit(
-                self._process_download_and_convert,
-                url,
-                outmp3,
-                cookies,
-                download_pool,
-                uploader,
-                result_future,
-            )
-
-        return result_futures
-
-    def _process_download_and_convert(
-        self,
-        url: str,
-        outmp3: str,
-        cookies: Path | None,
-        download_pool: ThreadPoolExecutor,
-        uploader: Uploader,
-        result_future: Future[tuple[str, str, Exception | None]],
-    ) -> None:
-        """Process the download and conversion for a single URL.
-
-        Args:
-            url: The URL to download
-            outmp3: Path to save the final MP3 file
-            cookies: Path to cookies file or None
-            download_pool: Thread pool for downloads
-            convert_pool: Thread pool for conversions
-            result_future: Future to set with the final result
-        """
-        # Create downloader
-        downloader = YtDlpDownloader(url, outmp3, cookies)
-
-        try:
-            # Check for keyboard interrupt
-            if check_keyboard_interrupt():
-                result_future.set_result(
-                    (
-                        url,
-                        outmp3,
-                        KeyboardInterruptException(
-                            "Download aborted due to previous keyboard interrupt"
-                        ),
-                    )
-                )
-                return
-
-            # Submit download task and wait for it to complete
-            download_future = download_pool.submit(downloader.download)
-            download_result = download_future.result()
-
-            # If download failed, set the result and return
-            if isinstance(download_result, Exception):
-                result_future.set_result((url, outmp3, download_result))
-                return
-
-            # Check for keyboard interrupt again before conversion
-            if check_keyboard_interrupt():
-                result_future.set_result(
-                    (
-                        url,
-                        outmp3,
-                        KeyboardInterruptException(
-                            "Conversion aborted due to previous keyboard interrupt"
-                        ),
-                    )
-                )
-                return
-
-            # Submit conversion task and wait for it to complete
-            convert_future = _FFMPEG_EXECUTORS.submit(
-                self._process_conversion, downloader, uploader
-            )
-            conversion_result = convert_future.result()
-
-            # Set the final result
-            result_future.set_result(conversion_result)
-
-        except KeyboardInterrupt as e:
-            # Handle keyboard interrupt
-            set_keyboard_interrupt()
-            result_future.set_result((url, outmp3, KeyboardInterruptException(str(e))))
-            _thread.interrupt_main()
-        except Exception as e:
-            # Handle any other exceptions
-            result_future.set_result((url, outmp3, e))
-        finally:
-            # Clean up resources
-            downloader.dispose()
+        return download_mp3s(
+            self,
+            downloads,
+            download_pool,
+            uploader,
+        )
 
     def download_mp3(self, url: str, outmp3: str, uploader: Uploader) -> None:
         """Download a single YouTube video as MP3.
