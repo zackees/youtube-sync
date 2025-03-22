@@ -14,9 +14,9 @@ from pathlib import Path
 from appdirs import user_data_dir
 from filelock import FileLock
 
+from youtube_sync.filesystem import FileUploader, Uploader
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
-from youtube_sync.uploader import FileUploader, Uploader
 from youtube_sync.vid_entry import VidEntry
 from youtube_sync.ytdlp.ytdlp import YtDlp
 
