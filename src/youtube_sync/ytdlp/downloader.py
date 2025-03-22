@@ -111,4 +111,4 @@ class YtDlpDownloader:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
 
         print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-        filesystem.upload(self.temp_mp3, self.outmp3)
+        filesystem.copy(self.temp_mp3, self.outmp3)
