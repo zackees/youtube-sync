@@ -37,3 +37,18 @@ class RealFileSystem(FileSystem):
 
     def exists(self, path: Path | str) -> bool:
         return Path(path).exists()
+
+
+class FSPath:
+    def __init__(self, fs: FileSystem, path: str) -> None:
+        self.path = path
+        self.fs = fs
+
+    def read_text(self) -> str:
+        return self.fs.read_text(self.path)
+
+    def read_binary(self) -> bytes:
+        return self.fs.read_binary(self.path)
+
+    def exists(self) -> bool:
+        return self.fs.exists(self.path)
