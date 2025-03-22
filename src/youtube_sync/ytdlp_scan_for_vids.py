@@ -9,7 +9,6 @@ import subprocess
 import warnings
 from pathlib import Path
 
-from youtube_sync import json_util
 from youtube_sync.library import VidEntry
 
 # Set up module logger
@@ -22,6 +21,10 @@ def _json_to_vid_entry(data: dict) -> VidEntry:
     title = data["title"]
     url = data["webpage_url"]
     return VidEntry(title=title, url=url, data=data)
+
+
+# FAST SCAN:
+# EXAMPLE: yt-dlp --flat-playlist  https://www.youtube.com/@TheDuran/videos --skip-download --get-url --get-title
 
 
 def scan_for_vids(
@@ -40,10 +43,25 @@ def scan_for_vids(
 
     stored_vids_set: set[VidEntry] = set(stored_vids)
 
+    # cmd_list: list[str] = [
+    #     "yt-dlp",
+    #     "--skip-download",
+    #     "--print-json",
+    # ]
+
+    # yt_dlp_exe()
+    from youtube_sync.ytdlp import yt_dlp_exe
+
+    exe = yt_dlp_exe()
+    if isinstance(exe, Exception):
+        raise RuntimeError(f"yt-dlp not found: {exe}")
+
     cmd_list: list[str] = [
-        "yt-dlp",
+        str(exe),
+        "--flat-playlist",
         "--skip-download",
-        "--print-json",
+        "--get-url",
+        "--get-title",
     ]
 
     # Add cookies file if provided
@@ -75,12 +93,18 @@ def scan_for_vids(
 
     vid: VidEntry | None = None
     max_errors = 100
+    prev_line: str | None = None
     for line_bytes in stdout:
         line: str | None = None
         try:
-            line = line_bytes.decode("utf-8")
-            data = json_util.load_dict(line)
-            vid = _json_to_vid_entry(data)
+            line = line_bytes.decode("utf-8").strip()
+            # data = json_util.load_dict(line)
+            # vid = _json_to_vid_entry(data)
+            if prev_line is None:
+                prev_line = line
+                continue
+            vid = VidEntry(title=prev_line, url=line)
+            prev_line = None  # clear for next iteration
         except Exception as e:
             if isinstance(line, str):
                 logger.error("Error parsing line: %s", line)

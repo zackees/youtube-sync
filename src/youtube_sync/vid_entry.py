@@ -30,6 +30,7 @@ class VidEntry:
         data: dict | None = None,
     ) -> None:
         _dbg_vid_dump(data)
+        assert "http" in url
         self.url = url
         self.title = title
         self.date = date
@@ -72,7 +73,11 @@ class VidEntry:
         if filepath is None:
             filepath = clean_filename(data["title"])
         filepath = clean_filename(filepath)
-        date = datetime.fromisoformat(data["date"]) if data.get("date") else None
+        date: datetime | None = None
+        if data is not None:
+            json_date = data.get("date")
+            if json_date is not None:
+                date = datetime.fromisoformat(json_date)
         error = data.get("error", False)
         return VidEntry(
             url=data["url"],
