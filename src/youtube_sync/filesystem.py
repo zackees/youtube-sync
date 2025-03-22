@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 
-class Uploader(abc.ABC):
+class FileSystem(abc.ABC):
     def __init__(self) -> None:
         pass
 
@@ -12,7 +12,7 @@ class Uploader(abc.ABC):
         pass
 
 
-class FileUploader(Uploader):
+class RealFileSystem(FileSystem):
     def __init__(self) -> None:
         super().__init__()
 

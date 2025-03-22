@@ -2,7 +2,7 @@ import _thread
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
-from youtube_sync.filesystem import Uploader
+from youtube_sync.filesystem import FileSystem
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
@@ -14,7 +14,7 @@ from youtube_sync.ytdlp.ytdlp import Cookies
 
 
 def _process_conversion(
-    downloader: YtDlpDownloader, uploader: Uploader
+    downloader: YtDlpDownloader, filesystem: FileSystem
 ) -> tuple[str, str, Exception | None]:
     """Process conversion and copying for a downloaded file.
 
@@ -31,7 +31,7 @@ def _process_conversion(
             return (downloader.url, downloader.outmp3, convert_result)
 
         # Copy to destination
-        downloader.copy_to_destination(uploader)
+        downloader.copy_to_destination(filesystem)
         return (downloader.url, downloader.outmp3, None)
     except Exception as e:
         return (downloader.url, downloader.outmp3, e)
@@ -43,7 +43,7 @@ def _process_conversion(
 def download_mp3s(
     downloads: list[tuple[str, str]],
     download_pool: ThreadPoolExecutor,
-    uploader: Uploader,
+    filesystem: FileSystem,
     cookies: Cookies | None = None,
 ) -> list[Future[tuple[str, str, Exception | None]]]:
     """Download multiple YouTube videos as MP3s using thread pools.
@@ -82,7 +82,7 @@ def download_mp3s(
             outmp3,
             cookies,
             download_pool,
-            uploader,
+            filesystem,
             result_future,
         )
 
@@ -94,7 +94,7 @@ def _process_download_and_convert(
     outmp3: str,
     cookies: Path | None,
     download_pool: ThreadPoolExecutor,
-    uploader: Uploader,
+    filesystem: FileSystem,
     result_future: Future[tuple[str, str, Exception | None]],
 ) -> None:
     """Process the download and conversion for a single URL.
@@ -148,7 +148,7 @@ def _process_download_and_convert(
 
         # Submit conversion task and wait for it to complete
         convert_future = FFMPEG_EXECUTORS.submit(
-            _process_conversion, downloader, uploader
+            _process_conversion, downloader, filesystem
         )
         conversion_result = convert_future.result()
 

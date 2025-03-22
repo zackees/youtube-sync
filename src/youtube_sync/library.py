@@ -14,7 +14,7 @@ from pathlib import Path
 from appdirs import user_data_dir
 from filelock import FileLock
 
-from youtube_sync.filesystem import FileUploader, Uploader
+from youtube_sync.filesystem import FileSystem, RealFileSystem
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
@@ -79,11 +79,11 @@ class Library:
         channel_url: str,
         source: Source | str,
         json_path: Path,
-        uploader: Uploader | None = None,
+        filesystem: FileSystem | None = None,
     ) -> None:
         if isinstance(source, str):
             source = Source.from_str(source)
-        self.uploader = uploader or FileUploader()
+        self.filesystem = filesystem or RealFileSystem()
         self.source = source
         self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
@@ -304,7 +304,7 @@ class Library:
                     futures = self.ytdlp.download_mp3s(
                         downloads=downloads_to_process,
                         download_pool=download_pool,
-                        uploader=self.uploader,
+                        filesystem=self.filesystem,
                     )
                     if not futures:
                         print("No downloads to process. Exiting.")

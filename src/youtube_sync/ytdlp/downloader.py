@@ -4,7 +4,7 @@ from pathlib import Path
 
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
-from youtube_sync.filesystem import Uploader
+from youtube_sync.filesystem import FileSystem
 
 from .error import KeyboardInterruptException, check_keyboard_interrupt
 from .exe import YtDlpCmdRunner
@@ -98,7 +98,7 @@ class YtDlpDownloader:
         self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
         return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
 
-    def copy_to_destination(self, uploader: Uploader) -> None:
+    def copy_to_destination(self, filesystem: FileSystem) -> None:
         """Copy the converted MP3 to the final destination.
 
         Raises:
@@ -111,4 +111,4 @@ class YtDlpDownloader:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
 
         print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-        uploader.upload(self.temp_mp3, self.outmp3)
+        filesystem.upload(self.temp_mp3, self.outmp3)
