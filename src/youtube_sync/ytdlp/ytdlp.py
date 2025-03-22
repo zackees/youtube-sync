@@ -69,7 +69,7 @@ def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
     if yt_exe is None:
         return FileNotFoundError("yt-dlp not found")
     if install_missing_plugins:
-        from youtube_sync.ytdlp.ytdlp_plugins import yt_dlp_install_plugins
+        from youtube_sync.ytdlp.plugins import yt_dlp_install_plugins
 
         errors: dict[str, Exception] | None = yt_dlp_install_plugins()
         if errors:
@@ -607,11 +607,11 @@ class YtDlp:
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
-    def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
-        cookies_txt = self._extract_cookies_if_needed()
-        return _fetch_videos_from_channel(
-            channel_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
-        )
+    # def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
+    #     cookies_txt = self._extract_cookies_if_needed()
+    #     return _fetch_videos_from_channel(
+    #         channel_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
+    #     )
 
     def _process_conversion(
         self, downloader: YtDlpDownloader, uploader: Uploader
