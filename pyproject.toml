@@ -26,11 +26,11 @@ dependencies = [
     "static-ffmpeg>=2.12",
     "pytest-playwright",
     "beautifulsoup4>=4.13.3",
-    "rclone-api>=1.5.15",
+    "rclone-api>=1.5.19",
 ]
 
 # Change this with the version number bump.
-version = "1.2.15"
+version = "1.2.16"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

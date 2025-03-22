@@ -14,7 +14,7 @@ from pathlib import Path
 from appdirs import user_data_dir
 from filelock import FileLock
 
-from youtube_sync import FSPath, RealFileSystem
+from youtube_sync import FSPath, RealFS
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
@@ -106,7 +106,7 @@ class Library:
         if isinstance(source, str):
             source = Source.from_str(source)
         if isinstance(json_path, Path):
-            json_path = RealFileSystem.get_real_path(json_path)
+            json_path = RealFS.from_path(json_path)
         self.filesystem = json_path.fs
         self.filecache = FSPathCache()
         self.source = source

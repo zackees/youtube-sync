@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from youtube_sync import RealFileSystem
+from youtube_sync import RealFS
 from youtube_sync.library import Library
 from youtube_sync.vid_entry import VidEntry
 
@@ -18,7 +18,7 @@ class LibraryTester(unittest.TestCase):
         """Test command line interface (CLI)."""
         with TemporaryDirectory() as temp_dir:
             _json_path = Path(temp_dir) / "library.json"
-            json_path = RealFileSystem.get_real_path(_json_path)
+            json_path = RealFS.from_path(_json_path)
             lib: Library = Library(
                 channel_name="Some channel",
                 channel_url="https://www.youtube.com/channel/123",

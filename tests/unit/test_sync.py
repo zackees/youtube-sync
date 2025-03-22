@@ -5,11 +5,11 @@ Unit test file.
 import unittest
 from pathlib import Path
 
-from youtube_sync import RealFileSystem, Source, YouTubeSync
+from youtube_sync import RealFS, Source, YouTubeSync
 
 HERE = Path(__file__).parent
 _TEST_DATA = HERE / "test_data" / "test_sync"
-TEST_DATA = RealFileSystem.get_real_path(_TEST_DATA)
+TEST_DATA = RealFS.from_path(_TEST_DATA)
 
 
 class SyncTester(unittest.TestCase):

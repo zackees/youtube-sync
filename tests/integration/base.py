@@ -7,12 +7,12 @@ Command entry point.
 from dataclasses import dataclass
 from pathlib import Path
 
-from youtube_sync import FSPath, RealFileSystem, Source, YouTubeSync
+from youtube_sync import FSPath, RealFS, Source, YouTubeSync
 
 HERE = Path(__file__).parent
 PROJECT_ROOT = HERE.parent.parent
 _TMP_DIR = PROJECT_ROOT / "tmp"
-TMP_DIR = RealFileSystem().get_path(_TMP_DIR.as_posix())
+TMP_DIR = RealFS().get_path(_TMP_DIR.as_posix())
 
 # def set_global_logging_level(level: int) -> None:
 # set_global_logging_level("DEBUG")

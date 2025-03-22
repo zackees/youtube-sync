@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from youtube_sync import FSPath, RealFileSystem, Source, YouTubeSync
+from youtube_sync import FSPath, RealFS, Source, YouTubeSync
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
@@ -73,7 +73,7 @@ def parse_args() -> Args:
         action="store_true",
         help="Skip the update of the library.json file",
     )
-    fs = RealFileSystem()
+    fs = RealFS()
 
     tmp = parser.parse_args()
     args = Args(
