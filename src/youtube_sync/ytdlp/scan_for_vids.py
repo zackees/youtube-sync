@@ -49,12 +49,9 @@ def scan_for_vids(
     # ]
 
     # yt_dlp_exe()
-    from youtube_sync.ytdlp.ytdlp import yt_dlp_exe
+    from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
-    exe = yt_dlp_exe()
-    if isinstance(exe, Exception):
-        raise RuntimeError(f"yt-dlp not found: {exe}")
-
+    exe = YtDlpCmdRunner.create_or_raise().exe
     cmd_list: list[str] = [
         str(exe),
         "--flat-playlist",

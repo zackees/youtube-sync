@@ -12,13 +12,13 @@ import warnings
 
 
 def update_yt_dlp(check: bool) -> bool:
-    from youtube_sync.ytdlp.ytdlp import yt_dlp_exe
+    from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
-    yt_exe = yt_dlp_exe()
+    yt_exe = YtDlpCmdRunner.create()
     if isinstance(yt_exe, Exception):
         warnings.warn(f"can't update because yt-dlp not found: {yt_exe}")
         return False
-    cmd_list = [yt_exe.as_posix(), "--update"]
+    cmd_list = [yt_exe.exe.as_posix(), "--update"]
     cp = subprocess.run(cmd_list, check=False, capture_output=True)
     cps = [cp]
     if cp.returncode != 0:

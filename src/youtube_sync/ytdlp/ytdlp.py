@@ -7,17 +7,18 @@ from pathlib import Path
 from typing import Any
 
 from youtube_sync.cookies import Cookies
-from youtube_sync.types import ChannelId, Source, VideoId
+from youtube_sync.types import ChannelId, Source
 from youtube_sync.uploader import Uploader
-from youtube_sync.ytdlp.exe import yt_dlp_exe
+from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
 
 def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
     """Get yt-dlp verbose output."""
     if yt_exe is None:
-        exe = yt_dlp_exe()
-        if isinstance(exe, Exception):
-            return exe
+        cmd_runner = YtDlpCmdRunner.create()
+        if isinstance(cmd_runner, Exception):
+            return cmd_runner
+        exe = cmd_runner.exe
     else:
         exe = yt_exe
     exe_str = exe.as_posix()
@@ -43,11 +44,11 @@ def _fetch_channel_info_ytdlp(
     """
     # yt-dlp -J "VIDEO_URL" > video_info.json
 
+    from .exe import YtDlpCmdRunner
+
     if yt_exe is None:
-        yt_or_error = yt_dlp_exe()
-        if isinstance(yt_or_error, Exception):
-            raise yt_or_error
-        yt_exe = yt_or_error
+        cmd_runner = YtDlpCmdRunner.create_or_raise()
+        yt_exe = cmd_runner.exe
 
     cmd_list = [
         yt_exe.as_posix(),
@@ -76,15 +77,8 @@ def _fetch_channel_info_ytdlp(
 
 
 def _fetch_video_info(
-    video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
+    video_url: str, yt_exe: Path, cookies_txt: Path | None = None
 ) -> dict:
-    if yt_exe is None:
-        yt_or_error = yt_dlp_exe()
-        if isinstance(yt_or_error, Exception):
-            raise yt_or_error
-        yt_exe = yt_or_error
-    if isinstance(yt_exe, Exception):
-        raise yt_exe
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
@@ -116,11 +110,11 @@ def _fetch_channel_url_ytdlp(
 ) -> str:
     """Fetch the info."""
     # yt-dlp -J "VIDEO_URL" > video_info.json
+    from .exe import YtDlpCmdRunner
+
     if yt_exe is None:
-        yt_or_error = yt_dlp_exe()
-        if isinstance(yt_or_error, Exception):
-            raise yt_or_error
-        yt_exe = yt_or_error
+        cmd_runnner = YtDlpCmdRunner.create_or_raise()
+        yt_exe = cmd_runnner.exe
     cmd_list = [
         yt_exe.as_posix(),
         "--print",
@@ -170,54 +164,12 @@ def _fetch_channel_id_ytdlp(
     raise RuntimeError(f"Could not find channel id in: {video_url} using yt-dlp.")
 
 
-def _fetch_videos_from_channel(
-    channel_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
-) -> list[VideoId]:
-    """Fetch the videos from a channel."""
-    # yt-dlp -J "CHANNEL_URL" > channel_info.json
-    # cmd = f'yt-dlp -i --get-id "https://www.youtube.com/channel/{channel_id}"'
-    if yt_exe is None:
-        yt_or_error = yt_dlp_exe()
-        if isinstance(yt_or_error, Exception):
-            raise yt_or_error
-        yt_exe = yt_or_error
-    cmd_list = [yt_exe.as_posix(), "--print", "id", channel_url]
-    if cookies_txt is not None:
-        cmd_list.append("--cookies")
-        cmd_list.append(cookies_txt.as_posix())
-    cms_str = subprocess.list2cmdline(cmd_list)
-    print(f"Running: {cms_str}")
-    completed_proc = subprocess.run(
-        cmd_list,
-        capture_output=True,
-        text=True,
-        shell=False,
-        check=True,
-    )
-    stdout = completed_proc.stdout
-    lines = stdout.splitlines()
-    out_channel_ids: list[VideoId] = []
-    for line in lines:
-        if line.startswith("OSError:"):  # happens on zach's machine
-            continue
-        if line.startswith("WARNING:"):
-            warnings.warn(line)
-            continue
-        if line.startswith("ERROR:"):
-            warnings.warn(line)
-            continue
-        out_channel_ids.append(VideoId(line))
-    return out_channel_ids
-
-
 class YtDlp:
 
     def __init__(self, source: Source) -> None:
         self.source: Source = source
-        yt_exe = yt_dlp_exe()
-        if isinstance(yt_exe, Exception):
-            raise yt_exe
-        self.yt_exe: Path = yt_exe
+        self.yt_cmd_runner = YtDlpCmdRunner.create_or_raise()
+        self.yt_exe: Path = self.yt_cmd_runner.exe
         self.cookies: Cookies | None = None
 
     def _extract_cookies_if_needed(self) -> Cookies | None:

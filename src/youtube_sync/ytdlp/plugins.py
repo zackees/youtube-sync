@@ -95,11 +95,16 @@ def _parse_plugin_dirs(stdout: str) -> list[Path]:
 
 def yt_dlp_plugin_dir() -> Path | Exception:
     """Get plugin directory."""
-    from youtube_sync.ytdlp.ytdlp import yt_dlp_exe
+    from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
-    exe = yt_dlp_exe(install_missing_plugins=False)
-    if isinstance(exe, Exception):
-        return exe
+    ytcmd: YtDlpCmdRunner | Exception = YtDlpCmdRunner.create(
+        install_missing_plugins=False
+    )
+
+    if isinstance(ytcmd, Exception):
+        return ytcmd
+
+    exe = ytcmd.exe
     assert isinstance(exe, Path)
 
     try:

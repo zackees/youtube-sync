@@ -7,6 +7,7 @@ from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
 from youtube_sync.uploader import Uploader
 
 from .error import KeyboardInterruptException, check_keyboard_interrupt
+from .exe import YtDlpCmdRunner
 
 
 class YtDlpDownloader:
@@ -55,16 +56,13 @@ class YtDlpDownloader:
             Path to the downloaded audio file or Exception if download failed
         """
         from .download_best_audio import yt_dlp_download_best_audio
-        from .ytdlp import yt_dlp_exe
 
         if check_keyboard_interrupt():
             return KeyboardInterruptException(
                 "Download aborted due to previous keyboard interrupt"
             )
 
-        yt_exe = yt_dlp_exe()
-        if isinstance(yt_exe, Exception):
-            return yt_exe
+        yt_exe: YtDlpCmdRunner = YtDlpCmdRunner.create_or_raise()
 
         result = yt_dlp_download_best_audio(
             url=self.url,

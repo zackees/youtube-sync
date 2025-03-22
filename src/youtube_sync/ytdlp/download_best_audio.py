@@ -1,6 +1,5 @@
 import _thread
 import os
-import signal
 import subprocess
 import time
 from pathlib import Path
@@ -10,10 +9,11 @@ from .error import (
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
+from .exe import YtDlpCmdRunner
 
 
 def yt_dlp_download_best_audio(
-    yt_exe: Path,
+    yt_exe: YtDlpCmdRunner,
     url: str,
     temp_dir: Path,
     cookies_txt: Path | None,
@@ -43,7 +43,7 @@ def yt_dlp_download_best_audio(
 
     # Command to download best audio format without any conversion
     cmd_list = [
-        yt_exe.as_posix(),
+        yt_exe.exe.as_posix(),
         url,
         "-f",
         "bestaudio/worst",  # Select best audio format
@@ -90,7 +90,7 @@ def yt_dlp_download_best_audio(
                 return downloaded_files[0]
             else:
                 rtn = proc.returncode
-                if 3221225786 == rtn or rtn == -signal.SIGINT:
+                if YtDlpCmdRunner.is_keyboard_interrupt(rtn):
                     set_keyboard_interrupt()
                     raise KeyboardInterrupt("KeyboardInterrupt")
                 last_error = subprocess.CalledProcessError(
