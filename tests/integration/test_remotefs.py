@@ -114,7 +114,10 @@ def _get_test_dst_fsfile_remote() -> FSPath:
 
 def unit_test() -> None:
     """Unit test."""
-    destination = _get_test_dst_fsfile()
+    destination = _get_test_dst_fsfile_remote()
+
+    print("\n##############################################")
+    print("Running unit test")
 
     args = Args(
         channel_name="@silverguru",
