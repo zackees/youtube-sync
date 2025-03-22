@@ -1,6 +1,5 @@
-from pathlib import Path
-
 from .create import create
+from .filesystem import FSPath
 from .library import Library
 from .sync_impl import BaseSync
 from .types import Source
@@ -12,9 +11,9 @@ class YouTubeSync:
     def __init__(
         self,
         channel_name: str,
-        media_output: Path,
+        media_output: FSPath,
         source: Source,
-        library_path: Path | None = None,
+        library_path: FSPath | None = None,
         channel_url: str | None = None,
     ) -> None:
         library = Library.get_or_create(
@@ -85,4 +84,4 @@ class YouTubeSync:
         self.download(download_limit)
 
 
-__all__ = ["YouTubeSync", "update_yt_dlp", "Source", "Library", "VidEntry"]
+__all__ = ["YouTubeSync", "update_yt_dlp", "Source", "Library", "VidEntry", "FSPath"]

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from youtube_sync import Source, YouTubeSync
+from youtube_sync.filesystem import FSPath, RealFileSystem
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
@@ -24,7 +25,7 @@ class Args:
     """Command line arguments."""
 
     channel_name: str
-    output: Path
+    output: FSPath
     limit_scan: int
     skip_download: bool
     download_limit: int
@@ -73,11 +74,12 @@ def parse_args() -> Args:
         action="store_true",
         help="Skip the update of the library.json file",
     )
+    fs = RealFileSystem()
 
     tmp = parser.parse_args()
     args = Args(
         channel_name=tmp.channel_name,
-        output=Path(tmp.output),
+        output=FSPath(fs, tmp.output),
         limit_scan=tmp.limit_scan,
         skip_download=tmp.skip_download,
         download_limit=tmp.download_limit,

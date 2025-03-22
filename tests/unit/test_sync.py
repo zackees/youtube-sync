@@ -2,21 +2,23 @@
 Unit test file.
 """
 
-import shutil
 import unittest
 from pathlib import Path
 
 from youtube_sync import Source, YouTubeSync
+from youtube_sync.filesystem import RealFileSystem
 
 HERE = Path(__file__).parent
-TEST_DATA = HERE / "test_data" / "test_sync"
+_TEST_DATA = HERE / "test_data" / "test_sync"
+TEST_DATA = RealFileSystem.get_real_path(_TEST_DATA)
 
 
 class SyncTester(unittest.TestCase):
     """Main tester class."""
 
     def test_simple(self) -> None:
-        shutil.rmtree(TEST_DATA, ignore_errors=True)
+        # shutil.rmtree(TEST_DATA, ignore_errors=True)
+        TEST_DATA.rmtree(ignore_errors=True)
         channel_name = "@silverguru"
         limit_scan = 1
         download_limit = 1

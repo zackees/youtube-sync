@@ -23,16 +23,31 @@ class FileSystem(abc.ABC):
     def write_binary(self, path: Path | str, data: bytes) -> None:
         pass
 
+    @abc.abstractmethod
+    def mkdir(self, path: str, parents=True, exist_ok=True) -> None:
+        pass
+
+    @abc.abstractmethod
+    def get_path(self, path: str) -> "FSPath":
+        pass
+
     def read_text(self, path: Path | str) -> str:
         utf = self.read_binary(path)
         return utf.decode("utf-8")
 
-    def write_text(self, path: Path | str, data: str) -> None:
-        utf = data.encode("utf-8")
+    def write_text(self, path: Path | str, data: str, encoding: str | None) -> None:
+        encoding = encoding or "utf-8"
+        utf = data.encode(encoding)
         self.write_binary(path, utf)
 
 
 class RealFileSystem(FileSystem):
+
+    @staticmethod
+    def get_real_path(path: Path | str) -> "FSPath":
+        path_str = Path(path).as_posix()
+        return FSPath(RealFileSystem(), path_str)
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -49,6 +64,12 @@ class RealFileSystem(FileSystem):
 
     def exists(self, path: Path | str) -> bool:
         return Path(path).exists()
+
+    def mkdir(self, path: str, parents=True, exist_ok=True) -> None:
+        Path(path).mkdir(parents=parents, exist_ok=exist_ok)
+
+    def get_path(self, path: str) -> "FSPath":
+        return FSPath(self, path)
 
 
 class FSPath:
@@ -70,3 +91,29 @@ class FSPath:
 
     def __repr__(self) -> str:
         return f"FSPath({self.path})"
+
+    def mkdir(self, parents=True, exist_ok=True) -> None:
+        self.fs.mkdir(self.path, parents=parents, exist_ok=exist_ok)
+
+    def write_text(self, data: str, encoding: str | None = None) -> None:
+        self.fs.write_text(self.path, data, encoding=encoding)
+
+    def rmtree(self, ignore_errors=False) -> None:
+        assert self.exists(), f"Path does not exist: {self.path}"
+        # check fs is RealFileSystem
+        assert isinstance(self.fs, RealFileSystem)
+        shutil.rmtree(self.path, ignore_errors=ignore_errors)
+
+    @property
+    def name(self) -> str:
+        return Path(self.path).name
+
+    @property
+    def parent(self) -> "FSPath":
+        parent_path = Path(self.path).parent
+        parent_str = parent_path.as_posix()
+        return FSPath(self.fs, parent_str)
+
+    def __truediv__(self, other: str) -> "FSPath":
+        new_path = Path(self.path) / other
+        return FSPath(self.fs, new_path.as_posix())

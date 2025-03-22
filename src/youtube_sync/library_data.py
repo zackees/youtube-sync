@@ -4,8 +4,8 @@
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
 
+from youtube_sync.filesystem import FSPath
 from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
 
@@ -49,11 +49,11 @@ class LibraryData:
         return not self.__eq__(value)
 
     @staticmethod
-    def from_json(data: dict | Path) -> "LibraryData | Exception | FileNotFoundError":
+    def from_json(data: dict | FSPath) -> "LibraryData | Exception | FileNotFoundError":
         """Create from dictionary."""
         try:
-            if isinstance(data, Path):
-                data_str = data.read_text(encoding="utf-8")
+            if isinstance(data, FSPath):
+                data_str = data.read_text()
                 data = json.loads(data_str)
                 assert isinstance(data, dict)
             channel_name = data["channel_name"]

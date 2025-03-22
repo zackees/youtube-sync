@@ -9,12 +9,11 @@ import traceback
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from pathlib import Path
 
 from appdirs import user_data_dir
 from filelock import FileLock
 
-from youtube_sync.filesystem import FileSystem, RealFileSystem
+from youtube_sync.filesystem import FSPath
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
@@ -31,7 +30,7 @@ _FILE_LOCK = FileLock(_get_library_json_lock_path())
 
 
 def _find_missing_downloads(
-    vids: list[VidEntry], dst_video_path: Path
+    vids: list[VidEntry], dst_video_path: FSPath
 ) -> list[VidEntry]:
     """Find missing downloads."""
     out: list[VidEntry] = []
@@ -55,7 +54,7 @@ def _make_library(
     channel_name: str,
     channel_url: str | None,  # None means auto-find
     source: Source,
-    library_path: Path,
+    library_path: FSPath,
 ) -> "Library":
     url = channel_url or to_channel_url(source=source, channel_name=channel_name)
     if library_path.exists():
@@ -78,12 +77,11 @@ class Library:
         channel_name: str,
         channel_url: str,
         source: Source | str,
-        json_path: Path,
-        filesystem: FileSystem | None = None,
+        json_path: FSPath,
     ) -> None:
         if isinstance(source, str):
             source = Source.from_str(source)
-        self.filesystem = filesystem or RealFileSystem()
+        self.filesystem = json_path.fs
         self.source = source
         self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
@@ -94,7 +92,7 @@ class Library:
         assert isinstance(self.libdata, LibraryData)
 
     @property
-    def path(self) -> Path:
+    def path(self) -> FSPath:
         """Get the path."""
         return self.json_path
 
@@ -102,10 +100,10 @@ class Library:
     def create(
         channel_name: str,
         channel_url: str | None,  # None means auto-find
-        media_output: Path,
+        media_output: FSPath,
         source: Source,
         # None means place the library at the root of the media_output
-        library_path: Path | None = None,
+        library_path: FSPath | None = None,
     ) -> "Library":
         library_path = library_path or media_output / "library.json"
         out = _make_library(
@@ -120,10 +118,10 @@ class Library:
     def get_or_create(
         channel_name: str,
         channel_url: str | None,  # None means auto-find
-        media_output: Path,
+        media_output: FSPath,
         source: Source,
         # None means place the library at the root of the media_output
-        library_path: Path | None = None,
+        library_path: FSPath | None = None,
     ) -> "Library":
         library_path = library_path or media_output / "library.json"
         if library_path.exists():
@@ -143,7 +141,7 @@ class Library:
         )
 
     @staticmethod
-    def from_json(json_path: Path) -> "Library | Exception | FileNotFoundError":
+    def from_json(json_path: FSPath) -> "Library | Exception | FileNotFoundError":
         """Create from json."""
         with _FILE_LOCK:
             lib_or_err = LibraryData.from_json(json_path)

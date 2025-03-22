@@ -8,10 +8,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from youtube_sync import Source, YouTubeSync
+from youtube_sync.filesystem import FSPath, RealFileSystem
 
 HERE = Path(__file__).parent
 PROJECT_ROOT = HERE.parent.parent
-TMP_DIR = PROJECT_ROOT / "tmp"
+_TMP_DIR = PROJECT_ROOT / "tmp"
+TMP_DIR = RealFileSystem().get_path(_TMP_DIR.as_posix())
 
 # def set_global_logging_level(level: int) -> None:
 # set_global_logging_level("DEBUG")
@@ -29,7 +31,7 @@ class Args:
     download_limit: int
     skip_scan: bool
 
-    def get_out_path(self) -> Path:
+    def get_out_path(self) -> FSPath:
         output = TMP_DIR / self.channel_name / "youtube"
         return output
 
