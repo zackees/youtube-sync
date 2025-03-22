@@ -9,11 +9,12 @@ import traceback
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from pathlib import Path
 
 from appdirs import user_data_dir
 from filelock import FileLock
 
-from youtube_sync.filesystem import FSPath
+from youtube_sync.filesystem import FSPath, RealFileSystem
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
@@ -77,10 +78,12 @@ class Library:
         channel_name: str,
         channel_url: str,
         source: Source | str,
-        json_path: FSPath,
+        json_path: FSPath | Path,
     ) -> None:
         if isinstance(source, str):
             source = Source.from_str(source)
+        if isinstance(json_path, Path):
+            json_path = RealFileSystem.get_real_path(json_path)
         self.filesystem = json_path.fs
         self.source = source
         self.ytdlp = YtDlp(source=source)
