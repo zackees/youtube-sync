@@ -72,6 +72,46 @@ class RealFileSystem(FileSystem):
         return FSPath(self, path)
 
 
+class RemoteFileSystem(FileSystem):
+    def __init__(self, rclone_conf: Path) -> None:
+        from rclone_api import Rclone
+
+        super().__init__()
+        self.rclone_conf = rclone_conf
+        self.rclone: Rclone = Rclone(rclone_conf)
+
+    def _to_str(self, path: Path | str) -> str:
+        if isinstance(path, Path):
+            return path.as_posix()
+        return path
+
+    def copy(self, src: Path | str, dest: Path | str) -> None:
+        src = self._to_str(src)
+        dest = self._to_str(dest)
+        self.rclone.copy(src, dest)
+
+    def read_binary(self, path: Path | str) -> bytes:
+        path = self._to_str(path)
+        err = self.rclone.read_bytes(path)
+        if err:
+            raise FileNotFoundError(f"File not found: {path}")
+        return err
+
+    def write_binary(self, path: Path | str, data: bytes) -> None:
+        path = self._to_str(path)
+        self.rclone.write_bytes(data, path)
+
+    def exists(self, path: Path | str) -> bool:
+        path = self._to_str(path)
+        return self.rclone.exists(path)
+
+    def mkdir(self, path: str, parents=True, exist_ok=True) -> None:
+        raise NotImplementedError("RemoteFileSystem does not support mkdir")
+
+    def get_path(self, path: str) -> "FSPath":
+        return FSPath(self, path)
+
+
 class FSPath:
     def __init__(self, fs: FileSystem, path: str) -> None:
         self.path = path

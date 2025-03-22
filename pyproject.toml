@@ -25,7 +25,8 @@ dependencies = [
     "download",
     "static-ffmpeg>=2.12",
     "pytest-playwright",
-    "beautifulsoup4>=4.13.3"
+    "beautifulsoup4>=4.13.3",
+    "rclone-api>=1.5.11",
 ]
 
 # Change this with the version number bump.
