@@ -15,6 +15,7 @@ from typing import Any
 from static_ffmpeg import add_paths
 
 from youtube_sync.types import Source
+from youtube_sync.uploader import Uploader
 
 from .cookies import Cookies
 from .types import ChannelId, VideoId
@@ -461,7 +462,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
 class YtDlpDownloader:
     """Class for downloading and converting YouTube videos to MP3."""
 
-    def __init__(self, url: str, outmp3: Path, cookies_txt: Path | None = None):
+    def __init__(self, url: str, outmp3: str, cookies_txt: Path | None = None):
         """Initialize the downloader with a temporary directory and download parameters.
 
         Args:
@@ -546,7 +547,7 @@ class YtDlpDownloader:
         self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
         return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
 
-    def copy_to_destination(self) -> None:
+    def copy_to_destination(self, uploader: Uploader) -> None:
         """Copy the converted MP3 to the final destination.
 
         Raises:
@@ -559,7 +560,7 @@ class YtDlpDownloader:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
 
         print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-        shutil.copy(str(self.temp_mp3), str(self.outmp3))
+        uploader.upload(self.temp_mp3, self.outmp3)
 
 
 def _is_youtube(url: str) -> bool:
@@ -615,8 +616,8 @@ class YtDlp:
         )
 
     def _process_conversion(
-        self, downloader: YtDlpDownloader
-    ) -> tuple[str, Path, Exception | None]:
+        self, downloader: YtDlpDownloader, uploader: Uploader
+    ) -> tuple[str, str, Exception | None]:
         """Process conversion and copying for a downloaded file.
 
         Args:
@@ -632,7 +633,7 @@ class YtDlp:
                 return (downloader.url, downloader.outmp3, convert_result)
 
             # Copy to destination
-            downloader.copy_to_destination()
+            downloader.copy_to_destination(uploader)
             return (downloader.url, downloader.outmp3, None)
         except Exception as e:
             return (downloader.url, downloader.outmp3, e)
@@ -642,9 +643,10 @@ class YtDlp:
 
     def download_mp3s(
         self,
-        downloads: list[tuple[str, Path]],
+        downloads: list[tuple[str, str]],
         download_pool: ThreadPoolExecutor,
-    ) -> list[Future[tuple[str, Path, Exception | None]]]:
+        uploader: Uploader,
+    ) -> list[Future[tuple[str, str, Exception | None]]]:
         """Download multiple YouTube videos as MP3s using thread pools.
 
         Args:
@@ -657,7 +659,7 @@ class YtDlp:
             where exception_or_none is None if download was successful,
             or the exception that occurred during download
         """
-        result_futures: list[Future[tuple[str, Path, Exception | None]]] = []
+        result_futures: list[Future[tuple[str, str, Exception | None]]] = []
 
         # Process each download
         for i, (url, outmp3) in enumerate(downloads):
@@ -665,7 +667,7 @@ class YtDlp:
             def on_done_task(count=i) -> None:
                 print(f"Download {count+1}/{len(downloads)} complete")
 
-            result_future: Future[tuple[str, Path, Exception | None]] = Future()
+            result_future: Future[tuple[str, str, Exception | None]] = Future()
             result_futures.append(result_future)
             result_future.add_done_callback(lambda _: on_done_task)
 
@@ -679,6 +681,7 @@ class YtDlp:
                 outmp3,
                 cookies,
                 download_pool,
+                uploader,
                 result_future,
             )
 
@@ -687,10 +690,11 @@ class YtDlp:
     def _process_download_and_convert(
         self,
         url: str,
-        outmp3: Path,
+        outmp3: str,
         cookies: Path | None,
         download_pool: ThreadPoolExecutor,
-        result_future: Future[tuple[str, Path, Exception | None]],
+        uploader: Uploader,
+        result_future: Future[tuple[str, str, Exception | None]],
     ) -> None:
         """Process the download and conversion for a single URL.
 
@@ -743,7 +747,7 @@ class YtDlp:
 
             # Submit conversion task and wait for it to complete
             convert_future = _FFMPEG_EXECUTORS.submit(
-                self._process_conversion, downloader
+                self._process_conversion, downloader, uploader
             )
             conversion_result = convert_future.result()
 
@@ -762,7 +766,7 @@ class YtDlp:
             # Clean up resources
             downloader.dispose()
 
-    def download_mp3(self, url: str, outmp3: Path) -> None:
+    def download_mp3(self, url: str, outmp3: str, uploader: Uploader) -> None:
         """Download a single YouTube video as MP3.
 
         Args:
@@ -778,6 +782,7 @@ class YtDlp:
             futures = self.download_mp3s(
                 [(url, outmp3)],
                 download_pool=download_pool,
+                uploader=uploader,
             )
 
             # Wait for the single future to complete

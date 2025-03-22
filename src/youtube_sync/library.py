@@ -16,6 +16,7 @@ from filelock import FileLock
 
 from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.to_channel_url import to_channel_url
+from youtube_sync.uploader import FileUploader, Uploader
 from youtube_sync.vid_entry import VidEntry
 from youtube_sync.ytdlp import YtDlp
 
@@ -78,9 +79,11 @@ class Library:
         channel_url: str,
         source: Source | str,
         json_path: Path,
+        uploader: Uploader | None = None,
     ) -> None:
         if isinstance(source, str):
             source = Source.from_str(source)
+        self.uploader = uploader or FileUploader()
         self.source = source
         self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
@@ -296,7 +299,9 @@ class Library:
                 try:
                     # Submit downloads to thread pools
                     futures = self.ytdlp.download_mp3s(
-                        downloads=downloads_to_process, download_pool=download_pool
+                        downloads=downloads_to_process,
+                        download_pool=download_pool,
+                        uploader=self.uploader,
                     )
                     if not futures:
                         print("No downloads to process. Exiting.")

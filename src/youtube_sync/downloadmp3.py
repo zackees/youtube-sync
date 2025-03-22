@@ -6,18 +6,15 @@ import os
 import subprocess
 import sys
 import warnings
-from pathlib import Path
 
-from youtube_sync.types import Source
-from youtube_sync.ytdlp import YtDlp, yt_dlp_exe
-
-
-def download_mp3(url: str, outmp3: Path, ytdlp: YtDlp) -> None:
-    """Download the youtube video as an mp3."""
-    return ytdlp.download_mp3(url=url, outmp3=outmp3)
+# def download_mp3(url: str, outmp3: str, ytdlp: YtDlp) -> None:
+#     """Download the youtube video as an mp3."""
+#     return ytdlp.download_mp3(url=url, outmp3=outmp3)
 
 
 def update_yt_dlp(check: bool) -> bool:
+    from youtube_sync.ytdlp import yt_dlp_exe
+
     yt_exe = yt_dlp_exe()
     if isinstance(yt_exe, Exception):
         warnings.warn(f"can't update because yt-dlp not found: {yt_exe}")
@@ -54,9 +51,16 @@ def update_yt_dlp(check: bool) -> bool:
 
 def unit_test() -> None:
     """Run the tests."""
+
+    from youtube_sync import Source
+    from youtube_sync.uploader import FileUploader
+    from youtube_sync.ytdlp import YtDlp
+
     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
-    outmp3 = Path("tmp.mp3")
-    download_mp3(url=url, outmp3=outmp3, ytdlp=YtDlp(source=Source.YOUTUBE))
+    outmp3 = "tmp.mp3"
+    ytdlp = YtDlp(source=Source.YOUTUBE)
+    uploader = FileUploader()
+    ytdlp.download_mp3(url=url, outmp3=outmp3, uploader=uploader)
     print(f"Downloaded {url} as {outmp3}")
     os.remove(outmp3)
 
