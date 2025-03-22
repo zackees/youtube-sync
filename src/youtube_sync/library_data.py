@@ -53,9 +53,12 @@ class LibraryData:
         """Create from dictionary."""
         try:
             if isinstance(data, FSPath):
-                data_str = data.read_text()
-                data = json.loads(data_str)
-                assert isinstance(data, dict)
+                try:
+                    data_str = data.read_text()
+                    data = json.loads(data_str)
+                    assert isinstance(data, dict)
+                except FileNotFoundError as e:
+                    return e
             channel_name = data["channel_name"]
             channel_url = data["channel_url"]
             source = Source.from_str(data["source"])

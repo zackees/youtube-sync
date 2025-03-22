@@ -2,7 +2,7 @@ import _thread
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
-from youtube_sync import FS
+from youtube_sync import FSPath
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
@@ -14,8 +14,8 @@ from youtube_sync.ytdlp.ytdlp import Cookies
 
 
 def _process_conversion(
-    downloader: YtDlpDownloader, filesystem: FS
-) -> tuple[str, str, Exception | None]:
+    downloader: YtDlpDownloader,
+) -> tuple[str, FSPath, Exception | None]:
     """Process conversion and copying for a downloaded file.
 
     Args:
@@ -31,7 +31,7 @@ def _process_conversion(
             return (downloader.url, downloader.outmp3, convert_result)
 
         # Copy to destination
-        downloader.copy_to_destination(filesystem)
+        downloader.copy_to_destination()
         return (downloader.url, downloader.outmp3, None)
     except Exception as e:
         return (downloader.url, downloader.outmp3, e)
@@ -41,11 +41,10 @@ def _process_conversion(
 
 
 def download_mp3s(
-    downloads: list[tuple[str, str]],
+    downloads: list[tuple[str, FSPath]],
     download_pool: ThreadPoolExecutor,
-    filesystem: FS,
     cookies: Cookies | None = None,
-) -> list[Future[tuple[str, str, Exception | None]]]:
+) -> list[Future[tuple[str, FSPath, Exception | None]]]:
     """Download multiple YouTube videos as MP3s using thread pools.
 
     Args:
@@ -58,7 +57,7 @@ def download_mp3s(
         where exception_or_none is None if download was successful,
         or the exception that occurred during download
     """
-    result_futures: list[Future[tuple[str, str, Exception | None]]] = []
+    result_futures: list[Future[tuple[str, FSPath, Exception | None]]] = []
 
     # Process each download
     for i, (url, outmp3) in enumerate(downloads):
@@ -66,7 +65,7 @@ def download_mp3s(
         def on_done_task(count=i) -> None:
             print(f"Download {count+1}/{len(downloads)} complete")
 
-        result_future: Future[tuple[str, str, Exception | None]] = Future()
+        result_future: Future[tuple[str, FSPath, Exception | None]] = Future()
         result_futures.append(result_future)
         result_future.add_done_callback(lambda _: on_done_task)
 
@@ -82,7 +81,6 @@ def download_mp3s(
             outmp3,
             cookies,
             download_pool,
-            filesystem,
             result_future,
         )
 
@@ -91,11 +89,10 @@ def download_mp3s(
 
 def _process_download_and_convert(
     url: str,
-    outmp3: str,
+    outmp3: FSPath,
     cookies: Path | None,
     download_pool: ThreadPoolExecutor,
-    filesystem: FS,
-    result_future: Future[tuple[str, str, Exception | None]],
+    result_future: Future[tuple[str, FSPath, Exception | None]],
 ) -> None:
     """Process the download and conversion for a single URL.
 
@@ -147,9 +144,7 @@ def _process_download_and_convert(
             return
 
         # Submit conversion task and wait for it to complete
-        convert_future = FFMPEG_EXECUTORS.submit(
-            _process_conversion, downloader, filesystem
-        )
+        convert_future = FFMPEG_EXECUTORS.submit(_process_conversion, downloader)
         conversion_result = convert_future.result()
 
         # Set the final result

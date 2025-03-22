@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 
 # from youtube_sync.filesystem import FS
-from youtube_sync import FS
+from youtube_sync import FSPath
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
 
@@ -14,7 +14,7 @@ from .exe import YtDlpCmdRunner
 class YtDlpDownloader:
     """Class for downloading and converting YouTube videos to MP3."""
 
-    def __init__(self, url: str, outmp3: str, cookies_txt: Path | None = None):
+    def __init__(self, url: str, outmp3: FSPath, cookies_txt: Path | None = None):
         """Initialize the downloader with a temporary directory and download parameters.
 
         Args:
@@ -32,9 +32,10 @@ class YtDlpDownloader:
         self.temp_mp3: Path | None = None
 
         # Ensure output directory exists
-        par_dir = os.path.dirname(str(outmp3))
+        par_dir = outmp3.parent
         if par_dir:
-            os.makedirs(par_dir, exist_ok=True)
+            # os.makedirs(par_dir, exist_ok=True)
+            par_dir.mkdir(parents=True, exist_ok=True)
 
     def __enter__(self):
         """Support for context manager."""
@@ -99,7 +100,7 @@ class YtDlpDownloader:
         self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
         return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
 
-    def copy_to_destination(self, filesystem: FS) -> None:
+    def copy_to_destination(self) -> None:
         """Copy the converted MP3 to the final destination.
 
         Raises:
@@ -112,4 +113,6 @@ class YtDlpDownloader:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
 
         print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-        filesystem.copy(self.temp_mp3, self.outmp3)
+
+        data = self.temp_mp3.read_bytes()
+        self.outmp3.write_bytes(data)
