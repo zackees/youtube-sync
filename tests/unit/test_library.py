@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from youtube_sync.filesystem import RealFileSystem
+from youtube_sync import RealFileSystem
 from youtube_sync.library import Library
 from youtube_sync.vid_entry import VidEntry
 

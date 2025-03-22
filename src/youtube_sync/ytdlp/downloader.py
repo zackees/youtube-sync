@@ -2,9 +2,10 @@ import os
 import tempfile
 from pathlib import Path
 
+# from youtube_sync.filesystem import FileSystem
+from youtube_sync import FileSystem
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
-from youtube_sync.filesystem import FileSystem
 
 from .error import KeyboardInterruptException, check_keyboard_interrupt
 from .exe import YtDlpCmdRunner

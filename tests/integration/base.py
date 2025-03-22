@@ -7,8 +7,7 @@ Command entry point.
 from dataclasses import dataclass
 from pathlib import Path
 
-from youtube_sync import Source, YouTubeSync
-from youtube_sync.filesystem import FSPath, RealFileSystem
+from youtube_sync import FSPath, RealFileSystem, Source, YouTubeSync
 
 HERE = Path(__file__).parent
 PROJECT_ROOT = HERE.parent.parent

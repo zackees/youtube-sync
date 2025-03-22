@@ -6,8 +6,8 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from youtube_sync import FileSystem
 from youtube_sync.cookies import Cookies
-from youtube_sync.filesystem import FileSystem
 from youtube_sync.types import ChannelId, Source
 from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 

@@ -1,5 +1,6 @@
+from rclone_api.filesystem import FileSystem, FSPath, RealFileSystem, RemoteFileSystem
+
 from .create import create
-from .filesystem import FSPath
 from .library import Library
 from .sync_impl import BaseSync
 from .types import Source
@@ -84,4 +85,15 @@ class YouTubeSync:
         self.download(download_limit)
 
 
-__all__ = ["YouTubeSync", "update_yt_dlp", "Source", "Library", "VidEntry", "FSPath"]
+__all__ = [
+    "YouTubeSync",
+    "update_yt_dlp",
+    "Source",
+    "Library",
+    "VidEntry",
+    "FSPath",
+    "FSPath",
+    "FileSystem",
+    "RealFileSystem",
+    "RemoteFileSystem",
+]

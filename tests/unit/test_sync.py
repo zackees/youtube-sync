@@ -5,8 +5,7 @@ Unit test file.
 import unittest
 from pathlib import Path
 
-from youtube_sync import Source, YouTubeSync
-from youtube_sync.filesystem import RealFileSystem
+from youtube_sync import RealFileSystem, Source, YouTubeSync
 
 HERE = Path(__file__).parent
 _TEST_DATA = HERE / "test_data" / "test_sync"

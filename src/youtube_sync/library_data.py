@@ -5,7 +5,7 @@
 import json
 from dataclasses import dataclass
 
-from youtube_sync.filesystem import FSPath
+from youtube_sync import FSPath
 from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
 
