@@ -1,4 +1,4 @@
-from rclone_api.filesystem import FSPath
+from rclone_api.fs import FSPath
 
 from .create import create
 from .library import Library

@@ -2,7 +2,7 @@ import _thread
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
-from youtube_sync import FileSystem
+from youtube_sync import FS
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
@@ -14,7 +14,7 @@ from youtube_sync.ytdlp.ytdlp import Cookies
 
 
 def _process_conversion(
-    downloader: YtDlpDownloader, filesystem: FileSystem
+    downloader: YtDlpDownloader, filesystem: FS
 ) -> tuple[str, str, Exception | None]:
     """Process conversion and copying for a downloaded file.
 
@@ -43,7 +43,7 @@ def _process_conversion(
 def download_mp3s(
     downloads: list[tuple[str, str]],
     download_pool: ThreadPoolExecutor,
-    filesystem: FileSystem,
+    filesystem: FS,
     cookies: Cookies | None = None,
 ) -> list[Future[tuple[str, str, Exception | None]]]:
     """Download multiple YouTube videos as MP3s using thread pools.
@@ -94,7 +94,7 @@ def _process_download_and_convert(
     outmp3: str,
     cookies: Path | None,
     download_pool: ThreadPoolExecutor,
-    filesystem: FileSystem,
+    filesystem: FS,
     result_future: Future[tuple[str, str, Exception | None]],
 ) -> None:
     """Process the download and conversion for a single URL.

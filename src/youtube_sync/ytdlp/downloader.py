@@ -2,8 +2,8 @@ import os
 import tempfile
 from pathlib import Path
 
-# from youtube_sync.filesystem import FileSystem
-from youtube_sync import FileSystem
+# from youtube_sync.filesystem import FS
+from youtube_sync import FS
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
 
@@ -99,7 +99,7 @@ class YtDlpDownloader:
         self.temp_mp3 = Path(os.path.join(self.temp_dir_path, "converted.mp3"))
         return convert_audio_to_mp3(self.downloaded_file, self.temp_mp3)
 
-    def copy_to_destination(self, filesystem: FileSystem) -> None:
+    def copy_to_destination(self, filesystem: FS) -> None:
         """Copy the converted MP3 to the final destination.
 
         Raises:

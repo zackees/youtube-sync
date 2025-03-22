@@ -6,7 +6,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from youtube_sync import FileSystem
+from youtube_sync import FS
 from youtube_sync.cookies import Cookies
 from youtube_sync.types import ChannelId, Source
 from youtube_sync.ytdlp.exe import YtDlpCmdRunner
@@ -212,7 +212,7 @@ class YtDlp:
         self,
         downloads: list[tuple[str, str]],
         download_pool: ThreadPoolExecutor,
-        filesystem: FileSystem,
+        filesystem: FS,
     ) -> list[Future[tuple[str, str, Exception | None]]]:
         from youtube_sync.ytdlp.bulk_download_mp3s import download_mp3s
 
@@ -225,7 +225,7 @@ class YtDlp:
             cookies,
         )
 
-    def download_mp3(self, url: str, outmp3: str, filesystem: FileSystem) -> None:
+    def download_mp3(self, url: str, outmp3: str, filesystem: FS) -> None:
         """Download a single YouTube video as MP3.
 
         Args:

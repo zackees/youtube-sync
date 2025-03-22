@@ -1,4 +1,4 @@
-from rclone_api.filesystem import FileSystem, FSPath, RealFS, RemoteFS
+from rclone_api.fs import FS, FSPath, RealFS, RemoteFS
 
 from .library import Library
 from .types import Source
@@ -76,7 +76,7 @@ __all__ = [
     "VidEntry",
     "FSPath",
     "FSPath",
-    "FileSystem",
+    "FS",
     "RealFS",
     "RemoteFS",
 ]
