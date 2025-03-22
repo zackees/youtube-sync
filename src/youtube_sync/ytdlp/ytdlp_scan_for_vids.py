@@ -10,10 +10,9 @@ import warnings
 from pathlib import Path
 
 from youtube_sync.library import VidEntry
+from youtube_sync.logutil import create_logger
 
-# Set up module logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logger = create_logger(__name__, logging.DEBUG)
 
 
 def _json_to_vid_entry(data: dict) -> VidEntry:
