@@ -13,7 +13,7 @@ from youtube_sync.ytdlp.ytdlp import YtDlpDownloader
 
 
 def _process_conversion(
-    self, downloader: YtDlpDownloader, uploader: Uploader
+    downloader: YtDlpDownloader, uploader: Uploader
 ) -> tuple[str, str, Exception | None]:
     """Process conversion and copying for a downloaded file.
 
@@ -147,7 +147,7 @@ def _process_download_and_convert(
 
         # Submit conversion task and wait for it to complete
         convert_future = FFMPEG_EXECUTORS.submit(
-            self._process_conversion, downloader, uploader
+            _process_conversion, downloader, uploader
         )
         conversion_result = convert_future.result()
 
