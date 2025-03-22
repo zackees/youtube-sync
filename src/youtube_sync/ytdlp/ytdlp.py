@@ -11,12 +11,6 @@ from youtube_sync.cookies import Cookies
 from youtube_sync.types import ChannelId, Source, VideoId
 from youtube_sync.uploader import Uploader
 
-from .downloader import YtDlpDownloader
-
-# yt-dlp-ChromeCookieUnlock
-
-# https://github.com/seproDev/yt-dlp-ChromeCookieUnlock?tab=readme-ov-file
-
 
 def yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
     yt_exe = shutil.which("yt-dlp")
@@ -270,38 +264,6 @@ class YtDlp:
         return _fetch_channel_id_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
-
-    # def fetch_videos_from_channel(self, channel_url: str) -> list[VideoId]:
-    #     cookies_txt = self._extract_cookies_if_needed()
-    #     return _fetch_videos_from_channel(
-    #         channel_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
-    #     )
-
-    def _process_conversion(
-        self, downloader: YtDlpDownloader, uploader: Uploader
-    ) -> tuple[str, str, Exception | None]:
-        """Process conversion and copying for a downloaded file.
-
-        Args:
-            downloader: The YtDlpDownloader instance with a downloaded file
-
-        Returns:
-            Tuple of (url, output_path, exception_or_none)
-        """
-        try:
-            # Convert to MP3
-            convert_result = downloader.convert_to_mp3()
-            if isinstance(convert_result, Exception):
-                return (downloader.url, downloader.outmp3, convert_result)
-
-            # Copy to destination
-            downloader.copy_to_destination(uploader)
-            return (downloader.url, downloader.outmp3, None)
-        except Exception as e:
-            return (downloader.url, downloader.outmp3, e)
-        finally:
-            # Clean up resources
-            downloader.dispose()
 
     def download_mp3s(
         self,

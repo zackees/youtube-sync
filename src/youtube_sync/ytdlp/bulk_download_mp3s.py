@@ -4,12 +4,12 @@ from pathlib import Path
 
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.uploader import Uploader
+from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
     KeyboardInterruptException,
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
-from youtube_sync.ytdlp.ytdlp import YtDlpDownloader
 
 
 def _process_conversion(
