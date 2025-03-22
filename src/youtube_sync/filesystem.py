@@ -8,7 +8,7 @@ class FileSystem(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def copy(self, src: Path, dest: str) -> None:
+    def copy(self, src: Path | str, dest: Path | str) -> None:
         pass
 
 
@@ -16,5 +16,5 @@ class RealFileSystem(FileSystem):
     def __init__(self) -> None:
         super().__init__()
 
-    def copy(self, src: Path, dest: str) -> None:
-        shutil.copy(str(src), dest)
+    def copy(self, src: Path | str, dest: Path | str) -> None:
+        shutil.copy(str(src), str(dest))
