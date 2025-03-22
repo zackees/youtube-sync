@@ -1,11 +1,11 @@
 from pathlib import Path
 
 from .create import create
-from .downloadmp3 import update_yt_dlp
 from .library import Library
 from .sync_impl import BaseSync
 from .types import Source
 from .vid_entry import VidEntry
+from .ytdllp_update import update_yt_dlp
 
 
 class YouTubeSync:

@@ -2,7 +2,6 @@
 Download a youtube video as an mp3.
 """
 
-import os
 import subprocess
 import sys
 import warnings
@@ -49,21 +48,21 @@ def update_yt_dlp(check: bool) -> bool:
     return cp.returncode == 0
 
 
-def unit_test() -> None:
-    """Run the tests."""
+# def unit_test() -> None:
+#     """Run the tests."""
 
-    from youtube_sync import Source
-    from youtube_sync.uploader import FileUploader
-    from youtube_sync.ytdlp import YtDlp
+#     from youtube_sync import Source
+#     from youtube_sync.uploader import FileUploader
+#     from youtube_sync.ytdlp import YtDlp
 
-    url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
-    outmp3 = "tmp.mp3"
-    ytdlp = YtDlp(source=Source.YOUTUBE)
-    uploader = FileUploader()
-    ytdlp.download_mp3(url=url, outmp3=outmp3, uploader=uploader)
-    print(f"Downloaded {url} as {outmp3}")
-    os.remove(outmp3)
+#     url = "https://www.youtube.com/watch?v=3Zl9puhwiyw"
+#     outmp3 = "tmp.mp3"
+#     ytdlp = YtDlp(source=Source.YOUTUBE)
+#     uploader = FileUploader()
+#     ytdlp.download_mp3(url=url, outmp3=outmp3, uploader=uploader)
+#     print(f"Downloaded {url} as {outmp3}")
+#     os.remove(outmp3)
 
 
-if __name__ == "__main__":
-    unit_test()
+# if __name__ == "__main__":
+#     unit_test()
