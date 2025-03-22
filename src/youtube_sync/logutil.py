@@ -9,9 +9,10 @@ def _init_once() -> None:
     if _INITIALIZED:
         return
     logging.basicConfig(level=logging.INFO)
+    _INITIALIZED = True
 
 
-def set_global_logging_level(level: int) -> None:
+def set_global_logging_level(level: int | str) -> None:
     """Set the global logging level."""
     _init_once()
     logging.getLogger().setLevel(level)

@@ -10,11 +10,16 @@ from open_webdriver import open_webdriver  # type: ignore
 
 from .types import Source
 
-_COOKIE_REFRESH_HOURS = 2
-
 # Set up module logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
+
+COOKIE_REFRESH_SECONDS = 2 * 60 * 60  # 2 hours
+
+
+def set_cookie_refresh_seconds(seconds: int) -> None:
+    global COOKIE_REFRESH_SECONDS
+    COOKIE_REFRESH_SECONDS = seconds
 
 
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
@@ -125,23 +130,14 @@ class CookiePaths:
         return out
 
 
-_COOKIE_PATHS: dict[Source, CookiePaths] | None = None
-
-
-def _make_cookie_path_map() -> dict[Source, CookiePaths]:
-    out = {
-        Source.YOUTUBE: CookiePaths.create(Source.YOUTUBE),
-        Source.RUMBLE: CookiePaths.create(Source.RUMBLE),
-        Source.BRIGHTEON: CookiePaths.create(Source.BRIGHTEON),
-    }
-    return out
-
-
 def get_cookie_paths(source: Source) -> CookiePaths:
-    global _COOKIE_PATHS
-    if _COOKIE_PATHS is None:
-        _COOKIE_PATHS = _make_cookie_path_map()
-    return _COOKIE_PATHS[source]
+    if source == Source.YOUTUBE:
+        return CookiePaths.create(Source.YOUTUBE)
+    if source == Source.RUMBLE:
+        return CookiePaths.create(Source.RUMBLE)
+    if source == Source.BRIGHTEON:
+        return CookiePaths.create(Source.BRIGHTEON)
+    raise ValueError(f"Unknown source: {source}")
 
 
 def get_or_refresh_cookies(
@@ -158,7 +154,9 @@ def get_or_refresh_cookies(
         # case 1: we have cookies
         if cookies is not None:
             # and they are not expired
-            expire_time = cookies.creation_time + timedelta(hours=_COOKIE_REFRESH_HOURS)
+            expire_time = cookies.creation_time + timedelta(
+                seconds=COOKIE_REFRESH_SECONDS
+            )
             if now < expire_time:
                 return cookies
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
@@ -166,8 +164,8 @@ def get_or_refresh_cookies(
             try:
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
                 if isinstance(yt_cookies, Cookies):
-                    hours_old = (now - yt_cookies.creation_time).seconds / 3600
-                    if hours_old < _COOKIE_REFRESH_HOURS:
+                    seconds_old = (now - yt_cookies.creation_time).seconds
+                    if seconds_old < COOKIE_REFRESH_SECONDS:
                         # save the cookies to the new location
                         yt_cookies.save(cookies_pkl)
                         yt_cookies.save(cookies_txt)
