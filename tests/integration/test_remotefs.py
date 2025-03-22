@@ -117,7 +117,8 @@ def unit_test() -> None:
     destination = _get_test_dst_fsfile_remote()
 
     print("\n##############################################")
-    print("Running unit test")
+    print(f"# Running with cwd: {destination}")
+    print("##############################################\n")
 
     args = Args(
         channel_name="@silverguru",
