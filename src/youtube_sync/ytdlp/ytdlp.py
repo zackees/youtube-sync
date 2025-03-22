@@ -233,20 +233,22 @@ class YtDlp:
         self.yt_exe: Path = yt_exe
         self.cookies: Cookies | None = None
 
-    def _extract_cookies_if_needed(self) -> Path | None:
+    def _extract_cookies_if_needed(self) -> Cookies | None:
         if self.source == Source.YOUTUBE:
             self.cookies = Cookies.load(self.source)
-            return self.cookies.path_txt
+            return self.cookies
         return None
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
-        cookies_txt = self._extract_cookies_if_needed()
+        cookies = self._extract_cookies_if_needed()
+        cookies_txt = cookies.path_txt if cookies is not None else None
         return _fetch_channel_info_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
-        cookies_txt = self._extract_cookies_if_needed()
+        cookies = self._extract_cookies_if_needed()
+        cookies_txt = cookies.path_txt if cookies is not None else None
         return _fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
@@ -254,13 +256,15 @@ class YtDlp:
         )
 
     def fetch_channel_url(self, video_url: str) -> str:
-        cookies_txt = self._extract_cookies_if_needed()
+        cookies = self._extract_cookies_if_needed()
+        cookies_txt = cookies.path_txt if cookies is not None else None
         return _fetch_channel_url_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
-        cookies_txt = self._extract_cookies_if_needed()
+        cookies = self._extract_cookies_if_needed()
+        cookies_txt = cookies.path_txt if cookies is not None else None
         return _fetch_channel_id_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
@@ -273,11 +277,13 @@ class YtDlp:
     ) -> list[Future[tuple[str, str, Exception | None]]]:
         from youtube_sync.ytdlp.bulk_download_mp3s import download_mp3s
 
+        cookies = self._extract_cookies_if_needed()
+
         return download_mp3s(
-            self,
             downloads,
             download_pool,
             uploader,
+            cookies,
         )
 
     def download_mp3(self, url: str, outmp3: str, uploader: Uploader) -> None:

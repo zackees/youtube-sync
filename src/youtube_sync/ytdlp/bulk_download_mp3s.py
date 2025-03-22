@@ -10,6 +10,7 @@ from youtube_sync.ytdlp.error import (
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
+from youtube_sync.ytdlp.ytdlp import Cookies
 
 
 def _process_conversion(
@@ -40,10 +41,10 @@ def _process_conversion(
 
 
 def download_mp3s(
-    self,
     downloads: list[tuple[str, str]],
     download_pool: ThreadPoolExecutor,
     uploader: Uploader,
+    cookies: Cookies | None = None,
 ) -> list[Future[tuple[str, str, Exception | None]]]:
     """Download multiple YouTube videos as MP3s using thread pools.
 
@@ -57,9 +58,6 @@ def download_mp3s(
         where exception_or_none is None if download was successful,
         or the exception that occurred during download
     """
-    from youtube_sync.ytdlp.ytdlp import YtDlp
-
-    assert isinstance(self, YtDlp)
     result_futures: list[Future[tuple[str, str, Exception | None]]] = []
 
     # Process each download
@@ -73,12 +71,13 @@ def download_mp3s(
         result_future.add_done_callback(lambda _: on_done_task)
 
         # Extract cookies if needed
-        cookies = self._extract_cookies_if_needed()
+        # cookies = self._extract_cookies_if_needed()
+        if cookies is not None:
+            cookies = cookies.refresh()
 
         # Submit the entire download and conversion process as a single task
         FUTURE_RESOLVER_POOL.submit(
             _process_download_and_convert,
-            self,
             url,
             outmp3,
             cookies,
@@ -91,7 +90,6 @@ def download_mp3s(
 
 
 def _process_download_and_convert(
-    self,
     url: str,
     outmp3: str,
     cookies: Path | None,
