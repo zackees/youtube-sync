@@ -1,4 +1,3 @@
-# FROM ubuntu:22.04
 FROM ubuntu:25.04
 
 
@@ -9,6 +8,9 @@ ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
+
+# Install required packages for Chrome
+RUN apt-get install -y wget gnupg
 
 RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev
 RUN apt-get install -y libgtk-3-dev libnotify-dev libnss3 libxss1 libasound2t64
@@ -88,14 +90,39 @@ RUN apt-get install -y python3-pip
 RUN apt-get install -y ca-certificates
 RUN apt-get install -y --fix-missing bash
 
+# Add Chrome repository and install specific version of Chrome
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+    apt-get update && \
+    apt-get install -y google-chrome-stable
+
+# Install ChromeDriver 114.0.5735.90 (which is compatible with Chrome 114)
+RUN mkdir -p /opt/chromedriver && \
+    wget -q https://storage.googleapis.com/chrome-for-testing-public/114.0.5735.90/linux64/chromedriver-linux64.zip -O /tmp/chromedriver.zip && \
+    unzip /tmp/chromedriver.zip -d /tmp/ && \
+    mv /tmp/chromedriver-linux64/chromedriver /opt/chromedriver/ && \
+    chmod +x /opt/chromedriver/chromedriver && \
+    rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
+
+# Add ChromeDriver to PATH
+ENV PATH="/opt/chromedriver:${PATH}"
+
 RUN mkdir -p /mytemp && chmod 1777 /mytemp
 ENV TMPDIR=/mytemp
 
 RUN pip install -U magic-wormhole uv --break-system-packages
 
+# Add after the initial FROM statement and before any installations
+RUN useradd -m -u 1001 -s /bin/bash user
+
+# Add near the end of the file, before the WORKDIR directive
+# Change ownership of the app directory to the new user
+RUN mkdir -p /app && chown -R user:user /app
+
 
 # Ensure /app is owned by the new user
 WORKDIR /app
+USER user
 
 # Add requirements and install
 COPY  pyproject.toml .

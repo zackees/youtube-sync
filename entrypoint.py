@@ -1,10 +1,4 @@
-
-
-# CMD ["uv", "run", "-m", "youtube_sync.cli.sync_multiple", "config.json"]
-
-
 import subprocess
-
 import os
 
 PORT = str(os.environ.get("PORT", "80"))

@@ -2,6 +2,8 @@
 requires = ["setuptools>=65.5.1", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
+
+
 [project]
 name = "youtube_sync"
 readme = "README.md"
@@ -10,6 +12,9 @@ requires-python = ">=3.10"
 keywords = ["template-python-cmd"]
 license = { text = "BSD 3-Clause License" }
 classifiers = ["Programming Language :: Python :: 3"]
+maintainers = [
+    {name = "Zachary Vorhies"}
+]
 
 dependencies = [
     "filelock",
