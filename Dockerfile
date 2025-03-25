@@ -11,13 +11,10 @@ RUN apt-get update && apt-get install -y python3-pip
 # RUN curl https://rclone.org/install.sh | sudo bash
 RUN pip3 install -U magic-wormhole uv --break-system-packages
 
-# Create a non-root user
-RUN useradd -m -u 1001 -s /bin/bash user
-RUN mkdir -p /app && chown -R user:user /app
+
 
 # Set up working directory
 WORKDIR /app
-USER user
 
 # Set temp dir
 RUN mkdir -p /mytemp
@@ -27,7 +24,7 @@ ENV TMPDIR=/mytemp
 COPY pyproject.toml ./
 RUN uv venv && uv pip install -r pyproject.toml
 
-COPY --chown=user:user . /app
+COPY . /app
 RUN uv pip install -e .
 
 # Runtime config
