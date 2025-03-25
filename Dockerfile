@@ -27,6 +27,8 @@ RUN wget -q -O /tmp/chrome.deb https://mirror.cs.uchicago.edu/google-chrome/pool
 RUN mkdir -p /mytemp && chmod 1777 /mytemp
 ENV TMPDIR=/mytemp
 
+RUN apt-get install -y Xvfb
+
 # Python tools
 RUN pip install -U magic-wormhole uv --break-system-packages
 

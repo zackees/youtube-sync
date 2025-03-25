@@ -33,6 +33,7 @@ dependencies = [
     "beautifulsoup4>=4.13.3",
     "virtual-fs>=1.0.10",
     "webdriver-manager",
+    "pyvirtualdisplay"
 ]
 
 # Change this with the version number bump.
