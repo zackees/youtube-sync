@@ -8,9 +8,9 @@ from pathlib import Path
 
 from virtual_fs import FSPath, Vfs
 
-from youtube_sync import Source
 from youtube_sync.json_util import load_dict
 from youtube_sync.settings import ENV_JSON
+from youtube_sync.types import Source
 
 
 @dataclass

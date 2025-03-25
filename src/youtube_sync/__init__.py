@@ -1,5 +1,6 @@
 from virtual_fs import FSPath, RealFS, RemoteFS, Vfs
 
+from .config import Channel
 from .library import Library
 from .types import Source
 from .vid_entry import VidEntry
@@ -83,4 +84,6 @@ __all__ = [
     "FSPath",
     "RealFS",
     "RemoteFS",
+    "Channel",
+    "Source",
 ]
