@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     software-properties-common python3-pip firefox
 
 # Install geckodriver manually
-ENV GECKODRIVER_VERSION=v0.34.0
+ENV GECKODRIVER_VERSION=v0.36.0
 RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
     tar -xzf "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" -C /usr/local/bin && \
     rm "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
