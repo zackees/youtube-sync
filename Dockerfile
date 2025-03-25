@@ -83,33 +83,33 @@ RUN apt-get install -y --fix-missing bash
 RUN mkdir -p /mytemp && chmod 1777 /mytemp
 ENV TMPDIR=/mytemp
 
-# RUN curl https://rclone.org/install.sh | sudo bash
+RUN pip install --upgrade pip && \
+    pip install -U magic-wormhole uv
 
-RUN pip install --upgrade pip
-# Install the necessary packages, magic-wormhole to get files off the container easily
-# and uv to run the app.
-RUN python -m pip install -U \
-  magic-wormhole \
-  uv
+# ---- ADD NON-ROOT USER HERE ----
+# Create a non-root user and group
+RUN groupadd --gid 1000 appuser && \
+    useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
 
+# Ensure /app is owned by the new user
+RUN mkdir -p /app && chown appuser:appuser /app
 WORKDIR /app
-# Add requirements file and install.
 
-COPY pyproject.toml .
+# Switch to non-root user from this point on
+USER appuser
 
-RUN uv venv
-RUN uv pip install -r pyproject.toml
-COPY . .
+# Add requirements and install
+COPY --chown=appuser:appuser pyproject.toml .
+
+RUN uv venv && \
+    uv pip install -r pyproject.toml
+
+COPY --chown=appuser:appuser . .
+
 RUN uv pip install -e .
 
-
-
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
-
-# Expose the port and then launch the app.
 EXPOSE 80
 ENV PORT=80
 
-#Blah
-#CMD ["python", "-m", "http.server", "80"]
 CMD ["uv", "run", "entrypoint.py"]
