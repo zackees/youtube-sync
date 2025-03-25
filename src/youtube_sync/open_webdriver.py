@@ -37,6 +37,9 @@ def _init_log() -> None:
                 filed.write("\n\n  WARNING: Running as root. The driver may crash!\n\n")
 
 
+_IS_DOCKER = True
+
+
 def _make_options(
     headless: bool,
     user_agent: str | None,
@@ -59,6 +62,9 @@ def _make_options(
 
     if user_agent:
         opts.add_argument(f"--user-agent={user_agent}")
+
+    if _IS_DOCKER:
+        opts.add_argument("--remote-debugging-address=0.0.0.0")
 
     return opts
 
