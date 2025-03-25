@@ -3,8 +3,8 @@
     "rclone": {
       "dst": {
         "type": "b2",
-        "account": "****",
-        "key": "****"
+        "account": "*****",
+        "key": "*****"
       }
     },
     "channels": [

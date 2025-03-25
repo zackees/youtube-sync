@@ -6,22 +6,49 @@ import unittest
 from pathlib import Path
 
 from youtube_sync.config import CmdOptions, Config
+from youtube_sync.json_util import load_dict
 
 HERE = Path(__file__).parent
-CONFIG_JSON = HERE / "test_data" / "config.json"
+
+
+CONFIG_JSON_TXT = """
+{
+    "output": "dst:TorrentBooks/podcast",
+    "rclone": {
+      "dst": {
+        "type": "b2",
+        "account": "****",
+        "key": "****"
+      }
+    },
+    "channels": [
+      {
+        "name": "PlandemicSeriesOfficial",
+        "source": "rumble",
+        "channel_id": "PlandemicSeriesOfficial"
+      },
+      {
+        "name": "RonGibson",
+        "source": "brighteon",
+        "channel_id": "rongibsonchannel"
+      },
+      {
+        "name": "TheDuran",
+        "source": "youtube",
+        "channel_id": "@theduran"
+      }
+    ]
+  }
+  """
 
 
 class ConfigJsonTester(unittest.TestCase):
     """Main tester class."""
 
-    def test_sanity(self) -> None:
-        """Test command line interface (CLI)."""
-        self.assertTrue(CONFIG_JSON.exists())
-
     def test_json_parsing(self) -> None:
         """Test command line interface (CLI)."""
-
-        config = Config.from_file(CONFIG_JSON)
+        data = load_dict(CONFIG_JSON_TXT)
+        config = Config.from_dict(data)
         self.assertIsInstance(config, Config)
         assert isinstance(config, Config)
         self.assertEqual(config.output, "dst:TorrentBooks/podcast")
