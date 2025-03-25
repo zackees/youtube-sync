@@ -84,17 +84,6 @@ RUN apt-get install -y --fix-missing \
 
 RUN apt-get install -y python3-pip
 
-# fix on gihtub runner
-# run: |
-# sudo apt-get -y install fluxbox
-# Xvfb :99 &
-# fluxbox -display :99 &
-# echo "DISPLAY=:99" >> "$GITHUB_ENV"
-
-RUN apt-get install -y --fix-missing fluxbox
-RUN apt-get install -y --fix-missing xvfb
-
-
 
 RUN apt-get install -y ca-certificates
 RUN apt-get install -y --fix-missing bash
@@ -105,31 +94,20 @@ ENV TMPDIR=/mytemp
 RUN pip install -U magic-wormhole uv --break-system-packages
 
 
-ENV DISPLAY=:99
-
-# ---- ADD NON-ROOT USER HERE ----
-# Create a non-root user and group
-RUN groupadd --gid 1010 appuser && \
-    useradd --uid 1010 --gid appuser --shell /bin/bash --create-home appuser
-
 # Ensure /app is owned by the new user
-RUN mkdir -p /app && chown appuser:appuser /app
 WORKDIR /app
 
-# Switch to non-root user from this point on
-USER appuser
-
 # Add requirements and install
-COPY --chown=appuser:appuser pyproject.toml .
+COPY  pyproject.toml .
 
 RUN uv venv && \
     uv pip install -r pyproject.toml
 
-COPY --chown=appuser:appuser . .
+COPY . .
 
 RUN uv pip install -e .
 
-ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
+# ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 EXPOSE 80
 ENV PORT=80
 
