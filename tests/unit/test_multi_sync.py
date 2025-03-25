@@ -2,18 +2,15 @@
 Unit test file.
 """
 
+import json
+import os
 import unittest
 from pathlib import Path
 
 from youtube_sync.cli.sync_multiple import Args, run
 
-# COMMAND = "youtube-sync"
-# --channel-name @CapitalCosm --output "E:\mikeadams\@CapitalCosm\youtube"
-
 HERE = Path(__file__).parent
 CONFIG_JSON = HERE / "test_data" / "config.json"
-
-# COMMAND = "youtube-sync --channel-name @CapitalCosm"  # --output E:\mikeadams\@CapitalCosm\youtube"
 
 
 class MainTester(unittest.TestCase):
@@ -27,6 +24,16 @@ class MainTester(unittest.TestCase):
         """Test command line interface (CLI)."""
         args = Args(
             config=CONFIG_JSON,
+            dry_run=True,
+        )
+        run(args)
+
+    def test_from_env(self) -> None:
+        """Test command line interface (CLI)."""
+        one_line_json_str = json.dumps(json.loads(CONFIG_JSON.read_text()))
+        os.environ["RCLONE_CONFIG_JSON"] = one_line_json_str
+        args = Args(
+            config=None,
             dry_run=True,
         )
         run(args)
