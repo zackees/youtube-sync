@@ -23,10 +23,6 @@ RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/
     && apt-get install -y /tmp/chrome.deb \
     && rm /tmp/chrome.deb
 
-# Install specific chromedriver version (1.30)
-RUN pip install webdriver-manager --break-system-packages
-
-
 # Temporary directory
 RUN mkdir -p /mytemp && chmod 1777 /mytemp
 ENV TMPDIR=/mytemp
