@@ -18,7 +18,10 @@ from youtube_sync.config import Config
 from youtube_sync.logutil import create_logger
 from youtube_sync.settings import ENV_JSON
 
-logger = create_logger(__name__, logging.INFO)
+logger = create_logger(__name__, logging.DEBUG)
+
+# set debug
+logging.basicConfig(level=logging.DEBUG)
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
