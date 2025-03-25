@@ -5,7 +5,7 @@ ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
-
+RUN apt-get update && apt-get install -y python3-pip
 
 # Optional tools
 # RUN curl https://rclone.org/install.sh | sudo bash
