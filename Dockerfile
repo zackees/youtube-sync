@@ -74,7 +74,20 @@ RUN apt-get install -y --fix-missing \
   libnss3 \
   lsb-release \
   xdg-utils \
-  libgbm-dev
+  libgbm-dev \
+  libappindicator3-1
+
+
+# fix on gihtub runner
+# run: |
+# sudo apt-get -y install fluxbox
+# Xvfb :99 &
+# fluxbox -display :99 &
+# echo "DISPLAY=:99" >> "$GITHUB_ENV"
+
+RUN apt-get install -y --fix-missing fluxbox
+RUN apt-get install -y --fix-missing xvfb
+
 
 
 RUN apt-get install -y ca-certificates
