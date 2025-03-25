@@ -1,12 +1,10 @@
 import os
-import platform
 import sys
 import traceback
 from typing import Optional
 
 import filelock  # type: ignore
 from open_webdriver.path import LOG_FILE, WDM_DIR
-from pyvirtualdisplay.display import Display
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -18,9 +16,6 @@ FORCE_HEADLESS = sys.platform == "linux" and "DISPLAY" not in os.environ
 
 os.makedirs(WDM_DIR, exist_ok=True)
 LOCK_FILE = os.path.join(WDM_DIR, "lock.file")
-
-if platform.system() == "Linux":
-    display = Display(visible=False, size=(800, 600))
 
 
 def _user_agent(chrome_version: str | None = None) -> str:
