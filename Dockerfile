@@ -26,7 +26,7 @@ RUN apt-get install -y --fix-missing \
   libexpat1 \
   libfontconfig1 \
   libgcc1 \
-  libgconf-2-4 \
+  libgconf-2-4
 
 RUN apt-get install -y --fix-missing \
   libgdk-pixbuf2.0-0 \
@@ -38,7 +38,7 @@ RUN apt-get install -y --fix-missing \
   libxrender1 \
   libxss1 \
   libxtst6 \
-  fonts-liberation
+  fonts-liberation \
   libnss3 \
   lsb-release \
   xdg-utils \
