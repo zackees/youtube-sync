@@ -98,7 +98,7 @@ def open_webdriver(  # pylint: disable=too-many-arguments,too-many-branches
 
         # Use specific chromedriver version
         service = ChromeService(
-            ChromeDriverManager(driver_version="114.0.5735.90").install()
+            ChromeDriverManager(driver_version="130.0.6723.116").install()
         )
         driver = webdriver.Chrome(service=service, options=opts)
 
