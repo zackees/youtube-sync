@@ -13,7 +13,12 @@ RUN apt-get update && apt-get install -y \
     libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libxfixes3 libxi6 libxrandr2 \
     libxrender1 libxss1 libxtst6 fonts-liberation lsb-release \
     xdg-utils libgbm-dev libappindicator3-1 ca-certificates bash \
-    software-properties-common python3-pip firefox
+    software-properties-common python3-pip
+
+    
+RUN curl https://rclone.org/install.sh | sudo bash
+
+RUN apt-get install -y firefox
 
 # Install geckodriver manually
 ENV GECKODRIVER_VERSION=v0.36.0
@@ -21,6 +26,7 @@ RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRI
     tar -xzf "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" -C /usr/local/bin && \
     rm "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
     chmod +x /usr/local/bin/geckodriver
+
 
 # Temporary directory
 RUN mkdir -p /mytemp && chmod 1777 /mytemp
