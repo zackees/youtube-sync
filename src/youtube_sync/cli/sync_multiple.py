@@ -60,7 +60,6 @@ def parse_args() -> Args:
         # help="URL of the channel, example: https://www.youtube.com/@silverguru/videos",
         help="Path to the json config file.",
         nargs="?",
-        default="config.json",
     )
     parser.add_argument(
         "--dry-run",
