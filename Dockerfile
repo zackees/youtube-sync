@@ -8,12 +8,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 
 # Optional tools
-RUN curl https://rclone.org/install.sh | sudo bash
+# RUN curl https://rclone.org/install.sh | sudo bash
 RUN pip install -U magic-wormhole uv --break-system-packages
-
-# Install Playwright (Python version) and its browser binaries
-RUN pip install --break-system-packages playwright && \
-    playwright install --with-deps
 
 # Create a non-root user
 RUN useradd -m -u 1001 -s /bin/bash user
