@@ -38,4 +38,4 @@ EXPOSE 80
 
 #Blah
 #CMD ["python", "-m", "http.server", "80"]
-CMD ["uv", "run", "-m", "youtube_sync.cli"]
+CMD ["uv", "run", "youtube_sync.sync_multiple", "config.json"]

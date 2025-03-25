@@ -10,6 +10,7 @@ from virtual_fs import FSPath, Vfs
 
 from youtube_sync import Source
 from youtube_sync.json_util import load_dict
+from youtube_sync.settings import ENV_JSON
 
 
 @dataclass
@@ -88,10 +89,8 @@ class Config:
     @staticmethod
     def from_env() -> "Config | Exception":
         try:
-            data_str = os.environ.get("RCLONE_CONFIG_JSON")
-            assert (
-                data_str is not None
-            ), "Expecting environment variable: RCLONE_CONFIG_JSON"
+            data_str = os.environ.get(ENV_JSON)
+            assert data_str is not None, f"Expecting environment variable: {ENV_JSON}"
             data = load_dict(data_str)
             return Config.from_dict(data)
         except Exception as e:

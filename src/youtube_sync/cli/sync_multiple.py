@@ -16,6 +16,7 @@ from virtual_fs import FSPath, Vfs
 from youtube_sync import YouTubeSync
 from youtube_sync.config import Config
 from youtube_sync.logutil import create_logger
+from youtube_sync.settings import ENV_JSON
 
 logger = create_logger(__name__, logging.INFO)
 
@@ -41,10 +42,9 @@ class Args:
             assert self.config.suffix == ".json"
         elif self.config is None:
             # Expect a json object in the environment
-            key = "RCLONE_CONFIG_JSON"
-            if key not in os.environ:
+            if ENV_JSON not in os.environ:
                 raise ValueError(
-                    f"Expecting environment variable when config is None: {key}"
+                    f"Expecting environment variable when config is None: {ENV_JSON}"
                 )
 
 

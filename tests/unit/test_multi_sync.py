@@ -31,7 +31,7 @@ class MainTester(unittest.TestCase):
     def test_from_env(self) -> None:
         """Test command line interface (CLI)."""
         one_line_json_str = json.dumps(json.loads(CONFIG_JSON.read_text()))
-        os.environ["RCLONE_CONFIG_JSON"] = one_line_json_str
+        os.environ["YOUTUBE_SYNC_CONFIG_JSON"] = one_line_json_str
         args = Args(
             config=None,
             dry_run=True,
