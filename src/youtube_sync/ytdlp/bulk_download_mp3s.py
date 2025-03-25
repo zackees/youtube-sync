@@ -72,14 +72,16 @@ def download_mp3s(
         # Extract cookies if needed
         # cookies = self._extract_cookies_if_needed()
         if cookies is not None:
-            cookies = cookies.refresh()
+            cookies.refresh()
+
+        cookied_path: Path | None = cookies.path_txt if cookies is not None else None
 
         # Submit the entire download and conversion process as a single task
         FUTURE_RESOLVER_POOL.submit(
             _process_download_and_convert,
             url,
             outmp3,
-            cookies,
+            cookied_path,
             download_pool,
             result_future,
         )
