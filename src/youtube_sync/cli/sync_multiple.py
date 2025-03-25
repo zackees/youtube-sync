@@ -113,7 +113,7 @@ def run(args: Args) -> None:
 
                 # Default limits
                 scan_limit = 1000  # Default value
-                download_limit = -1  # Default value
+                download_limit = None  # Default value
 
                 # Scan for videos
                 logger.info(f"Scanning channel {channel.name} with limit {scan_limit}")

@@ -11,7 +11,7 @@ from youtube_sync.library import Library
 from youtube_sync.types import Source
 from youtube_sync.vid_entry import VidEntry
 
-_YOUTUBE_USE_BOT_SCANNER = True
+_YOUTUBE_USE_BOT_SCANNER = False
 
 
 class BaseSync(ABC):

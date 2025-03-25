@@ -4,12 +4,15 @@ import traceback
 from typing import Optional
 
 import filelock  # type: ignore
-from open_webdriver.path import LOG_FILE, WDM_DIR
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.remote.webdriver import WebDriver as Driver  # type: ignore
 from webdriver_manager.chrome import ChromeDriverManager
+
+# from open_webdriver.path import LOG_FILE, WDM_DIR
+WDM_DIR = os.path.join(os.path.expanduser("~"), ".wdm")
+LOG_FILE = os.path.join(WDM_DIR, "log.txt")
 
 INSTALL_TIMEOUT = float(60 * 10)  # Up to 10 minutes of install time.
 FORCE_HEADLESS = sys.platform == "linux" and "DISPLAY" not in os.environ

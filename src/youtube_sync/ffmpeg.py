@@ -1,4 +1,5 @@
 import _thread
+import logging
 import signal
 import subprocess
 import time
@@ -11,6 +12,9 @@ from youtube_sync.ytdlp.error import (
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
 
 _FFMPEG_PATH_ADDED = False
 
@@ -55,9 +59,14 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
     ]
 
     try:
-        print(f"Begin {input_file} -> {output_file}")
+        logger.info("Converting %s -> %s", input_file, output_file)
         # proc = subprocess.Popen(cmd_list)
         # pipe to devnull to suppress output
+        cmd_str = subprocess.list2cmdline(cmd_list)
+        logger.debug(
+            "\n\n###################\n# Running command: %s\n###################\n\n",
+            cmd_str,
+        )
         proc = subprocess.Popen(
             cmd_list, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
@@ -78,7 +87,7 @@ def convert_audio_to_mp3(input_file: Path, output_file: Path) -> Path | Exceptio
                 raise KeyboardInterrupt("KeyboardInterrupt")
 
             return subprocess.CalledProcessError(proc.returncode, cmd_list)
-        print(f"Conversion successful: {input_file} -> {output_file}")
+        logger.info(f"Conversion successful: {input_file} -> {output_file}")
         return output_file
     except KeyboardInterrupt:
         set_keyboard_interrupt()

@@ -1,4 +1,5 @@
 import _thread
+import logging
 import os
 import subprocess
 import time
@@ -10,6 +11,9 @@ from .error import (
     set_keyboard_interrupt,
 )
 from .exe import YtDlpCmdRunner
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
 
 
 def yt_dlp_download_best_audio(
@@ -68,6 +72,11 @@ def yt_dlp_download_best_audio(
             )
 
         try:
+            cmd_str = subprocess.list2cmdline(cmd_list)
+            logger.debug(
+                "\n\n###################\n# Running command: %s\n###################\n\n",
+                cmd_str,
+            )
             proc = subprocess.Popen(cmd_list)
             while True:
                 if proc.poll() is not None:
