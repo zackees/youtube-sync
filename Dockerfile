@@ -41,7 +41,7 @@ USER user
 COPY pyproject.toml .
 RUN uv venv && uv pip install -r pyproject.toml
 
-COPY . .
+COPY --chown=user:user . /app
 RUN uv pip install -e .
 
 EXPOSE 80
