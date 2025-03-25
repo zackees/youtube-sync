@@ -6,9 +6,10 @@ from typing import Optional
 import filelock  # type: ignore
 from open_webdriver.path import LOG_FILE, WDM_DIR
 from selenium import webdriver
-from selenium.webdriver import FirefoxOptions  # type: ignore
-from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.remote.webdriver import WebDriver as Driver  # type: ignore
+from webdriver_manager.chrome import ChromeDriverManager
 
 INSTALL_TIMEOUT = float(60 * 10)  # Up to 10 minutes of install time.
 FORCE_HEADLESS = sys.platform == "linux" and "DISPLAY" not in os.environ
@@ -17,12 +18,12 @@ os.makedirs(WDM_DIR, exist_ok=True)
 LOCK_FILE = os.path.join(WDM_DIR, "lock.file")
 
 
-def _user_agent(firefox_version: str | None = None) -> str:
+def _user_agent(chrome_version: str | None = None) -> str:
     """Gets the user agent."""
-    firefox_version = firefox_version or "122.0"
+    chrome_version = chrome_version or "114.0.5735.90"
     return (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:"
-        f"{firefox_version}) Gecko/20100101 Firefox/{firefox_version}"
+        f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        f"Chrome/{chrome_version} Safari/537.36"
     )
 
 
@@ -39,17 +40,25 @@ def _init_log() -> None:
 def _make_options(
     headless: bool,
     user_agent: str | None,
-) -> FirefoxOptions:
-    """Makes the Firefox options."""
-    opts: FirefoxOptions = FirefoxOptions()
-    opts.set_preference("dom.webnotifications.enabled", False)
-    opts.set_preference("media.volume_scale", "0.0")
+    disable_gpu: bool = True,
+    disable_dev_shm_usage: bool = True,
+) -> ChromeOptions:
+    """Makes the Chrome options."""
+    opts = ChromeOptions()
+    opts.add_argument("--disable-notifications")
+    opts.add_argument("--mute-audio")
 
     if headless:
-        opts.add_argument("--headless")
+        opts.add_argument("--headless=new")
+
+    if disable_gpu:
+        opts.add_argument("--disable-gpu")
+
+    if disable_dev_shm_usage:
+        opts.add_argument("--disable-dev-shm-usage")
 
     if user_agent:
-        opts.set_preference("general.useragent.override", user_agent)
+        opts.add_argument(f"--user-agent={user_agent}")
 
     return opts
 
@@ -58,11 +67,11 @@ def open_webdriver(  # pylint: disable=too-many-arguments,too-many-branches
     headless: bool = True,
     verbose: bool = False,  # pylint: disable=unused-argument
     timeout: float = INSTALL_TIMEOUT,
-    disable_gpu: Optional[bool] = None,  # unused for Firefox
-    disable_dev_shm_usage: bool = True,  # unused for Firefox
+    disable_gpu: Optional[bool] = True,
+    disable_dev_shm_usage: bool = True,
     user_agent: str | None = None,
 ) -> Driver:
-    """Opens the Firefox web driver."""
+    """Opens the Chrome web driver."""
     user_agent = user_agent or _user_agent()
     _init_log()
 
@@ -71,19 +80,27 @@ def open_webdriver(  # pylint: disable=too-many-arguments,too-many-branches
             print("\n  WARNING: HEADLESS ENVIRONMENT DETECTED, FORCING HEADLESS")
         headless = True
 
-    opts = _make_options(headless=headless, user_agent=user_agent)
+    opts = _make_options(
+        headless=headless,
+        user_agent=user_agent,
+        disable_gpu=disable_gpu if disable_gpu is not None else True,
+        disable_dev_shm_usage=disable_dev_shm_usage,
+    )
 
     lock = filelock.FileLock(LOCK_FILE)
     with lock.acquire(timeout=timeout):
         if verbose:
-            print("  Launching Firefox WebDriver...")
+            print("  Launching Chrome WebDriver...")
 
     try:
         if os.path.exists(LOG_FILE):
             os.remove(LOG_FILE)
 
-        service = FirefoxService()  # Assumes geckodriver is in PATH
-        driver = webdriver.Firefox(service=service, options=opts)
+        # Use specific chromedriver version
+        service = ChromeService(
+            ChromeDriverManager(driver_version="114.0.5735.90").install()
+        )
+        driver = webdriver.Chrome(service=service, options=opts)
 
         if headless:
             driver.set_window_size(1440, 900)

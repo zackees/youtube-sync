@@ -18,14 +18,13 @@ RUN apt-get update && apt-get install -y \
     
 RUN curl https://rclone.org/install.sh | sudo bash
 
-RUN apt-get install -y firefox
+# Install specific Chrome version (114.0.5735.90)
+RUN wget -q -O /tmp/chrome.deb https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_114.0.5735.90-1_amd64.deb \
+    && apt-get install -y /tmp/chrome.deb \
+    && rm /tmp/chrome.deb
 
-# Install geckodriver manually
-ENV GECKODRIVER_VERSION=v0.36.0
-RUN wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
-    tar -xzf "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" -C /usr/local/bin && \
-    rm "geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
-    chmod +x /usr/local/bin/geckodriver
+# Install specific chromedriver version (1.30)
+RUN pip install webdriver-manager --break-system-packages
 
 
 # Temporary directory
