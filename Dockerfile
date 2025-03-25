@@ -45,7 +45,7 @@ RUN apt-get install -y --fix-missing \
   libgbm-dev
 
 RUN apt-get install -y ca-certificates
-RUN sudo -v ; curl https://rclone.org/install.sh | sudo bash
+RUN curl https://rclone.org/install.sh | sudo bash
 
 RUN pip install --upgrade pip
 # Install the necessary packages, magic-wormhole to get files off the container easily
