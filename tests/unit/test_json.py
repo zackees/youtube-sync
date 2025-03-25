@@ -5,7 +5,7 @@ Unit test file.
 import unittest
 from pathlib import Path
 
-from youtube_sync.config import Config
+from youtube_sync.config import CmdOptions, Config
 
 HERE = Path(__file__).parent
 CONFIG_JSON = HERE / "test_data" / "config.json"
@@ -28,6 +28,9 @@ class ConfigJsonTester(unittest.TestCase):
         self.assertIsInstance(config.rclone, dict)
         self.assertIsInstance(config.channels, list)
         self.assertEqual(len(config.channels), 3)
+        self.assertIsInstance(config.cmd_options, CmdOptions)
+        self.assertTrue(config.cmd_options.download)
+        self.assertTrue(config.cmd_options.scan)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,21 @@ from youtube_sync.json_util import load_dict
 
 
 @dataclass
+class CmdOptions:
+    download: bool
+    scan: bool
+
+    @staticmethod
+    def from_dict(data: dict) -> "CmdOptions":
+        download = data.get("download", True)
+        scan = data.get("scan", True)
+        return CmdOptions(
+            download=download,
+            scan=scan,
+        )
+
+
+@dataclass
 class Channel:
     name: str
     source: Source
@@ -33,17 +48,30 @@ class Channel:
 class Config:
     """Represents the rclone configuration from the JSON file."""
 
-    def __init__(self, output: str, rclone: dict, channels: list[Channel]):
+    def __init__(
+        self,
+        output: str,
+        rclone: dict,
+        channels: list[Channel],
+        cmd_options: CmdOptions,
+    ):
         self.output = output
         self.rclone = rclone
         self.channels = channels
+        self.cmd_options = cmd_options
 
     @staticmethod
     def from_dict(data: dict) -> "Config | Exception":
         try:
             channels = [Channel.from_dict(channel) for channel in data["channels"]]
+            output = data["output"]
+            rclone = data["rclone"]
+            cmd_options = CmdOptions.from_dict(data.get("cmd_options", {}))
             out = Config(
-                output=data["output"], rclone=data["rclone"], channels=channels
+                output=output,
+                rclone=rclone,
+                channels=channels,
+                cmd_options=cmd_options,
             )
             return out
         except Exception as e:
