@@ -10,7 +10,7 @@ readme = "README.md"
 description = "syncs youtube for offline play"
 requires-python = ">=3.10"
 keywords = ["template-python-cmd"]
-license = { text = "BSD 3-Clause License" }
+license = "BSD-3-Clause"
 classifiers = ["Programming Language :: Python :: 3"]
 maintainers = [
     {name = "Zachary Vorhies"}

@@ -42,7 +42,7 @@ COPY pyproject.toml .
 RUN uv venv && uv pip install -r pyproject.toml
 
 COPY --chown=user:user . /app
-RUN uv pip install -e .
+RUN uv pip install -e . --root-user-action
 
 EXPOSE 80
 ENV PORT=80
