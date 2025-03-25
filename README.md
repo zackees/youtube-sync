@@ -38,3 +38,9 @@ just list the key value pairs as shown below.
 }
 ```
 
+In this case the files will be outputted to
+
+  * RonGibson -> dst:path/to/RonGibson/brighteon/*
+  * TheDuran -> dst:path/to/TheDuran/youtube/*
+
+Each output directory will have one `library.json` file an multiple mp3 files.

@@ -24,6 +24,8 @@ RUN apt-get install -y --fix-missing \
   fonts-liberation libnss3 \
   lsb-release xdg-utils wget libgbm-dev
 
+RUN apt-get install -y ca-certificates
+RUN sudo -v ; curl https://rclone.org/install.sh | sudo bash
 
 RUN pip install --upgrade pip
 # Install the necessary packages, magic-wormhole to get files off the container easily
@@ -42,7 +44,7 @@ RUN uv pip install -r pyproject.toml
 COPY . .
 RUN uv pip install -e .
 
-RUN apt-get install -y ca-certificates
+
 
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
