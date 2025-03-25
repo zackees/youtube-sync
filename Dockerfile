@@ -49,5 +49,6 @@ RUN uv pip install -e .
 
 EXPOSE 80
 ENV PORT=80
+ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
 CMD ["uv", "run", "entrypoint.py"]
