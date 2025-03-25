@@ -10,10 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # From stack overflow. TODO: Remove the ones that aren't needed.
 RUN apt-get update
-RUN apt-get install -y --fix-missing \
-  sudo \
-  curl \
-  wget
+
 
 RUN apt-get install -y --fix-missing \
   gconf-service \
@@ -43,6 +40,12 @@ RUN apt-get install -y --fix-missing \
   lsb-release \
   xdg-utils \
   libgbm-dev
+
+
+RUN apt-get install -y --fix-missing \
+  sudo \
+  curl \
+  wget
 
 RUN apt-get install -y ca-certificates
 RUN apt-get install -y --fix-missing bash
@@ -75,7 +78,8 @@ ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
 # Expose the port and then launch the app.
 EXPOSE 80
+ENV PORT=80
 
 #Blah
 #CMD ["python", "-m", "http.server", "80"]
-CMD ["uv", "run", "-m", "youtube_sync.cli.sync_multiple", "config.json"]
+CMD ["uv", "run", "entrypoint.py"]
