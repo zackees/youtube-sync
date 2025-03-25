@@ -68,7 +68,7 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
 
 
 def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
-    with open_webdriver() as driver:
+    with open_webdriver(disable_gpu=True) as driver:
         # clear cookies
         driver.delete_all_cookies()
         driver.get(url)

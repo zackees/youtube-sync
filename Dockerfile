@@ -133,4 +133,4 @@ ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 EXPOSE 80
 ENV PORT=80
 
-CMD ["uv", "run", "entrypoint.py"]
+CMD ["xvfb-run", "uv", "run", "entrypoint.py"]
