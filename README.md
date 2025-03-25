@@ -38,4 +38,3 @@ just list the key value pairs as shown below.
 }
 ```
 
-In this case, the 

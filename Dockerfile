@@ -6,7 +6,7 @@ FROM python:3.10.4-slim-bullseye
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-
+ENV DEBIAN_FRONTEND=noninteractive
 
 # From stack overflow. TODO: Remove the ones that aren't needed.
 RUN apt-get update
