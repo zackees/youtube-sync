@@ -89,42 +89,46 @@ def run(args: Args) -> None:
     with Vfs.begin(output, rclone_conf=rclone_config) as cwd:
         # Process each channel in the config
         for channel in config.channels:
-            logger.info(f"Processing channel: {channel.name}")
-            # Get source from channel
-            source = channel.source
-            path: FSPath = channel.to_fs_path(cwd)
+            try:
+                logger.info(f"Processing channel: {channel.name}")
+                # Get source from channel
+                source = channel.source
+                path: FSPath = channel.to_fs_path(cwd)
 
-            if args.dry_run:
-                logger.info("Dry run, skipping download")
-                logger.info(f"Channel: {channel.name}")
-                logger.info(f"Output: {cwd}")
-                logger.info(f"Source: {source}")
-                logger.info(f"Path: {path}")
-                continue
+                if args.dry_run:
+                    logger.info("Dry run, skipping download")
+                    logger.info(f"Channel: {channel.name}")
+                    logger.info(f"Output: {cwd}")
+                    logger.info(f"Source: {source}")
+                    logger.info(f"Path: {path}")
+                    continue
 
-            # Create YouTubeSync instance
-            yt = YouTubeSync(
-                channel_name=channel.name,
-                media_output=path,
-                source=source,
-                channel_url=channel.channel_id,  # Using channel_id as the URL
-            )
+                # Create YouTubeSync instance
+                yt = YouTubeSync(
+                    channel_name=channel.name,
+                    media_output=path,
+                    source=source,
+                    channel_url=channel.channel_id,  # Using channel_id as the URL
+                )
 
-            # Default limits
-            scan_limit = 1000  # Default value
-            download_limit = -1  # Default value
+                # Default limits
+                scan_limit = 1000  # Default value
+                download_limit = -1  # Default value
 
-            # Scan for videos
-            logger.info(f"Scanning channel {channel.name} with limit {scan_limit}")
-            yt.scan_for_vids(scan_limit)
+                # Scan for videos
+                logger.info(f"Scanning channel {channel.name} with limit {scan_limit}")
+                yt.scan_for_vids(scan_limit)
 
-            # Download videos
-            logger.info(
-                f"Downloading videos for {channel.name} with limit {download_limit}"
-            )
-            yt.download(download_limit)
+                # Download videos
+                logger.info(
+                    f"Downloading videos for {channel.name} with limit {download_limit}"
+                )
+                yt.download(download_limit)
 
-            logger.info(f"Finished processing channel: {channel.name}")
+                logger.info(f"Finished processing channel: {channel.name}")
+            except Exception as e:
+                logger.error(f"Failed to process channel: {channel.name}")
+                logger.error(e)
 
 
 def main() -> None:
