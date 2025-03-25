@@ -16,11 +16,12 @@ from typing import Any, Callable, Generator
 
 import requests
 from bs4 import BeautifulSoup  # type: ignore
-from open_webdriver import open_webdriver  # type: ignore
 from selenium.common.exceptions import (
     StaleElementReferenceException as StaleElementException,
 )
 from selenium.webdriver.common.by import By
+
+from youtube_sync.open_webdriver import open_webdriver  # type: ignore
 
 from ..library import VidEntry
 

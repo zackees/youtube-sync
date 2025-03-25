@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Iterator
 
 from filelock import FileLock
-from open_webdriver import open_webdriver  # type: ignore
+
+from youtube_sync.open_webdriver import open_webdriver  # type: ignore
 
 from .types import Source
 
