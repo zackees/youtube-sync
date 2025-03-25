@@ -47,7 +47,7 @@ RUN apt-get install -y --fix-missing \
 RUN apt-get install -y ca-certificates
 RUN apt-get install -y --fix-missing bash
 
-RUN curl https://rclone.org/install.sh | sudo bash
+# RUN curl https://rclone.org/install.sh | sudo bash
 
 RUN pip install --upgrade pip
 # Install the necessary packages, magic-wormhole to get files off the container easily
