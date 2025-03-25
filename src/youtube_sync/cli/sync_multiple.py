@@ -21,7 +21,11 @@ from youtube_sync.settings import ENV_JSON
 logger = create_logger(__name__, logging.DEBUG)
 
 # set debug
-logging.basicConfig(level=logging.DEBUG)
+
+# set the root logger to debug
+logging.getLogger().setLevel(logging.DEBUG)
+# filter out filelock debug messages
+logging.getLogger("filelock").setLevel(logging.INFO)
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
@@ -55,11 +59,10 @@ def parse_args() -> Args:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser("youtube-sync-multiple")
     parser.add_argument(
-        "config",
+        "--config",
         type=Path,
         # help="URL of the channel, example: https://www.youtube.com/@silverguru/videos",
         help="Path to the json config file.",
-        nargs="?",
     )
     parser.add_argument(
         "--dry-run",
