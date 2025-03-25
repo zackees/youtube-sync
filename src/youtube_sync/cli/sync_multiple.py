@@ -60,6 +60,7 @@ def parse_args() -> Args:
         # help="URL of the channel, example: https://www.youtube.com/@silverguru/videos",
         help="Path to the json config file.",
         nargs="?",
+        default="config.json",
     )
     parser.add_argument(
         "--dry-run",
@@ -68,6 +69,8 @@ def parse_args() -> Args:
     )
     tmp = parser.parse_args()
     config_path = Path(tmp.config)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
 
     args = Args(config=config_path, dry_run=tmp.dry_run)
     return args

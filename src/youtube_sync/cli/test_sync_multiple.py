@@ -3,8 +3,10 @@ from pathlib import Path
 
 from youtube_sync.cli.sync_multiple import Args, run
 
-# set debug
-logging.basicConfig(level=logging.DEBUG)
+# set the root logger to debug
+logging.getLogger().setLevel(logging.DEBUG)
+# filter out filelock debug messages
+logging.getLogger("filelock").setLevel(logging.INFO)
 
 
 def main() -> None:

@@ -87,6 +87,7 @@ class YtDlpSync(BaseSync):
             full_scan=full_scan,
             cookies_txt=self.cookies.path_txt,
         )
+
         return out
 
 
