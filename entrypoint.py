@@ -11,7 +11,7 @@ PORT = str(os.environ.get("PORT", "80"))
 
 def main() -> None:
     """Main function."""
-    proc = subprocess.Popen(["uv", "run", "-m", "http.server", PORT])
+    proc = subprocess.Popen(["uv", "run", "-m", "http.server", PORT], cwd="www")
     with proc:
         subprocess.run(["uv", "run", "-m", "youtube_sync.cli.sync_multiple", "config.json"])
 
