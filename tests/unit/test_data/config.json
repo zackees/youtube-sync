@@ -1,0 +1,28 @@
+{
+    "output": "dst:TorrentBooks/podcast",
+    "rclone": {
+      "dst": {
+        "type": "b2",
+        "account": "****",
+        "key": "****"
+      }
+    },
+    "channels": [
+      {
+        "name": "PlandemicSeriesOfficial",
+        "source": "rumble",
+        "channel_id": "PlandemicSeriesOfficial"
+      },
+      {
+        "name": "RonGibson",
+        "source": "brighteon",
+        "channel_id": "rongibsonchannel"
+      },
+      {
+        "name": "TheDuran",
+        "source": "youtube",
+        "channel_id": "@theduran"
+      }
+    ]
+  }
+  

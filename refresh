@@ -1,0 +1,4 @@
+#!/bin/bash
+uv pip install -e . --refresh
+uv pip install -e . --refresh
+uv pip install -e . --refresh
