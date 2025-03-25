@@ -64,6 +64,8 @@ def fetch_all_sources(yt_channel_url: str, limit: int = -1) -> list[VidEntry]:
     scroll_pause = 1
     index = 0
 
+    print("starting browser")
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         page = browser.new_page()
@@ -74,6 +76,7 @@ def fetch_all_sources(yt_channel_url: str, limit: int = -1) -> list[VidEntry]:
         collected_html: set[str] = set()
 
         for i in range(max_scrolls):
+            print("querying")
             elements = page.query_selector_all("ytd-rich-item-renderer")
             for el in elements:
                 try:
@@ -82,7 +85,7 @@ def fetch_all_sources(yt_channel_url: str, limit: int = -1) -> list[VidEntry]:
                         collected_html.add(html)
                 except Exception:
                     continue
-
+            print("scrolling")
             page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
             time.sleep(scroll_pause)
             new_height = page.evaluate("document.documentElement.scrollHeight")
