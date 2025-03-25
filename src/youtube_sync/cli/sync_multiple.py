@@ -83,8 +83,10 @@ def run(args: Args) -> None:
         logger.error(f"Failed to load config: {config}")
         raise config
 
+    rclone_config = config.rclone
+
     output = config.output
-    with Vfs.begin(output) as cwd:
+    with Vfs.begin(output, rclone_conf=rclone_config) as cwd:
         # Process each channel in the config
         for channel in config.channels:
             logger.info(f"Processing channel: {channel.name}")
