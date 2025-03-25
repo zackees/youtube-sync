@@ -1,84 +1,42 @@
-# pylint: disable=line-too-long,missing-class-docstring,missing-function-docstring,consider-using-f-string,too-many-locals,invalid-name
-# mypy: ignore-errors
-
-"""
-Test script for opening a youtube channel and getting the latest videos.
-"""
-
-import _thread
-import concurrent.futures
-import os
 import time
 import traceback
 import unicodedata
 import warnings
-from typing import Any, Callable, Generator
 
 import requests
-from bs4 import BeautifulSoup  # type: ignore
-from selenium.common.exceptions import (
-    StaleElementReferenceException as StaleElementException,
-)
-from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
-from youtube_sync.open_webdriver import open_webdriver  # type: ignore
-
-from ..library import VidEntry
-
-IS_GITHUB_RUNNER = os.environ.get("GITHUB_ACTIONS") == "true"
-# Always headless now.
-HEADLESS = IS_GITHUB_RUNNER or True
+from youtube_sync.library import VidEntry  # Adjust if needed
 
 URL = "https://www.youtube.com/@silverguru/videos"
-
-JS_SCROLL_TO_BOTTOM = "window.scrollTo(0, document.documentElement.scrollHeight);"
-JS_SCROLL_TO_BOTTOM_WAIT = 1
 URL_BASE = "https://www.youtube.com"
 
 CACHE_OUTER_HTML: dict[str, str] = {}
-
 _ERRORS = False
 
 
 def sanitize_filepath(path: str, replacement_char: str = "_") -> str:
-    """
-    Sanitize a file path to make it safe for use in file systems.
-
-    :param path: The file path to be sanitized.
-    :param replacement_char: The character to use for replacing invalid characters.
-    :return: A sanitized version of the file path.
-    """
-    # Normalize unicode characters
     path = unicodedata.normalize("NFKD", path).encode("ascii", "ignore").decode("ascii")
-
-    # Replace invalid file path characters
     invalid_chars = r'<>:"/\\|?*'
     for char in invalid_chars:
         path = path.replace(char, replacement_char)
-
-    # Replace leading/trailing periods and spaces
     path = path.strip(". ")
-
-    # Avoid reserved names in Windows like CON, PRN, AUX, NUL, etc.
     reserved_names = ["CON", "PRN", "AUX", "NUL"] + [
         f"{name}{i}" for name in ["COM", "LPT"] for i in range(1, 10)
     ]
     basename = path.split("/")[-1]
     if basename.upper() in reserved_names:
         path = path.replace(basename, replacement_char + basename)
-
-    # Truncate long paths
     max_length = 255
     if len(path) > max_length:
         extension = "." + path.split(".")[-1] if "." in path else ""
         path = path[: max_length - len(extension)] + extension
     path = path.replace("'", "_")
-
     return path
 
 
 def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
-    """Div containing the youtube video, which has a title and an href."""
     global _ERRORS
     if _ERRORS:
         return []
@@ -89,154 +47,107 @@ def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
         try:
             title = title_link.get("title")  # type: ignore
             href = title_link.get("href")  # type: ignore
-            assert title is not None
-            assert href is not None
-            href = str(href)
-            title = str(title)
-            assert href.startswith("/")  # type: ignore
-            href = URL_BASE + href
-            # title = sanitize_filepath(title.strip())
-        except KeyboardInterrupt:
-            _ERRORS = True
-            _thread.interrupt_main()
-            raise
-        except SystemExit:
-            return out
-        except Exception as err:  # pylint: disable=broad-except
+            assert title and href
+            href = URL_BASE + str(href)
+        except Exception:
             stack_trace = traceback.format_exc()
-            warnings.warn(f"Error, could not scrape video: {err} {stack_trace}")
+            warnings.warn(f"Error scraping video: {stack_trace}")
             continue
-        out.append(VidEntry(title=title, url=href))
+        out.append(VidEntry(title=str(title), url=href))
     return out
 
 
-def fetch_source_cached(
-    unique_id: str, value_cb: Callable[[], str]
-) -> tuple[str, bool]:
-    if unique_id in CACHE_OUTER_HTML:
-        return CACHE_OUTER_HTML[unique_id], True
-    value = value_cb()
-    CACHE_OUTER_HTML[unique_id] = value
-    return value, False
-
-
-def clear_source_cache() -> None:
-    CACHE_OUTER_HTML.clear()
-
-
-def fetch_all_sources(
-    yt_channel_url: str, limit: int = -1
-) -> Generator[str, None, None]:
+def fetch_all_sources(yt_channel_url: str, limit: int = -1) -> list[VidEntry]:
     global _ERRORS
-    clear_source_cache()
-    max_index = limit if limit > 0 else 1000
-    with open_webdriver(headless=HEADLESS) as driver:
+    _ERRORS = False
+    max_scrolls = limit if limit > 0 else 1000
+    scroll_pause = 1
+    index = 0
 
-        def get_vid_attribute(vid: Any) -> str | None:
-            global _ERRORS
-            if _ERRORS:
-                return None
-            try:
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(yt_channel_url)
+        time.sleep(scroll_pause)
+
+        last_height = page.evaluate("document.documentElement.scrollHeight")
+        collected_html: set[str] = set()
+
+        for i in range(max_scrolls):
+            elements = page.query_selector_all("ytd-rich-item-renderer")
+            for el in elements:
                 try:
-                    unique_id = getattr(vid, "id")
-                    html, cached = fetch_source_cached(
-                        unique_id, lambda: str(vid.get_attribute("outerHTML"))
-                    )
-                    if cached:
-                        return None
-                    return html
-                except AttributeError:
-                    pass
-                return str(vid.get_attribute("outerHTML"))
-            except KeyboardInterrupt:
-                _ERRORS = True
-                _thread.interrupt_main()
-                raise
-            except StaleElementException:
-                warnings.warn("skipping stale element")
-                return None
+                    html = el.inner_html()
+                    if html not in collected_html:
+                        collected_html.add(html)
+                except Exception:
+                    continue
 
-        def get_contents() -> list[str]:
-            vids = driver.find_elements(by=By.TAG_NAME, value="ytd-rich-item-renderer")
-            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-                futures: list = []
-                for vid in vids:
-                    # Only new videos will be resolved. All cached values will be None.
-                    future = executor.submit(get_vid_attribute, vid)
-                    futures.append(future.result)
-                out = [future() for future in futures]
-                # filter out None and empty strings (happens if error).
-                out = [x for x in out if x]
-            return out
-
-        # All Chromium / web driver dependencies are now installed.
-        driver.get(yt_channel_url)
-        time.sleep(JS_SCROLL_TO_BOTTOM_WAIT)
-        yield from get_contents()
-        last_scroll_height = 0
-        index = 0
-        for index in range(max_index + 1):
-            driver.execute_script(JS_SCROLL_TO_BOTTOM)
-            time.sleep(JS_SCROLL_TO_BOTTOM_WAIT)
-            yield from get_contents()
-            scroll_height = driver.execute_script(
-                "return document.documentElement.scrollHeight"
-            )
-            print(f"#### {index}: scrolling for new content ####")
-            scroll_diff = abs(scroll_height - last_scroll_height)
-            if scroll_diff < 100:
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+            time.sleep(scroll_pause)
+            new_height = page.evaluate("document.documentElement.scrollHeight")
+            if abs(new_height - last_height) < 100:
                 break
-            last_scroll_height = scroll_height
-        if index == max_index and limit <= 0:
-            warnings.warn("Reached max scroll limit.")
+            last_height = new_height
+            print(f"#### {index}: scrolling for new content ####")
+            index += 1
+
+        browser.close()
+        return list_vids_from_html(collected_html)
+
+
+def list_vids_from_html(html_blocks: set[str]) -> list[VidEntry]:
+    all_vids: list[VidEntry] = []
+    for block in html_blocks:
+        vids = parse_youtube_videos([block])
+        all_vids.extend(vids)
+    # Deduplicate by URL
+    seen = set()
+    unique_vids = []
+    for vid in all_vids:
+        if vid.url not in seen:
+            seen.add(vid.url)
+            unique_vids.append(vid)
+    return unique_vids
 
 
 def test_channel_url(channel_url: str) -> bool:
-    """Test if the channel url is valid."""
-    response = requests.get(channel_url, timeout=10)
-    return response.status_code == 200
+    try:
+        response = requests.get(channel_url, timeout=10)
+        return response.status_code == 200
+    except Exception:
+        return False
 
 
 def scan_vids(yt_channel_url: str, limit: int | None) -> list[VidEntry]:
     """
-    Open a web driver and navigate to Google. yt_channel_url should be
-    of the form https://www.youtube.com/@silverguru/videos
+    Fetch YouTube video entries from a channel page using Playwright.
+    yt_channel_url should be something like: https://www.youtube.com/@channel/videos
     """
     if not test_channel_url(yt_channel_url):
-        raise ValueError(f"Invalid channel url: {yt_channel_url}")
+        raise ValueError(f"Invalid channel URL: {yt_channel_url}")
+
     limit = limit if limit is not None else -1
-    pending_fetches = fetch_all_sources(yt_channel_url=yt_channel_url, limit=limit)
-    list_vids: list[list[VidEntry]] = []
-    num_workers = max(1, os.cpu_count() or 0)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        try:
-            future_to_vid = {}
-            for sources in pending_fetches:
-                future = executor.submit(parse_youtube_videos, [sources])
-                future_to_vid[future] = sources
-            for future in concurrent.futures.as_completed(future_to_vid):
-                vids = future.result()
-                list_vids.append(vids)
-        except KeyboardInterrupt:
-            warnings.warn("Keyboard interrupt, stopping.")
-            global _ERRORS
-            _ERRORS = True
-            _thread.interrupt_main()
-    unique_vids: set[VidEntry] = set()
-    out_vids: list[VidEntry] = []
-    for vids in list_vids:
-        for vid in vids:
-            if vid not in unique_vids:
-                unique_vids.add(vid)
-                out_vids.append(vid)
-    return out_vids
+    vids = fetch_all_sources(yt_channel_url=yt_channel_url, limit=limit)
+
+    # Dedup again just in case
+    seen: set[str] = set()
+    unique_vids: list[VidEntry] = []
+    for vid in vids:
+        if vid.url not in seen:
+            seen.add(vid.url)
+            unique_vids.append(vid)
+
+    return unique_vids
 
 
 def main() -> int:
-    vidlist = scan_vids(URL, limit=1)
-    print(f"Found {len(vidlist)} videos.")
-    for vid in vidlist:
-        print(f"  {vid.url}")
+    if not test_channel_url(URL):
+        raise ValueError(f"Invalid channel URL: {URL}")
+    vids = fetch_all_sources(URL, limit=1)
+    print(f"Found {len(vids)} videos:")
+    for vid in vids:
+        print(f"  {vid.title} -> {vid.url}")
     return 0
 
 

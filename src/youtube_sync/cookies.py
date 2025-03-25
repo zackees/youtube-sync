@@ -92,8 +92,8 @@ def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
 
 
 def _get_cookies_from_browser(url: str) -> list[dict]:
-    return _get_cookies_from_browser_using_webdriver(url=url)
-    # return _get_cookies_from_browser_using_playwright(url=url)
+    # return _get_cookies_from_browser_using_webdriver(url=url)
+    return _get_cookies_from_browser_using_playwright(url=url)
 
 
 def _get_platform_homepage_url(source: Source) -> str:
