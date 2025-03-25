@@ -18,7 +18,7 @@ dependencies = [
     "Pillow",
     "certifi",
     "appdirs",
-    "open-webdriver>=1.6.5",
+    "open-webdriver>=1.6.7",
     "pytz",
     "python-dateutil",
     "feedparser",
