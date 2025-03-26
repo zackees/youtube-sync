@@ -10,7 +10,7 @@ from youtube_sync.ytdlp.error import (
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
-from youtube_sync.ytdlp.ytdlp import Cookies
+from youtube_sync.ytdlp.ytdlp import Cookies, Source
 
 
 def _process_conversion(
@@ -43,6 +43,7 @@ def _process_conversion(
 def download_mp3s(
     downloads: list[tuple[str, FSPath]],
     download_pool: ThreadPoolExecutor,
+    source: Source,
     cookies: Cookies | None = None,
 ) -> list[Future[tuple[str, FSPath, Exception | None]]]:
     """Download multiple YouTube videos as MP3s using thread pools.
@@ -84,6 +85,7 @@ def download_mp3s(
             url,
             outmp3,
             cookied_path,
+            source,
             download_pool,
             result_future,
         )
@@ -95,6 +97,7 @@ def _process_download_and_convert(
     url: str,
     outmp3: FSPath,
     cookies: Path | None,
+    source: Source,
     download_pool: ThreadPoolExecutor,
     result_future: Future[tuple[str, FSPath, Exception | None]],
 ) -> None:
@@ -109,7 +112,7 @@ def _process_download_and_convert(
         result_future: Future to set with the final result
     """
     # Create downloader
-    downloader = YtDlpDownloader(url, outmp3, cookies)
+    downloader = YtDlpDownloader(url, outmp3, cookies_txt=cookies, source=source)
 
     try:
         # Check for keyboard interrupt

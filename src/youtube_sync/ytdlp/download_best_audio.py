@@ -38,6 +38,7 @@ def _update_proxies_once() -> None:
 
 def yt_dlp_download_best_audio(
     yt_exe: YtDlpCmdRunner,
+    source: Source,
     url: str,
     temp_dir: Path,
     cookies_txt: Path | None,
@@ -131,7 +132,7 @@ def yt_dlp_download_best_audio(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
                 logger.error("Refreshing cookies")
-                cookies: Cookies = Cookies.from_browser(source=Source.YOUTUBE)
+                cookies: Cookies = Cookies.from_browser(source=source)
                 cookies_txt = Path(cookies.path_txt)
                 if cookies_txt is not None and cookies_txt.exists():
                     cookies_txt_str = cookies_txt.read_text()

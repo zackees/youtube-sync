@@ -4,6 +4,7 @@ from pathlib import Path
 
 # from youtube_sync.filesystem import FS
 from youtube_sync import FSPath
+from youtube_sync.config import Source
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
 
@@ -14,7 +15,9 @@ from .exe import YtDlpCmdRunner
 class YtDlpDownloader:
     """Class for downloading and converting YouTube videos to MP3."""
 
-    def __init__(self, url: str, outmp3: FSPath, cookies_txt: Path | None = None):
+    def __init__(
+        self, url: str, outmp3: FSPath, source: Source, cookies_txt: Path | None = None
+    ):
         """Initialize the downloader with a temporary directory and download parameters.
 
         Args:
@@ -30,6 +33,7 @@ class YtDlpDownloader:
         self.cookies_txt = cookies_txt
         self.downloaded_file: Path | None = None
         self.temp_mp3: Path | None = None
+        self.source = source
 
         # Ensure output directory exists
         par_dir = outmp3.parent
@@ -69,6 +73,7 @@ class YtDlpDownloader:
         result = yt_dlp_download_best_audio(
             url=self.url,
             temp_dir=self.temp_dir_path,
+            source=self.source,
             cookies_txt=self.cookies_txt,
             yt_exe=yt_exe,
             no_geo_bypass=True,

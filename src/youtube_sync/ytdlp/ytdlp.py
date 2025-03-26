@@ -231,7 +231,8 @@ class YtDlp:
         return download_mp3s(
             downloads,
             download_pool,
-            cookies,
+            source=self.source,
+            cookies=cookies,
         )
 
     def download_mp3(self, url: str, outmp3: FSPath) -> None:
