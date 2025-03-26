@@ -90,8 +90,6 @@ def yt_dlp_download_best_audio(
 
     import subprocess
 
-    _USE_PROXY = os.environ.get("USE_PROXY", "0") == "1"
-
     class RealYtdlp:
         def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
             full_cmd = [yt_exe.exe.as_posix()] + cmd_list
@@ -101,12 +99,26 @@ def yt_dlp_download_best_audio(
             except subprocess.CalledProcessError:
                 return False
 
-    executor: RealYtdlp | YtDLPProxy
-    if _USE_PROXY:
-        executor = YtDLPProxy()
-    else:
-        executor = RealYtdlp()
-    is_proxy = isinstance(executor, RealYtdlp)
+    class RealOrProxy:
+        def __init__(self) -> None:
+            self.proxy = YtDLPProxy()
+            self.real = RealYtdlp()
+            self.real_failures = 0
+
+        def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+            if self.real_failures > 3:
+                return self.proxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+            try:
+                self.real.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+                return True
+            except subprocess.CalledProcessError:
+                self.real_failures += 1
+                return self.proxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+
+        def is_proxy(self) -> bool:
+            return self.real_failures > 3
+
+    executor: RealOrProxy = RealOrProxy()
 
     for attempt in range(retries):
         if check_keyboard_interrupt():
@@ -151,9 +163,9 @@ def yt_dlp_download_best_audio(
                 logger.info(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
-                if is_proxy:
+                if executor.is_proxy():
                     logger.error("Refreshing cookies")
-                    cookies: Cookies = Cookies.from_browser(source=source)
+                    cookies: Cookies = Cookies.from_browser(source=source, save=True)
                     cookies_txt = Path(cookies.path_txt)
                     if cookies_txt is not None and cookies_txt.exists():
                         cookies_txt_str = cookies_txt.read_text()
