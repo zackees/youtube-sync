@@ -30,13 +30,13 @@ class CookiesTester(unittest.TestCase):
             set_cookie_root_path(output_dir)
             cookies = Cookies.load(source=Source.YOUTUBE)
             print(f"Found {len(cookies)} cookies.")
-            for cookie in cookies:
+            for cookie in cookies.cookies_txt.splitlines():
                 print(cookie)
             pkl = output_dir / "youtube" / "cookies.pkl"
             txt = output_dir / "youtube" / "cookies.txt"
             self.assertTrue(pkl.exists(), f"{pkl} not found.")
             self.assertTrue(txt.exists(), f"{txt} not found.")
-            set_cookie_root_path(Path("."))
+            set_cookie_root_path(Path("cookies"))
 
     def test_refresh_off(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -44,7 +44,7 @@ class CookiesTester(unittest.TestCase):
             set_cookie_root_path(output_dir)
             cookies = Cookies.load(source=Source.YOUTUBE)
             print(f"Found {len(cookies)} cookies.")
-            for cookie in cookies:
+            for cookie in cookies.cookies_txt.splitlines():
                 print(cookie)
             pkl = output_dir / "youtube" / "cookies.pkl"
             txt = output_dir / "youtube" / "cookies.txt"
@@ -55,7 +55,7 @@ class CookiesTester(unittest.TestCase):
             set_cookie_root_path(output_dir)  # force reload
             cookies.refresh()
             self.assertNotEqual(creation_time, cookies.creation_time)
-            set_cookie_root_path(Path("."))
+            set_cookie_root_path(Path("cookies"))
 
 
 if __name__ == "__main__":

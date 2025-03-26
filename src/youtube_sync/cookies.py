@@ -4,7 +4,6 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterator
 
 from filelock import FileLock
 
@@ -295,7 +294,7 @@ class Cookies:
         new_self = Cookies.get_or_refresh(source=self.source, cookies=self)
         if new_self != self:
             logger.info("Cookies were refreshed, updating instance")
-            self.data = new_self.data
+            self._cookies_txt = new_self.cookies_txt
             self.creation_time = new_self.creation_time
         else:
             logger.debug("No cookie refresh needed")
@@ -343,11 +342,17 @@ class Cookies:
 
         if suffix == ".pkl":
             logger.info(
-                "Saving %d cookies to pickle file: %s", len(self.data), out_file
+                "Saving %d cookies to pickle file: %s",
+                len(self.cookies_txt.splitlines()),
+                out_file,
             )
             self.to_pickle(out_file)
         elif suffix == ".txt":
-            logger.info("Saving %d cookies to text file: %s", len(self.data), out_file)
+            logger.info(
+                "Saving %d cookies to text file: %s",
+                len(self.cookies_txt.splitlines()),
+                out_file,
+            )
             self.write_cookies_txt(out_file)
         else:
             error_msg = f"Unsupported file extension: {suffix}"
@@ -357,13 +362,10 @@ class Cookies:
         logger.debug("Successfully saved cookies to %s", out_file)
 
     def __len__(self) -> int:
-        return len(self.data)
-
-    def __iter__(self) -> Iterator[dict]:
-        return iter(self.data)
+        return len(self.cookies_txt.splitlines())
 
     def __repr__(self) -> str:
-        return f"Cookies({self.data})"
+        return f"Cookies({self.cookies_txt})"
 
     def __str__(self) -> str:
         return self.cookies_txt
