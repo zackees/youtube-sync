@@ -117,9 +117,9 @@ def scan_for_vids(
 
             continue
         assert isinstance(vid, VidEntry)
-        logger.debug("Parsed video: %s", vid)
+        # logger.debug("Parsed video: %s", vid)
         # print(vid)
-        logger.debug(vid)
+        # logger.debug(vid)
         if vid in stored_vids_set:
             logger.debug(
                 f"Breaking out of loop because {vid} is already in the library"

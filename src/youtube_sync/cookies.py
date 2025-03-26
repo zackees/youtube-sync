@@ -1,5 +1,6 @@
 import logging
 import pickle
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -156,7 +157,7 @@ def get_cookie_paths(source: Source) -> CookiePaths:
     raise ValueError(f"Unknown source: {source}")
 
 
-def get_or_refresh_cookies(
+def _get_or_refresh_cookies(
     source: Source,
     cookies: "Cookies | None",
 ) -> "Cookies":
@@ -227,6 +228,23 @@ def get_or_refresh_cookies(
         yt_cookies = Cookies.from_browser(source, save=True)
         logger.info("Successfully obtained %d fresh cookies", len(yt_cookies))
         return yt_cookies
+
+
+COOKIES: dict[Source, "Cookies"] = {}
+COOKIES_LOCK = threading.Lock()
+
+
+def get_or_refresh_cookies(
+    source: Source,
+    cookies: "Cookies | None",
+) -> "Cookies":
+    global COOKIES
+
+    with COOKIES_LOCK:
+        if source not in COOKIES:
+            logger.info("Creating new Cookies object for %s", source.value)
+            COOKIES[source] = _get_or_refresh_cookies(source=source, cookies=cookies)
+        return COOKIES[source]
 
 
 class Cookies:
