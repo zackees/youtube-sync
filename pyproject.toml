@@ -36,7 +36,8 @@ dependencies = [
     "pyvirtualdisplay",
     "yt-dlp>=2025.3.25",
     "rclone-api>=1.5.44",
-    "yt-dlp-proxy>=1.0.7"
+    "yt-dlp-proxy>=1.0.7",
+    "youtube-trusted-session-generator>=0.0.4",
 ]
 
 # Change this with the version number bump.

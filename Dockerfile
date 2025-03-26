@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y python3-pip
 # RUN curl https://rclone.org/install.sh | sudo bash
 RUN pip3 install -U magic-wormhole uv --break-system-packages
 
-RUN playwright install chromium
+
 
 # Set up working directory
 WORKDIR /app
@@ -21,7 +21,21 @@ RUN mkdir -p /mytemp
 ENV TMPDIR=/mytemp
 
 COPY pre-requirements.txt ./
-RUN uv venv && run pip install -r pre-requirements.txt
+RUN uv venv
+RUN uv pip install -r pre-requirements.txt
+RUN uv run playwright install chromium
+
+# Install dependencies
+RUN apt-get install -y \
+      xvfb \
+    #   nss \
+    #   freetype \
+    #   freetype-dev \
+      #harfbuzz \
+      ca-certificates \
+#      ttf-freefont \
+      chromium \
+      chromium-chromedriver
 
 # Dependency setup
 COPY pyproject.toml ./

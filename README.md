@@ -44,3 +44,11 @@ In this case the files will be outputted to
   * TheDuran -> dst:path/to/TheDuran/youtube/*
 
 Each output directory will have one `library.json` file an multiple mp3 files.
+
+
+
+# PO Token TODO:
+
+  * https://github.com/LuanRT/BgUtils
+  * https://github.com/iv-org/youtube-trusted-session-generator
+    * docker run -p 8080:8080 quay.io/invidious/youtube-trusted-session-generator:webserver
