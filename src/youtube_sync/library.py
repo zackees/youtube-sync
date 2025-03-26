@@ -70,6 +70,21 @@ def _make_library(
     return library
 
 
+_UPDATE_PROXIES_LOCK = FileLock("proxies.lock")
+_PROXIES_UPDATED = False
+
+
+def _update_proxies_once() -> None:
+    from yt_dlp_proxy import YtDLPProxy
+
+    global _PROXIES_UPDATED
+    if _PROXIES_UPDATED:
+        return
+    with _UPDATE_PROXIES_LOCK:
+        YtDLPProxy.update()
+        _PROXIES_UPDATED = True
+
+
 class Library:
     """Represents the library"""
 
@@ -250,6 +265,8 @@ class Library:
             check_keyboard_interrupt,
             set_keyboard_interrupt,
         )
+
+        _update_proxies_once()
 
         # Create thread pools with appropriate sizes
         download_pool = ThreadPoolExecutor(

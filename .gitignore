@@ -153,3 +153,4 @@ rclone.conf
 !.aider.conf.yml
 !.aiderignore
 config.json
+proxy.json
