@@ -88,6 +88,26 @@ def yt_dlp_download_best_audio(
     ke: KeyboardInterrupt | None = None
     last_error: Exception | None = None
 
+    import subprocess
+
+    _USE_PROXY = os.environ.get("USE_PROXY", "0") == "1"
+
+    class RealYtdlp:
+        def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+            full_cmd = [yt_exe.exe.as_posix()] + cmd_list
+            try:
+                subprocess.run(full_cmd, check=True)
+                return True
+            except subprocess.CalledProcessError:
+                return False
+
+    executor: RealYtdlp | YtDLPProxy
+    if _USE_PROXY:
+        executor = YtDLPProxy()
+    else:
+        executor = RealYtdlp()
+    is_proxy = isinstance(executor, RealYtdlp)
+
     for attempt in range(retries):
         if check_keyboard_interrupt():
             return KeyboardInterruptException(
@@ -100,7 +120,7 @@ def yt_dlp_download_best_audio(
             #     "\n\n###################\n# Running command: %s\n###################\n\n",
             #     cmd_str,
             # )
-            ok = YtDLPProxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+            ok = executor.execute(cmd_list, yt_dlp_path=yt_exe.exe)
             # proc = subprocess.Popen(cmd_list)
             # while True:
             #     if proc.poll() is not None:
@@ -131,14 +151,15 @@ def yt_dlp_download_best_audio(
                 logger.info(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
-                logger.error("Refreshing cookies")
-                cookies: Cookies = Cookies.from_browser(source=source)
-                cookies_txt = Path(cookies.path_txt)
-                if cookies_txt is not None and cookies_txt.exists():
-                    cookies_txt_str = cookies_txt.read_text()
-                    logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
-                # update the proxies
-                YtDLPProxy.update()
+                if is_proxy:
+                    logger.error("Refreshing cookies")
+                    cookies: Cookies = Cookies.from_browser(source=source)
+                    cookies_txt = Path(cookies.path_txt)
+                    if cookies_txt is not None and cookies_txt.exists():
+                        cookies_txt_str = cookies_txt.read_text()
+                        logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
+                    # update the proxies
+                    YtDLPProxy.update()
 
         except KeyboardInterrupt as kee:
             set_keyboard_interrupt()
