@@ -22,7 +22,7 @@ _FFMPEG_PATH_ADDED = False
 def init_once() -> None:
     global _FFMPEG_PATH_ADDED  # pylint: disable=global-statement
     if not _FFMPEG_PATH_ADDED:
-        add_paths()
+        add_paths(weak=True)
         _FFMPEG_PATH_ADDED = True
 
 
