@@ -24,6 +24,7 @@ COPY pre-requirements.txt ./
 RUN uv venv
 RUN uv pip install -r pre-requirements.txt
 RUN uv run playwright install chromium
+# RUN uv run reclone-api-install-bins
 
 # Install dependencies
 RUN apt-get install -y \
@@ -36,6 +37,7 @@ RUN apt-get install -y \
 #      ttf-freefont \
       chromium \
       chromium-chromedriver
+
 
 # Dependency setup
 COPY pyproject.toml ./

@@ -1,0 +1,8 @@
+FROM quay.io/invidious/youtube-trusted-session-generator:latest
+
+COPY docker/scripts/startup-webserver.sh ./
+
+EXPOSE 8080
+
+# Run
+CMD [ "./startup-webserver.sh"]

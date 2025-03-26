@@ -1,10 +1,14 @@
-version: '3.9'
-
 services:
   webdriver:
     build: .
     # Disabled for now, but might need it again in the future.
     # shm_size: 2gb
     ports:
-      - published: 92
-        target: 80
+      - "92:80"
+
+  poken:
+    build:
+      context: .
+      dockerfile: Dockerfile.potoken
+    ports:
+      - "8081:8080"
