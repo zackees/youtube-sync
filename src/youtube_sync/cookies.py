@@ -203,7 +203,7 @@ def _get_or_refresh_cookies(
             logger.info("No cookies provided in memory")
 
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
-        if Path(cookies_pkl).exists() and Path(cookies_txt).exists():
+        if Path(cookies_pkl).exists() or Path(cookies_txt).exists():
             logger.info("Found cookie files on disk")
 
             yt_cookies: Cookies | None = None
