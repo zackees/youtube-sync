@@ -1,4 +1,5 @@
 import logging
+import os
 import pickle
 import threading
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ from .types import Source
 # Set up module logger
 logger = create_logger(__name__, logging.getLogger().level)
 
-COOKIE_REFRESH_SECONDS = 24 * 60 * 60  # 24 hours
+COOKIE_REFRESH_SECONDS = 2 * 24 * 60 * 60  # 2 days
 
 
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
@@ -165,6 +166,7 @@ def _get_or_refresh_cookies(
     logger.debug(
         "Cookie paths: pkl=%s, txt=%s, lock=%s", paths.pkl, paths.txt, paths.lck
     )
+    no_expire_cookies = os.environ.get("NO_EXPIRE_COOKIES", "false").lower() == "true"
 
     with FileLock(paths.lck):
         logger.debug("Acquired lock for cookie refresh: %s", paths.lck)
@@ -178,7 +180,7 @@ def _get_or_refresh_cookies(
             expire_time = cookies.creation_time + timedelta(
                 seconds=COOKIE_REFRESH_SECONDS
             )
-            if now < expire_time:
+            if now < expire_time or no_expire_cookies:
                 logger.info(
                     "Using existing cookies (not expired, age: %d seconds)",
                     (now - cookies.creation_time).seconds,
@@ -186,7 +188,7 @@ def _get_or_refresh_cookies(
                 return cookies
             else:
                 logger.info(
-                    "Existing cookies expired (age: %d seconds)",
+                    "#################################\n# EXPIRED COOKIES!! expired (age: %d seconds)\n#################################",
                     (now - cookies.creation_time).seconds,
                 )
         else:
@@ -270,9 +272,6 @@ class Cookies:
 
     @staticmethod
     def from_browser(source: Source, save=True) -> "Cookies":
-        import traceback
-
-        stacktrace = traceback.format_stack()
 
         logger.info("\n############################")
         logger.info("# Getting cookies for %s", source)
@@ -285,8 +284,6 @@ class Cookies:
         logger.info("Retrieved %d cookies from browser", len(data))
 
         text = _convert_cookies_to_txt(data)
-
-        logger.info("".join(stacktrace))
 
         out = Cookies(source=source, text=text)
         if save:
