@@ -6,9 +6,9 @@ services:
     ports:
       - "92:80"
 
-  poken:
-    build:
-      context: .
-      dockerfile: Dockerfile.potoken
-    ports:
-      - "8081:8080"
+  # poken:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.potoken
+  #   ports:
+  #     - "8081:8080"
