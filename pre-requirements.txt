@@ -19,3 +19,4 @@ pyvirtualdisplay
 yt-dlp>=2025.3.25
 youtube-trusted-session-generator
 rclone-api>=1.5.46
+yt-dlp-get-pot

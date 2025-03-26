@@ -38,6 +38,7 @@ dependencies = [
     "rclone-api>=1.5.44",
     "yt-dlp-proxy>=1.0.7",
     "youtube-trusted-session-generator>=0.0.4",
+    "yt-dlp-get-pot"
 ]
 
 # Change this with the version number bump.

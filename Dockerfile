@@ -39,12 +39,19 @@ RUN apt-get install -y \
       chromium-chromedriver
 
 
+RUN uv run rclone-api-install-bins
+
 # Dependency setup
 COPY pyproject.toml ./
 RUN uv pip install -r pyproject.toml
 
+
+
 COPY . /app
 RUN uv pip install -e .
+
+RUN mkdir -p /etc/yt-dlp-plugins
+
 
 # Runtime config
 EXPOSE 80
