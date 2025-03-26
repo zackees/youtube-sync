@@ -351,8 +351,8 @@ class Cookies:
             self.to_pickle(out_file)
         elif suffix == ".txt":
             logger.info(
-                "Saving %d cookies to text file: %s",
-                len(self.cookies_txt.splitlines()),
+                "Saving cookie to %s, content:\n%s\n",
+                self.cookies_txt,
                 out_file,
             )
             self.write_cookies_txt(out_file)
