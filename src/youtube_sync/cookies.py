@@ -15,7 +15,7 @@ from .types import Source
 # Set up module logger
 logger = create_logger(__name__, logging.getLogger().level)
 
-COOKIE_REFRESH_SECONDS = 2 * 60 * 60  # 2 hours
+COOKIE_REFRESH_SECONDS = 24 * 60 * 60  # 24 hours
 
 
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
