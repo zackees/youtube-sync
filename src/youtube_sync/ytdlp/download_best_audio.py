@@ -6,12 +6,17 @@ from pathlib import Path
 from filelock import FileLock
 from yt_dlp_proxy import YtDLPProxy
 
+from youtube_sync.cookies import Cookies, Source
+
 from .error import (
     KeyboardInterruptException,
     check_keyboard_interrupt,
     set_keyboard_interrupt,
 )
 from .exe import YtDlpCmdRunner
+
+# cookies
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
@@ -125,9 +130,14 @@ def yt_dlp_download_best_audio(
                 logger.info(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
+                logger.error("Refreshing cookies")
+                cookies: Cookies = Cookies.from_browser(source=Source.YOUTUBE)
+                cookies_txt = Path(cookies.path_txt)
                 if cookies_txt is not None and cookies_txt.exists():
                     cookies_txt_str = cookies_txt.read_text()
                     logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
+                # update the proxies
+                YtDLPProxy.update()
 
         except KeyboardInterrupt as kee:
             set_keyboard_interrupt()
