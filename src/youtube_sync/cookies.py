@@ -19,11 +19,6 @@ logger = create_logger(__name__, logging.getLogger().level)
 COOKIE_REFRESH_SECONDS = 2 * 60 * 60  # 2 hours
 
 
-def set_cookie_refresh_seconds(seconds: int) -> None:
-    global COOKIE_REFRESH_SECONDS
-    COOKIE_REFRESH_SECONDS = seconds
-
-
 def _convert_cookies_to_txt(cookies: list[dict]) -> str:
     """
     Convert a list of cookie dictionaries to the cookies.txt (Netscape format).
@@ -128,6 +123,10 @@ _COOKIE_ROOT_PATH = Path("cookies")
 def set_cookie_root_path(path: Path):
     global _COOKIE_ROOT_PATH
     _COOKIE_ROOT_PATH = path
+    with COOKIES_LOCK:
+        global COOKIES
+        COOKIES = {}
+        logger.info("Cleared COOKIES cache")
 
 
 @dataclass
@@ -245,6 +244,11 @@ def get_or_refresh_cookies(
             logger.info("Creating new Cookies object for %s", source.value)
             COOKIES[source] = _get_or_refresh_cookies(source=source, cookies=cookies)
         return COOKIES[source]
+
+
+def set_cookie_refresh_seconds(seconds: int) -> None:
+    global COOKIE_REFRESH_SECONDS
+    COOKIE_REFRESH_SECONDS = seconds
 
 
 class Cookies:
