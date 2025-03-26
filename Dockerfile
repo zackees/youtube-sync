@@ -20,9 +20,12 @@ WORKDIR /app
 RUN mkdir -p /mytemp
 ENV TMPDIR=/mytemp
 
+COPY pre-requirements.txt ./
+RUN uv venv && run pip install -r pre-requirements.txt
+
 # Dependency setup
 COPY pyproject.toml ./
-RUN uv venv && uv pip install -r pyproject.toml
+RUN uv pip install -r pyproject.toml
 
 COPY . /app
 RUN uv pip install -e .
