@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y python3-pip
 # RUN curl https://rclone.org/install.sh | sudo bash
 RUN pip3 install -U magic-wormhole uv --break-system-packages
 
-
+RUN playwright install chromium
 
 # Set up working directory
 WORKDIR /app

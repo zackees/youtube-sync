@@ -9,11 +9,11 @@ from filelock import FileLock
 
 from youtube_sync.open_webdriver import open_webdriver  # type: ignore
 
+from .logutil import create_logger
 from .types import Source
 
 # Set up module logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
+logger = create_logger(__name__, logging.getLogger().level)
 
 COOKIE_REFRESH_SECONDS = 2 * 60 * 60  # 2 hours
 
@@ -68,29 +68,45 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
 
 
 def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
-    with open_webdriver(disable_gpu=True) as driver:
-        # clear cookies
-        driver.delete_all_cookies()
-        driver.get(url)
-        return driver.get_cookies()
+    logger.info("Getting cookies using WebDriver from %s", url)
+    try:
+        with open_webdriver(disable_gpu=True) as driver:
+            # clear cookies
+            driver.delete_all_cookies()
+            logger.debug("Navigating to %s", url)
+            driver.get(url)
+            cookies = driver.get_cookies()
+            logger.info("Retrieved %d cookies from WebDriver", len(cookies))
+            return cookies
+    except Exception as e:
+        logger.error("Error getting cookies with WebDriver: %s", str(e))
+        raise
 
 
 def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
     from .playwright_launcher import Page, launch_playwright, set_headless
 
+    logger.info("Getting cookies using Playwright from %s", url)
     set_headless(True)
     out: list[dict] = []
 
-    page: Page
-    with launch_playwright() as (page, _):
-        page.goto(url)
-        cookies = page.context.cookies()
-        # convert to list of dicts
-        out = [dict(c) for c in cookies]
-        return out
+    try:
+        page: Page
+        with launch_playwright() as (page, _):
+            logger.debug("Navigating to %s", url)
+            page.goto(url)
+            cookies = page.context.cookies()
+            # convert to list of dicts
+            out = [dict(c) for c in cookies]
+            logger.info("Retrieved %d cookies from Playwright", len(out))
+            return out
+    except Exception as e:
+        logger.error("Error getting cookies with Playwright: %s", str(e))
+        raise
 
 
 def _get_cookies_from_browser(url: str) -> list[dict]:
+    logger.info("Getting cookies from browser for %s", url)
     # return _get_cookies_from_browser_using_webdriver(url=url)
     return _get_cookies_from_browser_using_playwright(url=url)
 
@@ -144,38 +160,72 @@ def get_or_refresh_cookies(
     source: Source,
     cookies: "Cookies | None",
 ) -> "Cookies":
+    logger.info("Getting or refreshing cookies for %s", source.value)
 
     paths = get_cookie_paths(source)
+    logger.debug(
+        "Cookie paths: pkl=%s, txt=%s, lock=%s", paths.pkl, paths.txt, paths.lck
+    )
 
     with FileLock(paths.lck):
+        logger.debug("Acquired lock for cookie refresh: %s", paths.lck)
         now = datetime.now()
         cookies_pkl = paths.pkl
         cookies_txt = paths.txt
-        # case 1: we have cookies
+
+        # case 1: we have cookies in memory
         if cookies is not None:
             # and they are not expired
             expire_time = cookies.creation_time + timedelta(
                 seconds=COOKIE_REFRESH_SECONDS
             )
             if now < expire_time:
+                logger.info(
+                    "Using existing cookies (not expired, age: %d seconds)",
+                    (now - cookies.creation_time).seconds,
+                )
                 return cookies
+            else:
+                logger.info(
+                    "Existing cookies expired (age: %d seconds)",
+                    (now - cookies.creation_time).seconds,
+                )
+        else:
+            logger.debug("No cookies provided in memory")
+
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
         if cookies_pkl.exists() and cookies_txt.exists():
+            logger.debug("Found cookie files on disk")
             try:
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
                 if isinstance(yt_cookies, Cookies):
                     seconds_old = (now - yt_cookies.creation_time).seconds
+                    logger.debug(
+                        "Loaded cookies from disk, age: %d seconds", seconds_old
+                    )
+
                     if seconds_old < COOKIE_REFRESH_SECONDS:
+                        logger.info(
+                            "Using cookies from disk (not expired, age: %d seconds)",
+                            seconds_old,
+                        )
                         # save the cookies to the new location
                         yt_cookies.save(cookies_pkl)
                         yt_cookies.save(cookies_txt)
                         return yt_cookies
+                    else:
+                        logger.info(
+                            "Cookies from disk expired (age: %d seconds)", seconds_old
+                        )
                 else:
                     logger.warning("Invalid cookies found at %s", cookies_pkl)
             except Exception as e:
                 logger.error("Error loading cookies from %s: %s", cookies_pkl, e)
+
         # case 3: we have no cookies, or they are expired, or they are the wrong type
+        logger.info("Fetching fresh cookies from browser for %s", source.value)
         yt_cookies = Cookies.from_browser(source, save=True)
+        logger.info("Successfully obtained %d fresh cookies", len(yt_cookies))
         return yt_cookies
 
 
@@ -188,22 +238,32 @@ class Cookies:
 
     @staticmethod
     def from_browser(source: Source, save=True) -> "Cookies":
-        print("\n############################")
-        print(f"# Getting cookies for {source}")
-        print("#############################\n")
+        logger.info("\n############################")
+        logger.info("# Getting cookies for %s", source)
+        logger.info("#############################")
+
         url: str = _get_platform_homepage_url(source)
+        logger.debug("Using platform URL: %s", url)
+
         data = _get_cookies_from_browser(url=url)
+        logger.info("Retrieved %d cookies from browser", len(data))
+
         out = Cookies(source=source, data=data)
         if save:
+            logger.info("Saving cookies to disk")
             out.save(out.path_pkl)
             out.save(out.path_txt)
         return out
 
     def refresh(self) -> None:
+        logger.info("Refreshing cookies for %s", self.source.value)
         new_self = Cookies.get_or_refresh(source=self.source, cookies=self)
         if new_self != self:
+            logger.info("Cookies were refreshed, updating instance")
             self.data = new_self.data
             self.creation_time = new_self.creation_time
+        else:
+            logger.debug("No cookie refresh needed")
 
     def __init__(self, source: Source, data: list[dict]) -> None:
         self.version = "1"
@@ -232,19 +292,31 @@ class Cookies:
         # self.to_pickle(out_pickle_file)
         suffix = out_file.suffix
         if suffix not in {".pkl", ".txt"}:
-            raise ValueError(
+            error_msg = (
                 f"Unsupported file extension: {suffix}, options are: '.pkl', '.txt'"
             )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
         parent = out_file.parent
-        parent.mkdir(parents=True, exist_ok=True)
+        if not parent.exists():
+            logger.debug("Creating directory: %s", parent)
+            parent.mkdir(parents=True, exist_ok=True)
+
         if suffix == ".pkl":
-            logger.debug("Saving cookies to %s", out_file)
+            logger.info(
+                "Saving %d cookies to pickle file: %s", len(self.data), out_file
+            )
             self.to_pickle(out_file)
         elif suffix == ".txt":
-            logger.debug("Saving cookies to %s", out_file)
+            logger.info("Saving %d cookies to text file: %s", len(self.data), out_file)
             self.write_cookies_txt(out_file)
         else:
-            raise ValueError(f"Unsupported file extension: {suffix}")
+            error_msg = f"Unsupported file extension: {suffix}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        logger.debug("Successfully saved cookies to %s", out_file)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -283,5 +355,21 @@ class Cookies:
             FileNotFoundError: If the pickle file doesn't exist
             pickle.UnpicklingError: If the file contains invalid pickle data
         """
-        with open(file_path, "rb") as f:
-            return pickle.load(f)
+        logger.debug("Loading cookies from pickle file: %s", file_path)
+        if not file_path.exists():
+            error_msg = f"Cookie file not found: {file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+
+        try:
+            with open(file_path, "rb") as f:
+                cookies = pickle.load(f)
+                logger.info(
+                    "Successfully loaded %d cookies from %s",
+                    len(cookies.data) if hasattr(cookies, "data") else 0,
+                    file_path,
+                )
+                return cookies
+        except Exception as e:
+            logger.error("Failed to load cookies from %s: %s", file_path, str(e))
+            raise
