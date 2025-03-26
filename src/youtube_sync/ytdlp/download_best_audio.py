@@ -105,7 +105,12 @@ def yt_dlp_download_best_audio(
                 last_error = subprocess.CalledProcessError(
                     returncode=proc.returncode, cmd=cmd_list
                 )
-                print(f"Download attempt {attempt+1}/{retries} failed: {last_error}")
+                logger.info(
+                    f"Download attempt {attempt+1}/{retries} failed: {last_error}"
+                )
+                if cookies_txt is not None and cookies_txt.exists():
+                    cookies_txt_str = cookies_txt.read_text()
+                    logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
 
         except KeyboardInterrupt as kee:
             set_keyboard_interrupt()
