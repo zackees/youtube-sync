@@ -310,6 +310,8 @@ class Cookies:
         self.creation_time = datetime.now()
         self._cookies_txt = text
 
+        logger.info("Created Cookies object for %s with \n%d\n cookies", source, text)
+
     @property
     def cookies_txt(self) -> str:
         return self._cookies_txt
