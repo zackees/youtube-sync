@@ -166,7 +166,7 @@ def _get_or_refresh_cookies(
     logger.debug(
         "Cookie paths: pkl=%s, txt=%s, lock=%s", paths.pkl, paths.txt, paths.lck
     )
-    no_expire_cookies = os.environ.get("NO_EXPIRE_COOKIES", "false").lower() == "true"
+    no_expire_cookies = os.environ.get("NO_EXPIRE_COOKIES", "0").lower() == "1"
 
     with FileLock(paths.lck):
         logger.debug("Acquired lock for cookie refresh: %s", paths.lck)
@@ -202,10 +202,14 @@ def _get_or_refresh_cookies(
             try:
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
             except Exception as e:
-                logger.error("Error loading cookies from %s: %s", cookies_pkl, e)
+                logger.error(
+                    "Error loading cookies from %s: %s, falling back to txt load",
+                    cookies_pkl,
+                    e,
+                )
                 yt_cookies = Cookies.from_txt(source, Path(cookies_txt).read_text())
+                logger.error("Loaded cookies from txt file: %s", cookies_txt)
             try:
-                yt_cookies = Cookies.from_pickle(cookies_pkl)
                 if isinstance(yt_cookies, Cookies):
                     seconds_old = (now - yt_cookies.creation_time).seconds
                     logger.info(
