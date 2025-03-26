@@ -1,3 +1,5 @@
+import logging
+
 from rclone_api.fs import FSPath
 
 from .create import create
@@ -5,6 +7,9 @@ from .library import Library
 from .sync_impl import BaseSync
 from .types import Source
 from .vid_entry import VidEntry
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class YouTubeSyncImpl:
@@ -50,12 +55,17 @@ class YouTubeSyncImpl:
     def scan_for_vids(
         self, limit: int | None, stop_on_duplicate_vids=False
     ) -> list[VidEntry]:
-        out: list[VidEntry] = self.api.scan_for_vids(
-            limit=limit,
-            stop_on_duplicate_vids=stop_on_duplicate_vids,
-        )
-        self.library.merge(out, save=True)
-        return out
+        remaining_to_download = self.find_vids_missing_downloads()
+        if len(remaining_to_download) < 5:
+            out: list[VidEntry] = self.api.scan_for_vids(
+                limit=limit,
+                stop_on_duplicate_vids=stop_on_duplicate_vids,
+            )
+            self.library.merge(out, save=True)
+            return out
+        else:
+            logger.info("Skipping scan for vids, enough videos already downloaded")
+            return []
 
     def find_vids_already_downloaded(self, refresh=True) -> list[VidEntry]:
         known_vids = self.known_vids(refresh=refresh)
