@@ -190,11 +190,11 @@ def _get_or_refresh_cookies(
                     (now - cookies.creation_time).seconds,
                 )
         else:
-            logger.debug("No cookies provided in memory")
+            logger.info("No cookies provided in memory")
 
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
         if Path(cookies_pkl).exists() and Path(cookies_txt).exists():
-            logger.debug("Found cookie files on disk")
+            logger.info("Found cookie files on disk")
 
             yt_cookies: Cookies | None = None
             try:
@@ -206,7 +206,7 @@ def _get_or_refresh_cookies(
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
                 if isinstance(yt_cookies, Cookies):
                     seconds_old = (now - yt_cookies.creation_time).seconds
-                    logger.debug(
+                    logger.info(
                         "Loaded cookies from disk, age: %d seconds", seconds_old
                     )
 
@@ -270,6 +270,10 @@ class Cookies:
 
     @staticmethod
     def from_browser(source: Source, save=True) -> "Cookies":
+        import traceback
+
+        stacktrace = traceback.format_stack()
+
         logger.info("\n############################")
         logger.info("# Getting cookies for %s", source)
         logger.info("#############################")
@@ -281,6 +285,8 @@ class Cookies:
         logger.info("Retrieved %d cookies from browser", len(data))
 
         text = _convert_cookies_to_txt(data)
+
+        logger.info("".join(stacktrace))
 
         out = Cookies(source=source, text=text)
         if save:
