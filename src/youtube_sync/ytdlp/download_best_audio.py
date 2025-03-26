@@ -112,6 +112,8 @@ def yt_dlp_download_best_audio(
             self.real_failures = 0
 
         def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+            cmd_str = subprocess.list2cmdline(cmd_list)
+            logger.info(f"Executing command:\n  {cmd_str}\n")
             if self.real_failures > 3:
                 return self.proxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
             try:
