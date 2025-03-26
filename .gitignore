@@ -154,3 +154,4 @@ rclone.conf
 !.aiderignore
 config.json
 proxy.json
+*.lock

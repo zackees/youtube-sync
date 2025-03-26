@@ -36,11 +36,11 @@ dependencies = [
     "pyvirtualdisplay",
     "yt-dlp>=2025.3.25",
     "rclone-api>=1.5.44",
-    "yt-dlp-proxy>=1.0.1"
+    "yt-dlp-proxy>=1.0.7"
 ]
 
 # Change this with the version number bump.
-version = "1.2.45"
+version = "1.2.47"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

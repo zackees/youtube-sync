@@ -1,9 +1,10 @@
 import _thread
 import logging
 import os
-import subprocess
-import time
 from pathlib import Path
+
+from filelock import FileLock
+from yt_dlp_proxy import YtDLPProxy
 
 from .error import (
     KeyboardInterruptException,
@@ -14,6 +15,20 @@ from .exe import YtDlpCmdRunner
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
+
+
+_UPDATE_PROXIES_LOCK = FileLock("proxies.lock")
+_PROXIES_UPDATED = False
+
+
+def _update_proxies_once() -> None:
+
+    global _PROXIES_UPDATED
+    if _PROXIES_UPDATED:
+        return
+    with _UPDATE_PROXIES_LOCK:
+        YtDLPProxy.update()
+        _PROXIES_UPDATED = True
 
 
 def yt_dlp_download_best_audio(
@@ -42,12 +57,14 @@ def yt_dlp_download_best_audio(
             "Download aborted due to previous keyboard interrupt"
         )
 
+    _update_proxies_once()
+
     # Use a generic name for the temporary file - let yt-dlp determine the extension
     temp_file = Path(os.path.join(temp_dir, "temp_audio"))
 
     # Command to download best audio format without any conversion
     cmd_list = [
-        yt_exe.exe.as_posix(),
+        # yt_dlp_proxy_path.as_posix(),
         url,
         "-f",
         "bestaudio/worst",  # Select best audio format
@@ -72,23 +89,24 @@ def yt_dlp_download_best_audio(
             )
 
         try:
-            cmd_str = subprocess.list2cmdline(cmd_list)
-            logger.debug(
-                "\n\n###################\n# Running command: %s\n###################\n\n",
-                cmd_str,
-            )
-            proc = subprocess.Popen(cmd_list)
-            while True:
-                if proc.poll() is not None:
-                    break
-                if check_keyboard_interrupt():
-                    proc.terminate()
-                    return KeyboardInterruptException(
-                        "Download aborted due to previous keyboard interrupt"
-                    )
-                time.sleep(0.1)
+            # cmd_str = subprocess.list2cmdline(cmd_list)
+            # logger.debug(
+            #     "\n\n###################\n# Running command: %s\n###################\n\n",
+            #     cmd_str,
+            # )
+            ok = YtDLPProxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+            # proc = subprocess.Popen(cmd_list)
+            # while True:
+            #     if proc.poll() is not None:
+            #         break
+            #     if check_keyboard_interrupt():
+            #         proc.terminate()
+            #         return KeyboardInterruptException(
+            #             "Download aborted due to previous keyboard interrupt"
+            #         )
+            #     time.sleep(0.1)
 
-            if proc.returncode == 0:
+            if ok:
                 # Find the downloaded file (with whatever extension yt-dlp used)
                 downloaded_files = list(temp_dir.glob("temp_audio.*"))
                 if not downloaded_files:
@@ -98,13 +116,12 @@ def yt_dlp_download_best_audio(
                     continue
                 return downloaded_files[0]
             else:
-                rtn = proc.returncode
-                if YtDlpCmdRunner.is_keyboard_interrupt(rtn):
-                    set_keyboard_interrupt()
-                    raise KeyboardInterrupt("KeyboardInterrupt")
-                last_error = subprocess.CalledProcessError(
-                    returncode=proc.returncode, cmd=cmd_list
-                )
+                # if YtDlpCmdRunner.is_keyboard_interrupt(rtn):
+                #     set_keyboard_interrupt()
+                #     raise KeyboardInterrupt("KeyboardInterrupt")
+                # last_error = subprocess.CalledProcessError(
+                #     returncode=proc.returncode, cmd=cmd_list
+                # )
                 logger.info(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
