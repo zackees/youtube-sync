@@ -3,11 +3,16 @@ from yt_dlp_plugins.extractor.getpot import GetPOTProvider, register_provider
 import httpx
 
 
+# def _get_pot() -> str:
+#     url = "http://localhost:8081/token"
+#     response = httpx.get(url)
+#     json = response.json()
+#     return json["potoken"]
+
 def _get_pot() -> str:
-    url = "http://localhost:8081/token"
-    response = httpx.get(url)
-    json = response.json()
-    return json["potoken"]
+    import os
+    import subprocess
+    
 
 @register_provider
 class MyProviderRH(GetPOTProvider):
