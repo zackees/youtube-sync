@@ -290,7 +290,7 @@ class Cookies:
         return out
 
     def refresh(self) -> None:
-        logger.info("Refreshing cookies for %s", self.source.value)
+        # logger.info("Refreshing cookies for %s", self.source.value)
         new_self = Cookies.get_or_refresh(source=self.source, cookies=self)
         if new_self != self:
             logger.info("Cookies were refreshed, updating instance")
