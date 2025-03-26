@@ -45,6 +45,8 @@ def yt_dlp_download_best_audio(
     no_geo_bypass: bool = True,
     retries: int = 1,
 ) -> Path | Exception:
+    from youtube_sync.cookies import get_user_agent
+
     """Download the best audio from a URL to a temporary directory without conversion.
 
     Args:
@@ -68,10 +70,14 @@ def yt_dlp_download_best_audio(
     # Use a generic name for the temporary file - let yt-dlp determine the extension
     temp_file = Path(os.path.join(temp_dir, "temp_audio"))
 
+    user_agent: str = get_user_agent()
+
     # Command to download best audio format without any conversion
     cmd_list = [
         # yt_dlp_proxy_path.as_posix(),
         url,
+        "--user-agent",
+        user_agent,
         "-f",
         "bestaudio/worst",  # Select best audio format
         "--no-playlist",  # Don't download playlists

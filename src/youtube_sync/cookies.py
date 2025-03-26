@@ -271,6 +271,27 @@ def set_cookie_refresh_seconds(seconds: int) -> None:
     COOKIE_REFRESH_SECONDS = seconds
 
 
+_USER_AGENT: str | None = None
+
+
+def _get_user_agent_no_cache() -> str:
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        user_agent = page.evaluate("navigator.userAgent")
+        browser.close()
+        return user_agent
+
+
+def get_user_agent() -> str:
+    global _USER_AGENT
+    if _USER_AGENT is None:
+        _USER_AGENT = _get_user_agent_no_cache()
+    return _USER_AGENT
+
+
 class Cookies:
 
     @staticmethod
