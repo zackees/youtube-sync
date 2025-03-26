@@ -5,6 +5,7 @@ Command entry point.
 # pylint: disable=consider-using-f-string
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from youtube_sync.cookies import Cookies
 from youtube_sync.library import Library
@@ -85,7 +86,7 @@ class YtDlpSync(BaseSync):
             limit=limit,
             stored_vids=stored_vids,
             full_scan=full_scan,
-            cookies_txt=self.cookies.path_txt,
+            cookies_txt=Path(self.cookies.path_txt),
         )
 
         return out

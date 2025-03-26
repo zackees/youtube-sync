@@ -74,7 +74,9 @@ def download_mp3s(
         if cookies is not None:
             cookies.refresh()
 
-        cookied_path: Path | None = cookies.path_txt if cookies is not None else None
+        cookied_path: Path | None = (
+            Path(cookies.path_txt) if cookies is not None else None
+        )
 
         # Submit the entire download and conversion process as a single task
         FUTURE_RESOLVER_POOL.submit(

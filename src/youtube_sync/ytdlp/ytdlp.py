@@ -180,14 +180,20 @@ class YtDlp:
 
     def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
         cookies = self._extract_cookies_if_needed()
-        cookies_txt = cookies.path_txt if cookies is not None else None
+        # cookies_txt = cookies.path_txt if cookies is not None else None
+        cookies_txt: Path | None = (
+            Path(cookies.path_txt) if cookies is not None else None
+        )
         return _fetch_channel_info_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_video_info(self, video_url: str) -> dict:
         cookies = self._extract_cookies_if_needed()
-        cookies_txt = cookies.path_txt if cookies is not None else None
+        # cookies_txt = cookies.path_txt if cookies is not None else None
+        cookies_txt: Path | None = (
+            Path(cookies.path_txt) if cookies is not None else None
+        )
         return _fetch_video_info(
             video_url,
             yt_exe=self.yt_exe,
@@ -196,14 +202,19 @@ class YtDlp:
 
     def fetch_channel_url(self, video_url: str) -> str:
         cookies = self._extract_cookies_if_needed()
-        cookies_txt = cookies.path_txt if cookies is not None else None
+        # cookies_txt = cookies.path_txt if cookies is not None else None
+        cookies_txt: Path | None = (
+            Path(cookies.path_txt) if cookies is not None else None
+        )
         return _fetch_channel_url_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
     def fetch_channel_id(self, video_url: str) -> ChannelId:
         cookies = self._extract_cookies_if_needed()
-        cookies_txt = cookies.path_txt if cookies is not None else None
+        cookies_txt: Path | None = (
+            Path(cookies.path_txt) if cookies is not None else None
+        )
         return _fetch_channel_id_ytdlp(
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )

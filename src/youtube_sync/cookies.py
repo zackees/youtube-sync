@@ -132,17 +132,17 @@ def set_cookie_root_path(path: Path):
 
 @dataclass
 class CookiePaths:
-    pkl: Path
-    txt: Path
-    lck: Path
+    pkl: str
+    txt: str
+    lck: str
 
     @staticmethod
     def create(source: Source) -> "CookiePaths":
         base_path = _COOKIE_ROOT_PATH / source.value
         out = CookiePaths(
-            pkl=base_path / "cookies.pkl",
-            txt=base_path / "cookies.txt",
-            lck=base_path / "cookies.lock",
+            pkl=(base_path / "cookies.pkl").as_posix(),
+            txt=(base_path / "cookies.txt").as_posix(),
+            lck=(base_path / "cookies.lock").as_posix(),
         )
         return out
 
@@ -195,7 +195,7 @@ def _get_or_refresh_cookies(
             logger.debug("No cookies provided in memory")
 
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
-        if cookies_pkl.exists() and cookies_txt.exists():
+        if Path(cookies_pkl).exists() and Path(cookies_txt).exists():
             logger.debug("Found cookie files on disk")
             try:
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
@@ -269,8 +269,8 @@ class Cookies:
         out = Cookies(source=source, data=data)
         if save:
             logger.info("Saving cookies to disk")
-            out.save(out.path_pkl)
-            out.save(out.path_txt)
+            out.save(Path(out.path_pkl))
+            out.save(Path(out.path_txt))
         return out
 
     def refresh(self) -> None:
@@ -305,9 +305,11 @@ class Cookies:
         cookies = Cookies.get_or_refresh(source=source, cookies=None)
         return cookies
 
-    def save(self, out_file: Path) -> None:
+    def save(self, out_file: Path | str) -> None:
         # assert out_pickle_file.suffix == ".pkl"
         # self.to_pickle(out_pickle_file)
+        if isinstance(out_file, str):
+            out_file = Path(out_file)
         suffix = out_file.suffix
         if suffix not in {".pkl", ".txt"}:
             error_msg = (
@@ -359,7 +361,7 @@ class Cookies:
             pickle.dump(self, f)
 
     @staticmethod
-    def from_pickle(file_path: Path) -> "Cookies":
+    def from_pickle(file_path: Path | str) -> "Cookies":
         """
         Create a Cookies object from a pickle file.
 
@@ -373,6 +375,8 @@ class Cookies:
             FileNotFoundError: If the pickle file doesn't exist
             pickle.UnpicklingError: If the file contains invalid pickle data
         """
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
         logger.debug("Loading cookies from pickle file: %s", file_path)
         if not file_path.exists():
             error_msg = f"Cookie file not found: {file_path}"
