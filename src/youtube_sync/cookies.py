@@ -310,7 +310,7 @@ class Cookies:
         self.creation_time = datetime.now()
         self._cookies_txt = text
 
-        logger.info("Created Cookies object for %s with \n%d\n cookies", source, text)
+        logger.info("Created Cookies object for %s with \n%s\n cookies", source, text)
 
     @property
     def cookies_txt(self) -> str:
@@ -408,11 +408,13 @@ class Cookies:
         try:
             with open(file_path, "rb") as f:
                 cookies = pickle.load(f)
-                logger.info(
-                    "Successfully loaded %d cookies from %s",
-                    len(cookies.data) if hasattr(cookies, "data") else 0,
-                    file_path,
-                )
+                assert isinstance(cookies, Cookies)
+                # txt = cookies._cookies_txt
+                # logger.info(
+                #     "Successfully loaded %s cookies from %s",
+                #     txt if hasattr(cookies, "data") else 0,
+                #     file_path,
+                # )
                 return cookies
         except Exception as e:
             logger.error("Failed to load cookies from %s: %s", file_path, str(e))
