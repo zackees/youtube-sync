@@ -196,6 +196,13 @@ def _get_or_refresh_cookies(
         # case 2: we have cookies on disk, but we must check to see that they are the right type.
         if Path(cookies_pkl).exists() and Path(cookies_txt).exists():
             logger.debug("Found cookie files on disk")
+
+            yt_cookies: Cookies | None = None
+            try:
+                yt_cookies = Cookies.from_pickle(cookies_pkl)
+            except Exception as e:
+                logger.error("Error loading cookies from %s: %s", cookies_pkl, e)
+                yt_cookies = Cookies.from_txt(source, Path(cookies_txt).read_text())
             try:
                 yt_cookies = Cookies.from_pickle(cookies_pkl)
                 if isinstance(yt_cookies, Cookies):
@@ -259,6 +266,10 @@ class Cookies:
         return get_or_refresh_cookies(source=source, cookies=cookies)
 
     @staticmethod
+    def from_txt(source: Source, txt: str) -> "Cookies":
+        return Cookies(source=source, text=txt)
+
+    @staticmethod
     def from_browser(source: Source, save=True) -> "Cookies":
         logger.info("\n############################")
         logger.info("# Getting cookies for %s", source)
@@ -270,7 +281,9 @@ class Cookies:
         data = _get_cookies_from_browser(url=url)
         logger.info("Retrieved %d cookies from browser", len(data))
 
-        out = Cookies(source=source, data=data)
+        text = _convert_cookies_to_txt(data)
+
+        out = Cookies(source=source, text=text)
         if save:
             logger.info("Saving cookies to disk")
             out.save(Path(out.path_pkl))
@@ -287,19 +300,20 @@ class Cookies:
         else:
             logger.debug("No cookie refresh needed")
 
-    def __init__(self, source: Source, data: list[dict]) -> None:
+    def __init__(self, source: Source, text: str) -> None:
         self.version = "1"
-        self.data = data
+        # self.data = data
         self.source = source
         path: CookiePaths = get_cookie_paths(source)
         self.path_pkl = path.pkl
         self.path_txt = path.txt
         self.path_lock = path.lck
         self.creation_time = datetime.now()
+        self._cookies_txt = text
 
     @property
     def cookies_txt(self) -> str:
-        return _convert_cookies_to_txt(self.data)
+        return self._cookies_txt
 
     def write_cookies_txt(self, file_path: Path):
         file_path.write_text(self.cookies_txt, encoding="utf-8")
