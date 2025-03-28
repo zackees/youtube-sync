@@ -35,14 +35,14 @@ dependencies = [
     "webdriver-manager",
     "pyvirtualdisplay",
     "yt-dlp>=2025.3.25",
-    "rclone-api>=1.5.44",
+    "rclone-api>=1.5.52",
     "yt-dlp-proxy>=1.0.7",
     "youtube-trusted-session-generator>=0.0.4",
     "yt-dlp-get-pot"
 ]
 
 # Change this with the version number bump.
-version = "1.2.70"
+version = "1.2.71"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

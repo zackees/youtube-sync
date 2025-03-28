@@ -116,8 +116,13 @@ class YtDlpDownloader:
 
         if self.temp_mp3 is None:
             raise ValueError("No converted MP3 available. Call convert_to_mp3() first.")
+        import time
 
+        start = time.time()
         print(f"Copying {self.temp_mp3} -> {self.outmp3}")
-
         data = self.temp_mp3.read_bytes()
         self.outmp3.write_bytes(data)
+        diff = time.time() - start
+        print(
+            f"\n#################################\n# Copy {self.outmp3} is done, took {diff:.2f} seconds\n#################################\n"
+        )
