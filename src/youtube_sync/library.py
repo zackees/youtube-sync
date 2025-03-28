@@ -68,6 +68,8 @@ def _make_library(
         if "http" not in channel_url:
             raise ValueError(f"Invalid channel url: {channel_url}")
     url = channel_url or to_channel_url(source=source, channel_id=channel_id)
+    if "http" not in url:
+        raise ValueError(f"Invalid channel URL: {url}")
     if library_path.exists():
         raise FileExistsError(f"Library file already exists: {library_path}")
     library = Library(
@@ -146,6 +148,9 @@ class Library:
         if library_path.exists():
             library_or_err = Library.from_json(library_path)
             if isinstance(library_or_err, Library):
+                logger.info(
+                    f"Loaded library: {library_or_err} with channel url {library_or_err.channel_url}"
+                )
                 return library_or_err
             warnings.warn(
                 f"Error loading library: {library_or_err}, falling back to create."
@@ -170,11 +175,15 @@ class Library:
         libdata = lib_or_err
         if "http" not in libdata.channel_url:
             logger.error(f"Invalid channel URL: {libdata.channel_url}")
-            if libdata.source == Source.YOUTUBE and libdata.channel_url.startswith("@"):
+            if libdata.source == Source.YOUTUBE and not libdata.channel_url.startswith(
+                "http"
+            ):
                 logger.error("Recoverable error, fixing channel URL")
-                libdata.channel_url = to_channel_url(
-                    libdata.source, libdata.channel_url
-                )
+                channel_id = libdata.channel_url
+                if not channel_id.startswith("@"):
+                    logger.error(f"Fixing channel ID: {channel_id} by prepending @")
+                    channel_id = f"@{channel_id}"
+                libdata.channel_url = to_channel_url(libdata.source, channel_id)
         channel_name = libdata.channel_name
         channel_url = libdata.channel_url
         source = libdata.source
