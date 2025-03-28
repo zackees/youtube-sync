@@ -1,6 +1,6 @@
 import logging
 
-from rclone_api.fs import FSPath
+from virtual_fs import FSPath
 
 from .create import create
 from .library import Library
