@@ -62,13 +62,8 @@ def download_mp3s(
 
     # Process each download
     for i, (url, outmp3) in enumerate(downloads):
-        # Create a future that will represent the final result for this download
-        def on_done_task(count=i) -> None:
-            print(f"Download {count+1}/{len(downloads)} complete")
 
         result_future: Future[tuple[str, FSPath, Exception | None]] = Future()
-        result_futures.append(result_future)
-        result_future.add_done_callback(lambda _: on_done_task)
 
         # Extract cookies if needed
         # cookies = self._extract_cookies_if_needed()
@@ -80,7 +75,7 @@ def download_mp3s(
         )
 
         # Submit the entire download and conversion process as a single task
-        FUTURE_RESOLVER_POOL.submit(
+        fut = FUTURE_RESOLVER_POOL.submit(
             _process_download_and_convert,
             url,
             outmp3,
@@ -89,6 +84,15 @@ def download_mp3s(
             download_pool,
             result_future,
         )
+
+        # Create a future that will represent the final result for this download
+        def on_done_task(count=i) -> None:
+            print(
+                f"\n###########################\n# Download {count+1}/{len(downloads)} complete\n###########################\n"
+            )
+
+        result_futures.append(result_future)
+        fut.add_done_callback(lambda _: on_done_task)
 
     return result_futures
 
