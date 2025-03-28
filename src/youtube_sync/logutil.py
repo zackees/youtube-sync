@@ -18,7 +18,7 @@ def set_global_logging_level(level: int | str) -> None:
     logging.getLogger().setLevel(level)
 
 
-def create_logger(name: str, level: int | None) -> logging.Logger:
+def create_logger(name: str, level: int | str | None) -> logging.Logger:
     """Get a logger."""
     _init_once()
     out = logging.getLogger(name)

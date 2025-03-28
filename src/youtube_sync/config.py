@@ -9,8 +9,11 @@ from pathlib import Path
 from virtual_fs import FSPath, Vfs
 
 from youtube_sync.json_util import load_dict
+from youtube_sync.logutil import create_logger
 from youtube_sync.settings import ENV_JSON
 from youtube_sync.types import Source
+
+logger = create_logger(__name__, "WARNING")
 
 
 @dataclass
@@ -26,6 +29,20 @@ class CmdOptions:
             download=download,
             scan=scan,
         )
+
+
+def _youtube_fix_channel_id_if_necessary(channel_name: str) -> str:
+    # youtube names must start with @
+    if channel_name.startswith("@"):
+        return channel_name
+    logger.warning(f"Fixing youtube channel name: {channel_name} -> @{channel_name}")
+    return f"@{channel_name}"
+
+
+def _fix_channel_id_if_necessary(source: Source, channel_id: str) -> str:
+    if source == Source.YOUTUBE:
+        return _youtube_fix_channel_id_if_necessary(channel_id)
+    return channel_id
 
 
 @dataclass
@@ -45,6 +62,32 @@ class Channel:
     def to_fs_path(self, root: FSPath) -> FSPath:
         return root / self.name / self.source.value
 
+    def __post_init__(self) -> None:
+        assert isinstance(self.name, str), f"Expecting name to be a string: {self.name}"
+        assert isinstance(
+            self.source, Source
+        ), f"Expecting source to be a Source: {self.source}"
+        assert isinstance(
+            self.channel_id, str
+        ), f"Expecting channel_id to be a string: {self.channel_id}"
+        self.channel_id = _fix_channel_id_if_necessary(self.source, self.channel_id)
+
+    # hash
+    def __hash__(self) -> int:
+        return hash((self.name, self.source, self.channel_id))
+
+
+def _remove_duplicates(channels: list[Channel]) -> list[Channel]:
+    seen = set()
+    out = []
+    for channel in channels:
+        if channel not in seen:
+            out.append(channel)
+            seen.add(channel)
+        else:
+            logger.warning(f"Duplicate channel: {channel} removed")
+    return out
+
 
 class Config:
     """Represents the rclone configuration from the JSON file."""
@@ -58,7 +101,7 @@ class Config:
     ):
         self.output = output
         self.rclone = rclone
-        self.channels = channels
+        self.channels = _remove_duplicates(channels)
         self.cmd_options = cmd_options
 
     @staticmethod
