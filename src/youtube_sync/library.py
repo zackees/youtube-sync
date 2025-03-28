@@ -234,7 +234,18 @@ class Library:
             raise ValueError(f"Unexpected return type {type(lib_or_err)}")
         assert isinstance(lib_or_err, LibraryData)
         assert self.channel_name == lib_or_err.channel_name
-        assert self.channel_url == lib_or_err.channel_url
+        if self.channel_url != lib_or_err.channel_url:
+            logger.warning(
+                f"Channel URL mismatch: {self.channel_url} != {lib_or_err.channel_url}"
+            )
+            if not lib_or_err.channel_url.startswith(
+                "http"
+            ) and self.channel_url.startswith("http"):
+                logger.warning("Libdata had old error channel URL, ignoring")
+            else:
+                logger.error("Channel URL mismatch, aborting")
+                raise ValueError("Channel URL mismatch")
+        # assert self.channel_url == lib_or_err.channel_url
         assert self.source == lib_or_err.source
         self.channel_name = self.libdata.channel_name
         self.channel_url = self.libdata.channel_url
