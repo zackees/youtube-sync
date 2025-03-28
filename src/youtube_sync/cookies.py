@@ -80,15 +80,7 @@ def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
 
 
 def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
-    import traceback
-
     from .playwright_launcher import Page, launch_playwright, set_headless
-
-    stacktrace = traceback.format_stack()
-    logger.info(
-        "_get_cookies_from_browser_using_playwright called: Stacktrace:\n%s",
-        "".join(stacktrace),
-    )
 
     logger.info("Getting cookies using Playwright from %s", url)
     set_headless(True)
