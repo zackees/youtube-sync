@@ -59,11 +59,15 @@ def _find_missing_downloads(
 
 def _make_library(
     channel_name: str,
+    channel_id: str,
     channel_url: str | None,  # None means auto-find
     source: Source,
     library_path: FSPath,
 ) -> "Library":
-    url = channel_url or to_channel_url(source=source, channel_name=channel_name)
+    if channel_url is not None:
+        if "http" not in channel_url:
+            raise ValueError(f"Invalid channel url: {channel_url}")
+    url = channel_url or to_channel_url(source=source, channel_id=channel_id)
     if library_path.exists():
         raise FileExistsError(f"Library file already exists: {library_path}")
     library = Library(
@@ -111,6 +115,7 @@ class Library:
     @staticmethod
     def create(
         channel_name: str,
+        channel_id: str,
         channel_url: str | None,  # None means auto-find
         media_output: FSPath,
         source: Source,
@@ -120,6 +125,7 @@ class Library:
         library_path = library_path or media_output / "library.json"
         out = _make_library(
             channel_name=channel_name,
+            channel_id=channel_id,
             channel_url=channel_url,
             source=source,
             library_path=library_path,
@@ -129,6 +135,7 @@ class Library:
     @staticmethod
     def get_or_create(
         channel_name: str,
+        channel_id: str,
         channel_url: str | None,  # None means auto-find
         media_output: FSPath,
         source: Source,
@@ -146,6 +153,7 @@ class Library:
 
         return Library.create(
             channel_name=channel_name,
+            channel_id=channel_id,
             channel_url=channel_url,
             media_output=media_output,
             source=source,
@@ -160,6 +168,13 @@ class Library:
         if not isinstance(lib_or_err, LibraryData):
             return lib_or_err
         libdata = lib_or_err
+        if "http" not in libdata.channel_url:
+            logger.error(f"Invalid channel URL: {libdata.channel_url}")
+            if libdata.source == Source.YOUTUBE and libdata.channel_url.startswith("@"):
+                logger.error("Recoverable error, fixing channel URL")
+                libdata.channel_url = to_channel_url(
+                    libdata.source, libdata.channel_url
+                )
         channel_name = libdata.channel_name
         channel_url = libdata.channel_url
         source = libdata.source

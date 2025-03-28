@@ -7,13 +7,13 @@ from youtube_sync.fetch_html import fetch_html_using_curl as fetch_html
 from youtube_sync.library_data import Source
 
 
-def to_channel_url(source: Source, channel_name: str) -> str:
+def to_channel_url(source: Source, channel_id: str) -> str:
     if source == Source.YOUTUBE:
-        return _to_channel_url_youtube(channel_name)
+        return _to_channel_url_youtube(channel_id)
     elif source == Source.RUMBLE:
-        return _to_channel_url_rumble(channel_name)
+        return _to_channel_url_rumble(channel_id)
     elif source == Source.BRIGHTEON:
-        return f"https://www.brighteon.com/channels/{channel_name}"
+        return f"https://www.brighteon.com/channels/{channel_id}"
     raise ValueError(f"Unknown source: {source}")
 
 

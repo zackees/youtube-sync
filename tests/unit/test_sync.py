@@ -19,12 +19,14 @@ class SyncTester(unittest.TestCase):
     def test_simple(self) -> None:
         # shutil.rmtree(TEST_DATA, ignore_errors=True)
         try:
-            channel_name = "@silverguru"
+            channel_name = "silverguru"
+            channel_id = "@silverguru"
             limit_scan = 1
             download_limit = 1
             media_output = TEST_DATA
             yt = YouTubeSync(
                 channel_name=channel_name,
+                channel_id=channel_id,
                 media_output=media_output,
                 source=Source.YOUTUBE,
             )

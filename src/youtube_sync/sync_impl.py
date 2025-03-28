@@ -53,11 +53,11 @@ class YtDlpSync(BaseSync):
     def channel_source(self) -> Source:
         pass
 
-    def to_channel_url(self, channel_name: str) -> str:
+    def to_channel_url(self, channel_id: str) -> str:
         from youtube_sync.to_channel_url import to_channel_url
 
         source = self.channel_source()
-        out = to_channel_url(source=source, channel_name=channel_name)
+        out = to_channel_url(source=source, channel_id=channel_id)
         return out
 
     def scan_for_vids(
@@ -75,6 +75,8 @@ class YtDlpSync(BaseSync):
 
         channel_name = self.lib.channel_name
         channel_url = self.to_channel_url(channel_name)
+        if "http" not in channel_url:
+            raise ValueError(f"Invalid channel URL: {channel_url}")
         if stop_on_duplicate_vids:
             stored_vids = self.lib.load()
         else:

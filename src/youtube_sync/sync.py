@@ -16,6 +16,7 @@ class YouTubeSyncImpl:
     def __init__(
         self,
         channel_name: str,
+        channel_id: str,
         media_output: FSPath,
         source: Source,
         library_path: FSPath | None = None,
@@ -24,6 +25,7 @@ class YouTubeSyncImpl:
         library = Library.get_or_create(
             channel_name=channel_name,
             channel_url=channel_url,
+            channel_id=channel_id,
             media_output=media_output,
             source=source,
             library_path=library_path,

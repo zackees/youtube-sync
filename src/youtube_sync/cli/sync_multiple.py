@@ -18,6 +18,7 @@ from youtube_sync import Channel, YouTubeSync
 from youtube_sync.config import Config
 from youtube_sync.logutil import create_logger
 from youtube_sync.settings import ENV_JSON
+from youtube_sync.to_channel_url import to_channel_url
 
 logger = create_logger(__name__, logging.DEBUG)
 # set debug logging for all youtube_sync modules
@@ -92,12 +93,15 @@ def _process_channel(channel: Channel, cwd: FSPath, dry_run: bool) -> None:
             logger.info(f"Path: {path}")
             return
 
+        url = to_channel_url(source=source, channel_id=channel.channel_id)
+
         # Create YouTubeSync instance
         yt = YouTubeSync(
             channel_name=channel.name,
+            channel_id=channel.channel_id,
             media_output=path,
             source=source,
-            channel_url=channel.channel_id,  # Using channel_id as the URL
+            channel_url=url,  # Using channel_id as the URL
         )
 
         # Default limits

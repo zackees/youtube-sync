@@ -22,6 +22,7 @@ class Args:
     """Command line arguments."""
 
     channel_name: str
+    channel_id: str
     output: FSPath
     limit_scan: int
     skip_download: bool
@@ -31,6 +32,7 @@ class Args:
     def __post_init__(self) -> None:
         # check types
         _check_type(self.channel_name, str)
+        _check_type(self.channel_id, str)
         _check_type(self.output, FSPath)
         _check_type(self.limit_scan, int)
         _check_type(self.skip_download, bool)
@@ -43,6 +45,12 @@ def parse_args() -> Args:
     parser = argparse.ArgumentParser("youtube-sync")
     parser.add_argument(
         "--channel-name",
+        type=str,
+        help="Name of the channel, example: silverguru",
+        required=True,
+    )
+    parser.add_argument(
+        "--channel-id",
         type=str,
         # help="URL of the channel, example: https://www.youtube.com/@silverguru/videos",
         help="URL slug of the channel, example: @silverguru",
@@ -76,6 +84,7 @@ def parse_args() -> Args:
     tmp = parser.parse_args()
     args = Args(
         channel_name=tmp.channel_name,
+        channel_id=tmp.channel_id,
         output=FSPath(fs, tmp.output),
         limit_scan=tmp.limit_scan,
         skip_download=tmp.skip_download,
@@ -90,6 +99,7 @@ def main() -> None:
     args = parse_args()
     yt = YouTubeSync(
         channel_name=args.channel_name,
+        channel_id=args.channel_id,
         media_output=args.output,
         source=Source.YOUTUBE,
     )
@@ -117,7 +127,8 @@ def unit_test() -> None:
     destination = _get_test_dst_fsfile()
 
     args = Args(
-        channel_name="@silverguru",
+        channel_name="silverguru",
+        channel_id="@silverguru",
         output=destination,
         limit_scan=1,
         skip_download=False,
@@ -126,6 +137,7 @@ def unit_test() -> None:
     )
     yt = YouTubeSync(
         channel_name=args.channel_name,
+        channel_id=args.channel_id,
         media_output=args.output,
         source=Source.YOUTUBE,
     )

@@ -25,6 +25,7 @@ class Args:
 
     source: Source
     channel_name: str
+    channel_id: str
     limit_scan: int
     skip_download: bool
     download_limit: int
@@ -40,6 +41,7 @@ def integration_test(args: Args) -> None:
 
     yt = YouTubeSync(
         channel_name=args.channel_name,
+        channel_id=args.channel_id,
         media_output=args.get_out_path(),
         source=args.source,
     )

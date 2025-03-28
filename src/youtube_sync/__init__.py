@@ -11,6 +11,7 @@ class YouTubeSync:
     def __init__(
         self,
         channel_name: str,
+        channel_id: str,
         media_output: str | FSPath,
         source: Source,
         library_path: FSPath | None = None,
@@ -18,11 +19,16 @@ class YouTubeSync:
     ) -> None:
         from .sync import YouTubeSyncImpl
 
+        if channel_url is not None:
+            if "http" not in channel_url:
+                raise ValueError(f"Invalid channel URL: {channel_url}")
+
         if not isinstance(media_output, FSPath):
             media_output = Vfs.begin(src=media_output)
 
         self.impl = YouTubeSyncImpl(
             channel_name=channel_name,
+            channel_id=channel_id,
             media_output=media_output,
             source=source,
             library_path=library_path,

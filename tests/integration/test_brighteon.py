@@ -9,6 +9,7 @@ from youtube_sync import Source
 BRIGHTEON_HHR = Args(
     source=Source.BRIGHTEON,
     channel_name="hrreport",
+    channel_id="hrreport",
     limit_scan=1,
     skip_download=False,
     download_limit=1,
