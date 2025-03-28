@@ -1,6 +1,7 @@
 import _thread
 import logging
 import os
+import subprocess
 from pathlib import Path
 
 from filelock import FileLock
@@ -93,8 +94,6 @@ def yt_dlp_download_best_audio(
 
     ke: KeyboardInterrupt | None = None
     last_error: Exception | None = None
-
-    import subprocess
 
     class RealYtdlp:
         def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
