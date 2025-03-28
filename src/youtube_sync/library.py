@@ -233,23 +233,29 @@ class Library:
             logger.error(f"Unexpected return type {type(lib_or_err)}")
             raise ValueError(f"Unexpected return type {type(lib_or_err)}")
         assert isinstance(lib_or_err, LibraryData)
-        assert self.channel_name == lib_or_err.channel_name
-        if self.channel_url != lib_or_err.channel_url:
+        lib: LibraryData = lib_or_err
+        assert self.channel_name == lib.channel_name
+        resave = False
+        if self.channel_url != lib.channel_url:
             logger.warning(
-                f"Channel URL mismatch: {self.channel_url} != {lib_or_err.channel_url}"
+                f"Channel URL mismatch: {self.channel_url} != {lib.channel_url}"
             )
-            if not lib_or_err.channel_url.startswith(
+            if not lib.channel_url.startswith("http") and self.channel_url.startswith(
                 "http"
-            ) and self.channel_url.startswith("http"):
-                logger.warning("Libdata had old error channel URL, ignoring")
+            ):
+                logger.warning("Libdata had old error channel URL, fixing")
+                lib.channel_url = self.channel_url
+                resave = True
             else:
                 logger.error("Channel URL mismatch, aborting")
                 raise ValueError("Channel URL mismatch")
         # assert self.channel_url == lib_or_err.channel_url
-        assert self.source == lib_or_err.source
+        assert self.source == lib.source
         self.channel_name = self.libdata.channel_name
         self.channel_url = self.libdata.channel_url
         self.source = self.libdata.source
+        if resave:
+            self.save(overwrite=True)
         return self.libdata.vids.copy()
 
     def save(self, overwrite=False) -> Exception | None:
