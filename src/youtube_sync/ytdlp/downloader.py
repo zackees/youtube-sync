@@ -124,5 +124,5 @@ class YtDlpDownloader:
         self.outmp3.write_bytes(data)
         diff = time.time() - start
         print(
-            f"\n#################################\n# Copy {self.outmp3} is done, took {diff:.2f} seconds\n#################################\n"
+            f"\n#################################\n# Copy done in {diff:.2f} seconds: {self.outmp3}\n#################################\n"
         )
