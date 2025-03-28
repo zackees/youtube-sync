@@ -37,7 +37,7 @@ class YouTubeSync:
     def source(self) -> Source:
         return self.impl.source
 
-    def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry]:
+    def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry] | Exception:
         if refresh:
             self.impl.known_vids(refresh=True)
         out = self.library.find_missing_downloads()

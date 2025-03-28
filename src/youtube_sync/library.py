@@ -36,22 +36,25 @@ _FILE_LOCK = FileLock(_get_library_json_lock_path())
 def _find_missing_downloads(
     vids: list[VidEntry],
     dst_video_path: FSPath,
-) -> list[VidEntry]:
+) -> list[VidEntry] | Exception:
     """Find missing downloads."""
-    out: list[VidEntry] = []
-    files, _ = dst_video_path.ls()
-    files_set: set[str] = set(files)
+    try:
+        out: list[VidEntry] = []
+        files, _ = dst_video_path.ls()
+        files_set: set[str] = set(files)
 
-    for vid in vids:
-        file_path = vid.file_path
-        if file_path in files_set:
-            continue
-        out.append(vid)
-    all_have_a_date = all(vid.date for vid in out)
-    if all_have_a_date:
-        # sort oldest first
-        out.sort(key=lambda vid: vid.date)  # type: ignore
-    return out
+        for vid in vids:
+            file_path = vid.file_path
+            if file_path in files_set:
+                continue
+            out.append(vid)
+        all_have_a_date = all(vid.date for vid in out)
+        if all_have_a_date:
+            # sort oldest first
+            out.sort(key=lambda vid: vid.date)  # type: ignore
+        return out
+    except Exception as e:
+        return e
 
 
 def _make_library(
@@ -193,7 +196,7 @@ class Library:
         assert self.libdata is not None
         return self.libdata.vids.copy()
 
-    def find_missing_downloads(self) -> list[VidEntry]:
+    def find_missing_downloads(self) -> list[VidEntry] | Exception:
         """Find missing downloads."""
         return _find_missing_downloads(self.libdata.vids, self.out_dir)
 
@@ -282,9 +285,16 @@ class Library:
                 print(
                     "\n#######################\n# Scanning for missing files\n###################"
                 )
-                missing_downloads = self.find_missing_downloads()
-                if not missing_downloads:
+                missing_downloads_or_error = self.find_missing_downloads()
+
+                batch_size: int
+                if isinstance(missing_downloads_or_error, Exception):
+                    logger.error(
+                        f"Error finding missing downloads: {missing_downloads_or_error}"
+                    )
                     break
+
+                missing_downloads: list[VidEntry] = missing_downloads_or_error
 
                 # Determine how many to download in this batch
                 remaining_limit = None if limit is None else limit - download_count
