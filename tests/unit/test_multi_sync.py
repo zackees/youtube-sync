@@ -24,6 +24,7 @@ class MainTester(unittest.TestCase):
         """Test command line interface (CLI)."""
         args = Args(
             config=CONFIG_JSON,
+            download_limit=2,
             dry_run=True,
         )
         run(args)
@@ -34,6 +35,7 @@ class MainTester(unittest.TestCase):
         os.environ["YOUTUBE_SYNC_CONFIG_JSON"] = one_line_json_str
         args = Args(
             config=None,
+            download_limit=2,
             dry_run=True,
         )
         run(args)

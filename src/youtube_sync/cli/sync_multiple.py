@@ -37,6 +37,7 @@ class Args:
 
     config: Path | None
     dry_run: bool
+    download_limit: int
 
     def __post_init__(self) -> None:
         # check types
@@ -51,6 +52,13 @@ class Args:
                     f"Expecting environment variable when config is None: {ENV_JSON}"
                 )
 
+        assert isinstance(
+            self.dry_run, bool
+        ), f"Expected bool, got {type(self.dry_run)}"
+        assert isinstance(
+            self.download_limit, int
+        ), f"Expected int, got {type(self.download_limit)}"
+
 
 def parse_args() -> Args:
     """Parse command line arguments."""
@@ -62,13 +70,21 @@ def parse_args() -> Args:
         help="Path to the json config file.",
     )
     parser.add_argument(
+        "--download-limit",
+        type=int,
+        help="Limit the number of videos to download per run",
+        default=300,
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Dry run, do not download anything.",
     )
     tmp = parser.parse_args()
     config_path = Path(tmp.config)
-    args = Args(config=config_path, dry_run=tmp.dry_run)
+    args = Args(
+        config=config_path, download_limit=tmp.download_limit, dry_run=tmp.dry_run
+    )
     return args
 
 
@@ -78,7 +94,9 @@ def _get_config(path: Path | None) -> Config | Exception:
     return Config.from_env()
 
 
-def _process_channel(channel: Channel, cwd: FSPath, dry_run: bool) -> None:
+def _process_channel(
+    channel: Channel, cwd: FSPath, download_limit: int, dry_run: bool
+) -> None:
     try:
         logger.info(f"Processing channel: {channel.name}")
         # Get source from channel
@@ -106,7 +124,6 @@ def _process_channel(channel: Channel, cwd: FSPath, dry_run: bool) -> None:
 
         # Default limits
         scan_limit = 1000  # Default value
-        download_limit = None  # Default value
 
         # Scan for videos
         logger.info(f"Scanning channel {channel.name} with limit {scan_limit}")
@@ -140,7 +157,12 @@ def run(args: Args) -> None:
         # Process each channel in the config
         for channel in config.channels:
             logger.info(f"Processing channel: {channel.name}")
-            _process_channel(channel=channel, cwd=cwd, dry_run=args.dry_run)
+            _process_channel(
+                channel=channel,
+                cwd=cwd,
+                download_limit=args.download_limit,
+                dry_run=args.dry_run,
+            )
 
 
 def main() -> None:

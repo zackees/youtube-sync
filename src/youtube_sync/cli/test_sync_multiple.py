@@ -13,6 +13,7 @@ def main() -> None:
     """Main function."""
     args = Args(
         config=Path("config.json"),
+        download_limit=1,
         dry_run=False,
     )
 
