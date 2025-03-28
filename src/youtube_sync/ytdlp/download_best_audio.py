@@ -99,11 +99,20 @@ def yt_dlp_download_best_audio(
     class RealYtdlp:
         def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
             full_cmd = [yt_exe.exe.as_posix()] + cmd_list
-            try:
-                subprocess.run(full_cmd, check=True)
+            # subprocess.run(full_cmd, check=True)
+            proc = subprocess.Popen(
+                full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+            with proc:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    linestr = line.decode("utf-8").strip()
+                    print(linestr)
+                proc.wait()
+                if proc.returncode != 0:
+                    logging.error(f"yt-dlp failed with return code {proc.returncode}")
+                    return False
                 return True
-            except subprocess.CalledProcessError:
-                return False
 
     class RealOrProxy:
         def __init__(self) -> None:
