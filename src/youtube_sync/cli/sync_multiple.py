@@ -7,6 +7,7 @@ Command entry point for syncing multiple YouTube channels.
 import argparse
 import logging
 import os
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -115,6 +116,8 @@ def _process_channel(channel: Channel, cwd: FSPath, dry_run: bool) -> None:
 
         logger.info(f"Finished processing channel: {channel.name}")
     except Exception as e:
+        stacktrace_str = traceback.format_exc()
+        logger.error(stacktrace_str)
         logger.error(f"Failed to process channel: {channel.name}")
         logger.error(e)
 
@@ -132,6 +135,7 @@ def run(args: Args) -> None:
     with Vfs.begin(output, rclone_conf=rclone_config) as cwd:
         # Process each channel in the config
         for channel in config.channels:
+            logger.info(f"Processing channel: {channel.name}")
             _process_channel(channel=channel, cwd=cwd, dry_run=args.dry_run)
 
 

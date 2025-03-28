@@ -16,9 +16,12 @@ from filelock import FileLock
 
 from youtube_sync import FSPath, RealFS
 from youtube_sync.library_data import LibraryData, Source
+from youtube_sync.logutil import create_logger
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
 from youtube_sync.ytdlp.ytdlp import YtDlp
+
+logger = create_logger(__name__, "INFO")
 
 
 def _get_library_json_lock_path() -> str:
@@ -80,6 +83,7 @@ class Library:
         source: Source | str,
         json_path: FSPath | Path,
     ) -> None:
+        logger.info(f"Creating library: {channel_name}")
         if isinstance(source, str):
             source = Source.from_str(source)
         if isinstance(json_path, Path):
@@ -92,7 +96,9 @@ class Library:
         self.json_path = json_path
         self.out_dir = json_path.parent
         self.load()
-        assert isinstance(self.libdata, LibraryData)
+        if not isinstance(self.libdata, LibraryData):
+            logger.error(f"Error loading library: {self.libdata}")
+            raise ValueError(f"Error loading library: {self.libdata}")
 
     @property
     def path(self) -> FSPath:
@@ -201,10 +207,12 @@ class Library:
             lib_or_err = self._empty_data()
             self.libdata = lib_or_err
         elif isinstance(lib_or_err, Exception):
+            logger.error(f"Error loading library: {lib_or_err}")
             raise lib_or_err
         elif isinstance(lib_or_err, LibraryData):
             self.libdata = lib_or_err
         else:
+            logger.error(f"Unexpected return type {type(lib_or_err)}")
             raise ValueError(f"Unexpected return type {type(lib_or_err)}")
         assert isinstance(lib_or_err, LibraryData)
         assert self.channel_name == lib_or_err.channel_name
@@ -228,6 +236,7 @@ class Library:
 
     def merge(self, vids: list[VidEntry], save: bool) -> None:
         """Merge the vids into the library."""
+        logger.info(f"Merging {len(vids)} vids into library for {self.channel_name}")
         self.load()
         assert self.libdata is not None
         self.libdata.merge(vids)
@@ -246,6 +255,7 @@ class Library:
             max_concurrent_downloads: Maximum number of concurrent downloads
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
+        logger.info(f"Downloading missing files for {self.channel_name}")
         from youtube_sync.ytdlp.error import (
             check_keyboard_interrupt,
             set_keyboard_interrupt,
