@@ -19,13 +19,8 @@ from youtube_sync.logutil import create_logger
 from youtube_sync.settings import ENV_JSON
 
 logger = create_logger(__name__, logging.DEBUG)
-
-# set debug
-
-# set the root logger to debug
-logging.getLogger().setLevel(logging.DEBUG)
-# filter out filelock debug messages
-logging.getLogger("filelock").setLevel(logging.INFO)
+# set debug logging for all youtube_sync modules
+logging.getLogger("youtube_sync").setLevel(logging.DEBUG)
 
 
 def _check_type(obj: Any, class_type: Any) -> None:
