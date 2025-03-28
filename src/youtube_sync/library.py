@@ -290,7 +290,7 @@ class Library:
     def download_missing(
         self,
         limit: int | None,
-        max_concurrent_downloads: int = 1,
+        max_concurrent_downloads: int = 2,
     ) -> None:
         """Download the missing files using thread pools.
 

@@ -111,6 +111,8 @@ def _process_download_and_convert(
         convert_pool: Thread pool for conversions
         result_future: Future to set with the final result
     """
+    # Note that this is run from a top level thread pool, so this doesn't actually block.
+    #
     # Create downloader
     downloader = YtDlpDownloader(url, outmp3, cookies_txt=cookies, source=source)
 
