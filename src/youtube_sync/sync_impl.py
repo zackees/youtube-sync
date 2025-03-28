@@ -53,13 +53,6 @@ class YtDlpSync(BaseSync):
     def channel_source(self) -> Source:
         pass
 
-    def to_channel_url(self, channel_id: str) -> str:
-        from youtube_sync.to_channel_url import to_channel_url
-
-        source = self.channel_source()
-        out = to_channel_url(source=source, channel_id=channel_id)
-        return out
-
     def scan_for_vids(
         self,
         limit: int | None,
@@ -73,8 +66,7 @@ class YtDlpSync(BaseSync):
             source=self.channel_source(), cookies=self.cookies
         )
 
-        channel_name = self.lib.channel_name
-        channel_url = self.to_channel_url(channel_name)
+        channel_url = self.lib.channel_url
         if "http" not in channel_url:
             raise ValueError(f"Invalid channel URL: {channel_url}")
         if stop_on_duplicate_vids:
@@ -112,7 +104,7 @@ class YouTubeSyncImpl(YtDlpSync):
     def _bot_scan(self, limit: int | None) -> list[VidEntry]:
         from youtube_sync.youtube.scan import youtube_scan
 
-        channel_url = self.to_channel_url(self.lib.channel_name)
+        channel_url = self.lib.channel_url
         limit_scroll_pages = max(1, limit // 10) if limit is not None else None
         return youtube_scan(
             channel_url=channel_url,
