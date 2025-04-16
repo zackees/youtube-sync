@@ -1,3 +1,5 @@
+#!/bin/bash
+
 
 rm -f /tmp/.X0-lock
 

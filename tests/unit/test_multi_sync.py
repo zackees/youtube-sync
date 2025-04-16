@@ -26,6 +26,7 @@ class MainTester(unittest.TestCase):
             config=CONFIG_JSON,
             download_limit=2,
             dry_run=True,
+            once=True,
         )
         run(args)
 
@@ -37,6 +38,7 @@ class MainTester(unittest.TestCase):
             config=None,
             download_limit=2,
             dry_run=True,
+            once=True,
         )
         run(args)
 

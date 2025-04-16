@@ -11,11 +11,7 @@ logging.getLogger("filelock").setLevel(logging.INFO)
 
 def main() -> None:
     """Main function."""
-    args = Args(
-        config=Path("config.json"),
-        download_limit=1,
-        dry_run=False,
-    )
+    args = Args(config=Path("config.json"), download_limit=1, dry_run=False, once=True)
 
     run(args)
 

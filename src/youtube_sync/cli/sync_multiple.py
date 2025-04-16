@@ -7,6 +7,7 @@ Command entry point for syncing multiple YouTube channels.
 import argparse
 import logging
 import os
+import time
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +39,7 @@ class Args:
     config: Path | None
     dry_run: bool
     download_limit: int
+    once: bool
 
     def __post_init__(self) -> None:
         # check types
@@ -58,6 +60,8 @@ class Args:
         assert isinstance(
             self.download_limit, int
         ), f"Expected int, got {type(self.download_limit)}"
+
+        assert isinstance(self.once, bool), f"Expected bool, got {type(self.once)}"
 
 
 def parse_args() -> Args:
@@ -80,10 +84,21 @@ def parse_args() -> Args:
         action="store_true",
         help="Dry run, do not download anything.",
     )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run once, do not loop.",
+    )
     tmp = parser.parse_args()
+    if tmp.dry_run:
+        logger.info("Dry run, no downloads will be performed.")
+        tmp.once = True
     config_path = Path(tmp.config)
     args = Args(
-        config=config_path, download_limit=tmp.download_limit, dry_run=tmp.dry_run
+        config=config_path,
+        download_limit=tmp.download_limit,
+        dry_run=tmp.dry_run,
+        once=tmp.once,
     )
     return args
 
@@ -167,7 +182,16 @@ def run(args: Args) -> None:
 
 def main() -> None:
     args = parse_args()
-    run(args)
+    logger.info(f"Arguments: {args}")
+
+    while True:
+        run(args)
+        if args.once:
+            break
+        # Sleep for a while before the next run
+        logger.info("Sleeping for 1 hour...")
+        # Sleep for 1 hour
+        time.sleep(3600)
 
 
 def unit_test() -> None:

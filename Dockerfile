@@ -6,7 +6,11 @@ FROM ubuntu:latest
 #COPY ./app /app
 #COPY ./scripts /scripts
 
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -y
+
+RUN apt-get install -y \
     xvfb \
     x11vnc \
     fluxbox \
@@ -103,4 +107,7 @@ EXPOSE 80
 ENV PORT=80
 ENV DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
-CMD /bin/bash startup.sh
+SHELL ["/bin/bash", "-c"]
+
+#  CMD /bin/bash startup.sh
+CMD ["/bin/bash", "startup.sh"]
