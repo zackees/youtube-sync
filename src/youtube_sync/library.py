@@ -313,117 +313,115 @@ class Library:
         try:
             download_count = 0
             max_errors = 100
-            while True:
-                # Check for keyboard interrupt
-                if check_keyboard_interrupt():
-                    print("Detected previous keyboard interrupt. Aborting downloads.")
-                    break
 
-                if (limit is not None) and (download_count >= limit):
-                    break
+            # Check for keyboard interrupt
+            if check_keyboard_interrupt():
+                print("Detected previous keyboard interrupt. Aborting downloads.")
+                return
 
-                # Find missing downloads
-                print(
-                    "\n#######################\n# Scanning for missing files\n###################"
+            if (limit is not None) and (download_count >= limit):
+                return
+
+            # Find missing downloads
+            print(
+                "\n#######################\n# Scanning for missing files\n###################"
+            )
+            missing_downloads_or_error = self.find_missing_downloads()
+
+            batch_size: int
+            if isinstance(missing_downloads_or_error, Exception):
+                logger.error(
+                    f"Error finding missing downloads: {missing_downloads_or_error}"
                 )
-                missing_downloads_or_error = self.find_missing_downloads()
+                return
 
-                batch_size: int
-                if isinstance(missing_downloads_or_error, Exception):
-                    logger.error(
-                        f"Error finding missing downloads: {missing_downloads_or_error}"
-                    )
-                    break
+            missing_downloads: list[VidEntry] = missing_downloads_or_error
 
-                missing_downloads: list[VidEntry] = missing_downloads_or_error
+            # Determine how many to download in this batch
+            remaining_limit = None if limit is None else limit - download_count
+            batch_size = (
+                len(missing_downloads)
+                if remaining_limit is None
+                else min(len(missing_downloads), remaining_limit)
+            )
 
-                # Determine how many to download in this batch
-                remaining_limit = None if limit is None else limit - download_count
-                batch_size = (
-                    len(missing_downloads)
-                    if remaining_limit is None
-                    else min(len(missing_downloads), remaining_limit)
+            if batch_size <= 0:
+                return
+
+            # Prepare download list
+            downloads_to_process = []
+            for i in range(batch_size):
+                vid = missing_downloads[i]
+                next_url = vid.url
+                next_mp3_path = self.out_dir / vid.file_path
+                downloads_to_process.append((next_url, next_mp3_path))
+
+            print(
+                f"\n#######################\n# Downloading {batch_size} missing files\n"
+                "###################"
+            )
+
+            try:
+                # Submit downloads to thread pools
+                futures = self.ytdlp.download_mp3s(
+                    downloads=downloads_to_process,
+                    download_pool=download_pool,
                 )
+                if not futures:
+                    print("No downloads to process. Exiting.")
+                    return
 
-                if batch_size <= 0:
-                    break
-
-                # Prepare download list
-                downloads_to_process = []
-                for i in range(batch_size):
-                    vid = missing_downloads[i]
-                    next_url = vid.url
-                    next_mp3_path = self.out_dir / vid.file_path
-                    downloads_to_process.append((next_url, next_mp3_path))
-
-                print(
-                    f"\n#######################\n# Downloading {batch_size} missing files\n"
-                    "###################"
-                )
-
-                try:
-                    # Submit downloads to thread pools
-                    futures = self.ytdlp.download_mp3s(
-                        downloads=downloads_to_process,
-                        download_pool=download_pool,
-                    )
-                    if not futures:
-                        print("No downloads to process. Exiting.")
-                        break
-
-                    # Process results as they complete
-                    for i, future in enumerate(futures):
-                        # Check for keyboard interrupt
-                        if check_keyboard_interrupt():
-                            print(
-                                "Detected keyboard interrupt. Skipping remaining results."
-                            )
-                            break
-
-                        vid = missing_downloads[i]
-                        try:
-                            _, _, error = future.result()
-                            if error is not None:
-                                print(f"Error downloading {vid.url}: {error}")
-                                self.mark_error(vid)
-                                max_errors -= 1
-                                if max_errors <= 0:
-                                    print("Too many errors, aborting downloads.")
-                                    download_pool.shutdown(
-                                        wait=False, cancel_futures=True
-                                    )
-                                    break
-                            else:
-                                print(f"Successfully downloaded {vid.url}")
-                        except KeyboardInterrupt:
-                            print(
-                                "KeyboardInterrupt detected while processing results. Stopping download."
-                            )
-                            set_keyboard_interrupt()
-                            break
-                        except Exception as e:  # pylint: disable=broad-except
-                            stacktrace_str = traceback.format_exc()
-                            print(f"Error downloading {vid.url}: {e}")
-                            print(stacktrace_str)
-                            self.mark_error(vid)
-
-                    # Update download count
-                    download_count += batch_size
-
-                    # Check for keyboard interrupt after batch
+                # Process results as they complete
+                for i, future in enumerate(futures):
+                    # Check for keyboard interrupt
                     if check_keyboard_interrupt():
                         print(
-                            "Detected keyboard interrupt after batch. Stopping downloads."
+                            "Detected keyboard interrupt. Skipping remaining results."
                         )
-                        break
+                        return
 
-                except KeyboardInterrupt:
+                    vid = missing_downloads[i]
+                    try:
+                        _, _, error = future.result()
+                        if error is not None:
+                            print(f"Error downloading {vid.url}: {error}")
+                            self.mark_error(vid)
+                            max_errors -= 1
+                            if max_errors <= 0:
+                                print("Too many errors, aborting downloads.")
+                                download_pool.shutdown(wait=False, cancel_futures=True)
+                                break
+                        else:
+                            print(f"Successfully downloaded {vid.url}")
+                    except KeyboardInterrupt:
+                        print(
+                            "KeyboardInterrupt detected while processing results. Stopping download."
+                        )
+                        set_keyboard_interrupt()
+                        return
+                    except Exception as e:  # pylint: disable=broad-except
+                        stacktrace_str = traceback.format_exc()
+                        print(f"Error downloading {vid.url}: {e}")
+                        print(stacktrace_str)
+                        self.mark_error(vid)
+
+                # Update download count
+                download_count += batch_size
+
+                # Check for keyboard interrupt after batch
+                if check_keyboard_interrupt():
                     print(
-                        "KeyboardInterrupt detected. Stopping download and shutting down thread pools."
+                        "Detected keyboard interrupt after batch. Stopping downloads."
                     )
-                    set_keyboard_interrupt()
-                    # Don't raise here, let the outer try/finally handle cleanup
-                    break
+                    return
+
+            except KeyboardInterrupt:
+                print(
+                    "KeyboardInterrupt detected. Stopping download and shutting down thread pools."
+                )
+                set_keyboard_interrupt()
+                # Don't raise here, let the outer try/finally handle cleanup
+                return
 
         except KeyboardInterrupt:
             print("KeyboardInterrupt detected. Shutting down thread pools.")
