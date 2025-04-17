@@ -2,6 +2,7 @@ import _thread
 import logging
 import os
 import subprocess
+import time
 from pathlib import Path
 
 from filelock import FileLock
@@ -25,6 +26,9 @@ logging.basicConfig(level=logging.WARNING)
 
 _UPDATE_PROXIES_LOCK = FileLock("proxies.lock")
 _PROXIES_UPDATED = False
+
+_DOWNLOADER_COUNTER = 0
+_STARTUP_TIME = time.time()
 
 
 def _update_proxies_once() -> None:
@@ -168,6 +172,16 @@ def yt_dlp_download_best_audio(
                         f"No audio file was downloaded to {temp_dir}"
                     )
                     continue
+                global _DOWNLOADER_COUNTER
+                _DOWNLOADER_COUNTER += 1
+                running_time_seconds = time.time() - _STARTUP_TIME
+                running_time_hours = running_time_seconds / 3600
+                logger.info(
+                    f"\n###################################################################\n"
+                    f"# Downloaded {_DOWNLOADER_COUNTER} file(s)\n"
+                    f"# Downloaded {downloaded_files[0]} in {running_time_hours:.1f} hours\n"
+                    f"###################################################################\n"
+                )
                 return downloaded_files[0]
             else:
                 # if YtDlpCmdRunner.is_keyboard_interrupt(rtn):
