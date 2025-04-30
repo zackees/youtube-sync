@@ -16,7 +16,9 @@ TEST_DATA = RealFS.from_path(_TEST_DATA)
 class SyncTester(unittest.TestCase):
     """Main tester class."""
 
-    # @unittest.skip("Silverguru channel is already filled")
+    @unittest.skip(
+        "Silverguru channel is already filled and therefore the test is not valid"
+    )
     def test_simple(self) -> None:
         # shutil.rmtree(TEST_DATA, ignore_errors=True)
         try:
