@@ -7,6 +7,7 @@ from pathlib import Path
 from youtube_sync import FSPath
 from youtube_sync.final_result import FinalResult
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
+from youtube_sync.ytdlp.download_item import DownloadRequest
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
     KeyboardInterruptException,
@@ -71,7 +72,7 @@ def _process_conversion(
 
 
 def download_mp3s(
-    downloads: list[tuple[str, FSPath]],
+    downloads: list[DownloadRequest],
     download_pool: ThreadPoolExecutor,
     source: Source,
     cookies: Cookies | None = None,
@@ -89,9 +90,13 @@ def download_mp3s(
         or the exception that occurred during download
     """
     result_futures: list[Future[FinalResult]] = []
-
+    di: DownloadRequest
     # Process each download
-    for i, (url, outmp3) in enumerate(downloads):
+    for i, di in enumerate(downloads):
+        # (url, outmp3) = di.url, di.outmp3
+        assert isinstance(
+            di, DownloadRequest
+        ), f"Expected DownloadRequest, got {type(di)}"
 
         result_future: Future[FinalResult] = Future()
 
@@ -107,8 +112,8 @@ def download_mp3s(
         # Submit the entire download and conversion process as a single task
         fut = FUTURE_RESOLVER_POOL.submit(
             _process_download_and_convert,
-            url,
-            outmp3,
+            di.url,
+            di.outmp3,
             cookied_path,
             source,
             download_pool,

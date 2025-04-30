@@ -10,6 +10,7 @@ from youtube_sync import FSPath
 from youtube_sync.cookies import Cookies
 from youtube_sync.final_result import FinalResult
 from youtube_sync.types import ChannelId, Source
+from youtube_sync.ytdlp.download_item import DownloadRequest
 from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
 
@@ -222,7 +223,7 @@ class YtDlp:
 
     def download_mp3s(
         self,
-        downloads: list[tuple[str, FSPath]],
+        downloads: list[DownloadRequest],
         download_pool: ThreadPoolExecutor,
     ) -> list[Future[FinalResult]]:
         from youtube_sync.ytdlp.bulk_download_mp3s import download_mp3s
@@ -249,8 +250,12 @@ class YtDlp:
         # Create a single thread pool and use it for both download and conversion
         # to maintain sequential processing for a single file
         with (ThreadPoolExecutor(max_workers=1) as download_pool,):
+            di: DownloadRequest = DownloadRequest(
+                url=url,
+                outmp3=outmp3,
+            )
             futures = self.download_mp3s(
-                [(url, outmp3)],
+                [di],
                 download_pool=download_pool,
             )
 

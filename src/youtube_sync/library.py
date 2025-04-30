@@ -19,6 +19,7 @@ from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.logutil import create_logger
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
+from youtube_sync.ytdlp.download_item import DownloadRequest
 from youtube_sync.ytdlp.ytdlp import YtDlp
 
 logger = create_logger(__name__, "INFO")
@@ -356,12 +357,16 @@ class Library:
                 return
 
             # Prepare download list
-            downloads_to_process = []
+            downloads_to_process: list[DownloadRequest] = []
             for i in range(batch_size):
                 vid = missing_downloads[i]
                 next_url = vid.url
                 next_mp3_path = self.out_dir / vid.file_path
-                downloads_to_process.append((next_url, next_mp3_path))
+                di: DownloadRequest = DownloadRequest(
+                    url=next_url,
+                    outmp3=next_mp3_path,
+                )
+                downloads_to_process.append(di)
 
             print(
                 f"\n#######################\n# Downloading {batch_size} missing files\n"
