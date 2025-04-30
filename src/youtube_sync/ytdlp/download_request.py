@@ -8,3 +8,4 @@ class DownloadRequest:
     url: str
     outmp3: FSPath
     download_vid: bool
+    download_date: bool

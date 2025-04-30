@@ -1,5 +1,6 @@
 import os
 import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,15 @@ from youtube_sync.final_result import DownloadRequest
 
 from .error import KeyboardInterruptException, check_keyboard_interrupt
 from .exe import YtDlpCmdRunner
+
+
+@dataclass
+class DownloadResult:
+    """Class to hold the result of a download operation."""
+
+    di: DownloadRequest
+    upload_date: datetime | None
+    downloaded_mp3: Path | None
 
 
 class YtDlpDownloader:
@@ -70,7 +80,7 @@ class YtDlpDownloader:
             self._temp_dir.cleanup()
             self._temp_dir = None
 
-    def download(self) -> Path | Exception:
+    def download(self) -> DownloadResult | Exception:
         """Download the best audio from the URL.
 
         Returns:
@@ -89,26 +99,41 @@ class YtDlpDownloader:
         yt_exe: YtDlpCmdRunner = YtDlpCmdRunner.create_or_raise()
         no_geo_bypass = True
 
-        result = yt_dlp_download_best_audio(
-            url=self.url,
-            temp_dir=self.temp_dir_path,
-            source=self.source,
-            cookies_txt=self.cookies_txt,
-            yt_exe=yt_exe,
-            no_geo_bypass=no_geo_bypass,
-            retries=3,
-        )
-        date: datetime | Exception = yt_dlp_get_upload_date(
-            yt_exe=yt_exe,
-            source=self.source,
-            url=self.url,
-            cookies_txt=self.cookies_txt,
-            no_geo_bypass=no_geo_bypass,
-        )
-        self.date = date
-        if not isinstance(result, Exception):
+        if self.di.download_vid:
+            result = yt_dlp_download_best_audio(
+                url=self.url,
+                temp_dir=self.temp_dir_path,
+                source=self.source,
+                cookies_txt=self.cookies_txt,
+                yt_exe=yt_exe,
+                no_geo_bypass=no_geo_bypass,
+                retries=3,
+            )
+            if isinstance(result, Exception):
+                return result
             self.downloaded_file = result
-        return result
+
+        if self.di.download_date:
+            date: datetime | Exception = yt_dlp_get_upload_date(
+                yt_exe=yt_exe,
+                source=self.source,
+                url=self.url,
+                cookies_txt=self.cookies_txt,
+                no_geo_bypass=no_geo_bypass,
+            )
+            if isinstance(date, Exception):
+                return date
+            assert isinstance(date, datetime), "Date should be a datetime object"
+            self.date = date
+
+        date_or_none: datetime | None = None
+        if isinstance(self.date, datetime):
+            date_or_none = self.date
+        return DownloadResult(
+            di=self.di,
+            upload_date=date_or_none,
+            downloaded_mp3=self.downloaded_file,
+        )
 
     def convert_to_mp3(self) -> Path | Exception:
         """Convert downloaded audio file to MP3 format.
