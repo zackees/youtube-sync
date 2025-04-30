@@ -6,7 +6,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from youtube_sync import FSPath
 from youtube_sync.cookies import Cookies
 from youtube_sync.final_result import FinalResult
 from youtube_sync.types import ChannelId, Source
@@ -237,7 +236,7 @@ class YtDlp:
             cookies=cookies,
         )
 
-    def download_mp3(self, url: str, outmp3: FSPath) -> None:
+    def download_mp3(self, di: DownloadRequest) -> FinalResult:
         """Download a single YouTube video as MP3.
 
         Args:
@@ -250,10 +249,6 @@ class YtDlp:
         # Create a single thread pool and use it for both download and conversion
         # to maintain sequential processing for a single file
         with (ThreadPoolExecutor(max_workers=1) as download_pool,):
-            di: DownloadRequest = DownloadRequest(
-                url=url,
-                outmp3=outmp3,
-            )
             futures = self.download_mp3s(
                 [di],
                 download_pool=download_pool,
@@ -269,3 +264,4 @@ class YtDlp:
             error: Exception | None = final_result.exception
             if error is not None:
                 raise error
+            return final_result

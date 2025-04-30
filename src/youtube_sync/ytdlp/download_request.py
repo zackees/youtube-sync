@@ -7,3 +7,4 @@ from virtual_fs import FSPath
 class DownloadRequest:
     url: str
     outmp3: FSPath
+    download_vid: bool

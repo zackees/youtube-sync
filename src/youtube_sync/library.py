@@ -363,8 +363,7 @@ class Library:
                 next_url = vid.url
                 next_mp3_path = self.out_dir / vid.file_path
                 di: DownloadRequest = DownloadRequest(
-                    url=next_url,
-                    outmp3=next_mp3_path,
+                    url=next_url, outmp3=next_mp3_path, download_vid=True
                 )
                 downloads_to_process.append(di)
 
