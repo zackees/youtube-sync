@@ -26,6 +26,7 @@ class VidEntry:
         title: str,
         file_path: str | None = None,
         date: datetime | None = None,
+        upload_date: datetime | None = None,
         error=False,
         data: dict | None = None,
     ) -> None:
@@ -41,6 +42,7 @@ class VidEntry:
             self.file_path = clean_filename(file_path)
         if date is None:
             self.date = datetime.now()
+        self.date_upload: datetime | None = upload_date
         self.error = error
 
     # needed for set membership
@@ -58,10 +60,14 @@ class VidEntry:
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
+        dateupload_str: str | None = None
+        if self.date_upload is not None:
+            dateupload_str = self.date_upload.isoformat()
         return {
             "url": self.url,
             "title": self.title,
             "date": self.date.isoformat() if self.date else None,
+            "date_upload": dateupload_str,
             "file_path": self.file_path,
             "error": self.error,
         }
@@ -78,11 +84,15 @@ class VidEntry:
             json_date = data.get("date")
             if json_date is not None:
                 date = datetime.fromisoformat(json_date)
+        upload_date: datetime | None = None
+        if data.get("date_upload") is not None:
+            upload_date = datetime.fromisoformat(data["date_upload"])
         error = data.get("error", False)
         return VidEntry(
             url=data["url"],
             title=data["title"],
             date=date,
+            upload_date=upload_date,
             file_path=filepath,
             error=error,
         )

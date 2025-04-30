@@ -127,7 +127,7 @@ class RealOrProxyExecutor(YtDlpExecutor):
         self.yt_exe = yt_exe
         self.source = source
         # Update proxies once during initialization
-        self._update_proxies()
+        # self._update_proxies()
 
     def _update_proxies(self) -> None:
         """Update proxies once."""
@@ -155,12 +155,12 @@ class RealOrProxyExecutor(YtDlpExecutor):
         self, cmd_list: list[str], yt_dlp_path: Path | None = None
     ) -> ExeResult:
         # Always ensure proxies are updated
-        self._update_proxies()
 
         cmd_str = subprocess.list2cmdline(cmd_list)
         logger.info(f"Executing command:\n  {cmd_str}\n")
 
         if self.real_failures > 3:
+            self._update_proxies()
             ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
             out: ExeResult = ExeResult(
                 ok=ok,
@@ -175,8 +175,7 @@ class RealOrProxyExecutor(YtDlpExecutor):
             # If we're switching to proxy mode, refresh cookies and proxies
             if self.real_failures > 3 and self.source is not None:
                 self._refresh_cookies(self.source)
-                # Update proxies again
-                YtDLPProxy.update()
+                self._update_proxies()
             ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
             out: ExeResult = ExeResult(
                 ok=ok,

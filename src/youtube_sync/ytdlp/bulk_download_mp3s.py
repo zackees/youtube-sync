@@ -1,4 +1,5 @@
 import _thread
+import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
@@ -42,6 +43,9 @@ def _process_conversion(
         downloader.copy_to_destination()
         # return (downloader.url, downloader.outmp3, None)
         date = downloader.date
+        if isinstance(date, Exception):
+            warnings.warn(f"Failed to get upload date for {downloader.url}: {date}")
+            date = None
         out: FinalResult = FinalResult(
             url=downloader.url, outmp3=downloader.outmp3, exception=None, date=date
         )

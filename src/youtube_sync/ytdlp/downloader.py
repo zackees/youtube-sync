@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 # from youtube_sync.filesystem import FS
@@ -34,7 +35,7 @@ class YtDlpDownloader:
         self.downloaded_file: Path | None = None
         self.temp_mp3: Path | None = None
         self.source = source
-        self.date: str | None = None
+        self.date: datetime | Exception | None = None
 
         # Ensure output directory exists
         par_dir = outmp3.parent
@@ -62,7 +63,10 @@ class YtDlpDownloader:
         Returns:
             Path to the downloaded audio file or Exception if download failed
         """
-        from .download_best_audio import yt_dlp_download_best_audio
+        from .download_best_audio import (
+            yt_dlp_download_best_audio,
+            yt_dlp_get_upload_date,
+        )
 
         if check_keyboard_interrupt():
             return KeyboardInterruptException(
@@ -70,6 +74,7 @@ class YtDlpDownloader:
             )
 
         yt_exe: YtDlpCmdRunner = YtDlpCmdRunner.create_or_raise()
+        no_geo_bypass = True
 
         result = yt_dlp_download_best_audio(
             url=self.url,
@@ -77,13 +82,19 @@ class YtDlpDownloader:
             source=self.source,
             cookies_txt=self.cookies_txt,
             yt_exe=yt_exe,
-            no_geo_bypass=True,
+            no_geo_bypass=no_geo_bypass,
             retries=3,
         )
-
+        date: datetime | Exception = yt_dlp_get_upload_date(
+            yt_exe=yt_exe,
+            source=self.source,
+            url=self.url,
+            cookies_txt=self.cookies_txt,
+            no_geo_bypass=no_geo_bypass,
+        )
+        self.date = date
         if not isinstance(result, Exception):
             self.downloaded_file = result
-
         return result
 
     def convert_to_mp3(self) -> Path | Exception:

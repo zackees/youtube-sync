@@ -7,7 +7,7 @@ import os
 import sys
 import traceback
 import warnings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -267,6 +267,12 @@ class Library:
             self.save(overwrite=True)
         return self.libdata.vids.copy()
 
+    def to_json(self) -> dict:
+        """Convert to dictionary."""
+        data = self.libdata or self._empty_data()
+        out = data.to_json()
+        return out
+
     def save(self, overwrite=False) -> Exception | None:
         """Save json to file."""
         data = self.libdata or self._empty_data()
@@ -300,6 +306,7 @@ class Library:
             max_concurrent_conversions: Maximum number of concurrent conversions
         """
         logger.info(f"Downloading missing files for {self.channel_name}")
+        from youtube_sync.final_result import FinalResult
         from youtube_sync.ytdlp.error import (
             check_keyboard_interrupt,
             set_keyboard_interrupt,
@@ -363,7 +370,7 @@ class Library:
 
             try:
                 # Submit downloads to thread pools
-                futures = self.ytdlp.download_mp3s(
+                futures: list[Future[FinalResult]] = self.ytdlp.download_mp3s(
                     downloads=downloads_to_process,
                     download_pool=download_pool,
                 )
@@ -382,8 +389,10 @@ class Library:
 
                     vid = missing_downloads[i]
                     try:
-                        final_result = future.result()
+                        final_result: FinalResult = future.result()
                         error = final_result.exception
+                        if final_result.date is not None:
+                            vid.date = final_result.date
                         if error is not None:
                             print(f"Error downloading {vid.url}: {error}")
                             self.mark_error(vid)

@@ -54,3 +54,14 @@ def integration_test(args: Args) -> None:
 
     if not args.skip_download:
         yt.download(args.download_limit)
+
+    # print out the vids json file
+    out = yt.library.to_json()
+    import json
+
+    json_str = json.dumps(out, indent=4)
+    print(json_str)
+    vid = out["vids"][0]
+    upload_date = vid.get("date_upload")
+    assert upload_date is not None
+    print("Done")

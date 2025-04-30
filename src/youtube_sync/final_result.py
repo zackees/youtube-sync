@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 from youtube_sync import FSPath
 
@@ -7,5 +8,5 @@ from youtube_sync import FSPath
 class FinalResult:
     url: str
     outmp3: FSPath
-    date: str | None
+    date: datetime | None
     exception: Exception | None
