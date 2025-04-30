@@ -1,5 +1,7 @@
 import _thread
+import logging
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import datetime
 from pathlib import Path
 
 from youtube_sync import FSPath
@@ -12,6 +14,9 @@ from youtube_sync.ytdlp.error import (
     set_keyboard_interrupt,
 )
 from youtube_sync.ytdlp.ytdlp import Cookies, Source
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.WARNING)
 
 
 def _process_conversion(
@@ -41,8 +46,17 @@ def _process_conversion(
         # Copy to destination
         downloader.copy_to_destination()
         # return (downloader.url, downloader.outmp3, None)
+        upload_date: datetime | None = None
+        if isinstance(downloader.date, datetime):
+            upload_date = downloader.date
+        else:
+            logger.warning(f"Failed to get upload date for {downloader.url}")
+            upload_date = None
         out: FinalResult = FinalResult(
-            url=downloader.url, outmp3=downloader.outmp3, exception=None, date=None
+            url=downloader.url,
+            outmp3=downloader.outmp3,
+            exception=None,
+            date=upload_date,
         )
         return out
     except Exception as e:
@@ -156,11 +170,21 @@ def _process_download_and_convert(
 
         # If download failed, set the result and return
         if isinstance(download_result, Exception):
+            upload_date: datetime | None = None
+            if isinstance(downloader.date, datetime):
+                upload_date = downloader.date
+            elif upload_date is None:
+                logger.warning(f"Failed to download {url}: {download_result}")
+            else:
+                logger.warning(
+                    f"Failed to download {url}: {download_result} (date: {downloader.date})"
+                )
+                upload_date = None
             rslt = FinalResult(
                 url=url,
                 outmp3=outmp3,
                 exception=download_result,
-                date=None,
+                date=upload_date,
             )
             result_future.set_result(rslt)
             return

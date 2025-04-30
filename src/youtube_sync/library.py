@@ -392,7 +392,8 @@ class Library:
                         final_result: FinalResult = future.result()
                         error = final_result.exception
                         if final_result.date is not None:
-                            vid.date = final_result.date
+                            vid.date_upload = final_result.date
+                            self.merge([vid], save=True)
                         if error is not None:
                             print(f"Error downloading {vid.url}: {error}")
                             self.mark_error(vid)

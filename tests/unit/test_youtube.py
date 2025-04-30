@@ -21,7 +21,7 @@ YOURTUBE_SILVER_GURU = Args(
 class YoutubeIntegrationTester(unittest.TestCase):
     """Main tester class."""
 
-    @unittest.skip("Test is failing right now")
+    # @unittest.skip("Test is failing right now")
     def test_imports(self) -> None:
         """Test command line interface (CLI)."""
         integration_test(YOURTUBE_SILVER_GURU)

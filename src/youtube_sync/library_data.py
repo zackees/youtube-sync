@@ -37,7 +37,14 @@ class LibraryData:
     def merge(self, vids: list[VidEntry]) -> None:
         """Merge two libraries."""
         for vid in vids:
-            if vid not in self.vids:
+            for inner_vid in self.vids:
+                if inner_vid.url == vid.url:
+                    # Merge in the field.
+                    inner_vid.date_upload = (
+                        vid.date_upload if vid.date_upload else inner_vid.date_upload
+                    )
+                    break
+            else:
                 self.vids.append(vid)
 
     def __eq__(self, value) -> bool:
