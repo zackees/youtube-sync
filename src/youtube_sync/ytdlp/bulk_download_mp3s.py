@@ -3,6 +3,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
 from youtube_sync import FSPath
+from youtube_sync.final_result import FinalResult
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
@@ -15,7 +16,7 @@ from youtube_sync.ytdlp.ytdlp import Cookies, Source
 
 def _process_conversion(
     downloader: YtDlpDownloader,
-) -> tuple[str, FSPath, Exception | None]:
+) -> FinalResult:
     """Process conversion and copying for a downloaded file.
 
     Args:
@@ -28,13 +29,31 @@ def _process_conversion(
         # Convert to MP3
         convert_result = downloader.convert_to_mp3()
         if isinstance(convert_result, Exception):
-            return (downloader.url, downloader.outmp3, convert_result)
+            # return (downloader.url, downloader.outmp3, convert_result)
+            out: FinalResult = FinalResult(
+                url=downloader.url,
+                outmp3=downloader.outmp3,
+                exception=convert_result,
+            )
+            return out
 
         # Copy to destination
         downloader.copy_to_destination()
-        return (downloader.url, downloader.outmp3, None)
+        # return (downloader.url, downloader.outmp3, None)
+        out: FinalResult = FinalResult(
+            url=downloader.url,
+            outmp3=downloader.outmp3,
+            exception=None,
+        )
+        return out
     except Exception as e:
-        return (downloader.url, downloader.outmp3, e)
+        # return (downloader.url, downloader.outmp3, e)
+        out: FinalResult = FinalResult(
+            url=downloader.url,
+            outmp3=downloader.outmp3,
+            exception=e,
+        )
+        return out
     finally:
         # Clean up resources
         downloader.dispose()
@@ -45,7 +64,7 @@ def download_mp3s(
     download_pool: ThreadPoolExecutor,
     source: Source,
     cookies: Cookies | None = None,
-) -> list[Future[tuple[str, FSPath, Exception | None]]]:
+) -> list[Future[FinalResult]]:
     """Download multiple YouTube videos as MP3s using thread pools.
 
     Args:
@@ -58,12 +77,12 @@ def download_mp3s(
         where exception_or_none is None if download was successful,
         or the exception that occurred during download
     """
-    result_futures: list[Future[tuple[str, FSPath, Exception | None]]] = []
+    result_futures: list[Future[FinalResult]] = []
 
     # Process each download
     for i, (url, outmp3) in enumerate(downloads):
 
-        result_future: Future[tuple[str, FSPath, Exception | None]] = Future()
+        result_future: Future[FinalResult] = Future()
 
         # Extract cookies if needed
         # cookies = self._extract_cookies_if_needed()
@@ -103,7 +122,7 @@ def _process_download_and_convert(
     cookies: Path | None,
     source: Source,
     download_pool: ThreadPoolExecutor,
-    result_future: Future[tuple[str, FSPath, Exception | None]],
+    result_future: Future[FinalResult],
 ) -> None:
     """Process the download and conversion for a single URL.
 
@@ -123,15 +142,14 @@ def _process_download_and_convert(
     try:
         # Check for keyboard interrupt
         if check_keyboard_interrupt():
-            result_future.set_result(
-                (
-                    url,
-                    outmp3,
-                    KeyboardInterruptException(
-                        "Download aborted due to previous keyboard interrupt"
-                    ),
-                )
+            rslt = FinalResult(
+                url=url,
+                outmp3=outmp3,
+                exception=KeyboardInterruptException(
+                    "Download aborted due to previous keyboard interrupt"
+                ),
             )
+            result_future.set_result(rslt)
             return
 
         # Submit download task and wait for it to complete
@@ -140,20 +158,24 @@ def _process_download_and_convert(
 
         # If download failed, set the result and return
         if isinstance(download_result, Exception):
-            result_future.set_result((url, outmp3, download_result))
+            rslt = FinalResult(
+                url=url,
+                outmp3=outmp3,
+                exception=download_result,
+            )
+            result_future.set_result(rslt)
             return
 
         # Check for keyboard interrupt again before conversion
         if check_keyboard_interrupt():
-            result_future.set_result(
-                (
-                    url,
-                    outmp3,
-                    KeyboardInterruptException(
-                        "Conversion aborted due to previous keyboard interrupt"
-                    ),
-                )
+            rslt = FinalResult(
+                url=url,
+                outmp3=outmp3,
+                exception=KeyboardInterruptException(
+                    "Download aborted due to previous keyboard interrupt"
+                ),
             )
+            result_future.set_result(rslt)
             return
 
         # Submit conversion task and wait for it to complete
@@ -166,11 +188,23 @@ def _process_download_and_convert(
     except KeyboardInterrupt as e:
         # Handle keyboard interrupt
         set_keyboard_interrupt()
-        result_future.set_result((url, outmp3, KeyboardInterruptException(str(e))))
+        # Set the result with the exception
+        rslt = FinalResult(
+            url=url,
+            outmp3=outmp3,
+            exception=KeyboardInterruptException(str(e)),
+        )
+        result_future.set_result(rslt)
         _thread.interrupt_main()
     except Exception as e:
         # Handle any other exceptions
-        result_future.set_result((url, outmp3, e))
+        # result_future.set_result((url, outmp3, e))
+        rslt = FinalResult(
+            url=url,
+            outmp3=outmp3,
+            exception=e,
+        )
+        result_future.set_result(rslt)
     finally:
         # Clean up resources
         downloader.dispose()

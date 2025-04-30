@@ -382,7 +382,8 @@ class Library:
 
                     vid = missing_downloads[i]
                     try:
-                        _, _, error = future.result()
+                        final_result = future.result()
+                        error = final_result.exception
                         if error is not None:
                             print(f"Error downloading {vid.url}: {error}")
                             self.mark_error(vid)

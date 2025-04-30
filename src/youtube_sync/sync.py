@@ -74,6 +74,7 @@ class YouTubeSyncImpl:
                 limit=limit,
                 stop_on_duplicate_vids=stop_on_duplicate_vids,
             )
+            logger.info(f"Found {len(out)} new videos")
             self.library.merge(out, save=True)
             return out
         else:

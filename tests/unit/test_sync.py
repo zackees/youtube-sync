@@ -16,6 +16,7 @@ TEST_DATA = RealFS.from_path(_TEST_DATA)
 class SyncTester(unittest.TestCase):
     """Main tester class."""
 
+    # @unittest.skip("Silverguru channel is already filled")
     def test_simple(self) -> None:
         # shutil.rmtree(TEST_DATA, ignore_errors=True)
         try:
@@ -35,6 +36,8 @@ class SyncTester(unittest.TestCase):
             if len(all_downloaded) < download_limit:
                 yt.download(download_limit)
             total_downloaded = yt.find_vids_already_downloaded()
+            print(f"Total downloaded: {len(total_downloaded)}")
+            print(f"Total already downloaded: {len(all_downloaded)}")
             self.assertGreaterEqual(len(total_downloaded), download_limit)
             print("Done")
         finally:

@@ -8,6 +8,7 @@ from typing import Any
 
 from youtube_sync import FSPath
 from youtube_sync.cookies import Cookies
+from youtube_sync.final_result import FinalResult
 from youtube_sync.types import ChannelId, Source
 from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
@@ -223,7 +224,7 @@ class YtDlp:
         self,
         downloads: list[tuple[str, FSPath]],
         download_pool: ThreadPoolExecutor,
-    ) -> list[Future[tuple[str, FSPath, Exception | None]]]:
+    ) -> list[Future[FinalResult]]:
         from youtube_sync.ytdlp.bulk_download_mp3s import download_mp3s
 
         cookies = self._extract_cookies_if_needed()
@@ -258,6 +259,8 @@ class YtDlp:
             future = futures[0]
 
             # Get the result and raise any exception
-            _, _, error = future.result()
+            # _, _, error = future.result()
+            final_result = future.result()
+            error: Exception | None = final_result.exception
             if error is not None:
                 raise error
