@@ -4,6 +4,7 @@ import os
 import subprocess
 import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -33,6 +34,15 @@ _DOWNLOADER_COUNTER = 0
 _STARTUP_TIME = time.time()
 
 
+@dataclass
+class ExeResult:
+    """Class to hold the result of a yt-dlp command."""
+
+    ok: bool
+    output: str | None
+    error: str | None = None
+
+
 def _update_proxies_once() -> None:
     """Legacy function kept for compatibility."""
     global _PROXIES_UPDATED
@@ -47,7 +57,9 @@ class YtDlpExecutor(ABC):
     """Abstract base class for yt-dlp execution strategies."""
 
     @abstractmethod
-    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+    def execute(
+        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+    ) -> ExeResult:
         """Execute a yt-dlp command.
 
         Args:
@@ -75,21 +87,31 @@ class RealYtdlp(YtDlpExecutor):
     def __init__(self, yt_exe: YtDlpCmdRunner):
         self.yt_exe = yt_exe
 
-    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+    def execute(
+        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+    ) -> ExeResult:
         full_cmd = [self.yt_exe.exe.as_posix()] + cmd_list
         proc = subprocess.Popen(
             full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
         )
+        lines: list[str] = []
         with proc:
             assert proc.stdout is not None
             for line in proc.stdout:
                 linestr = line.decode("utf-8").strip()
                 print(linestr)
+                lines.append(linestr)
+            stdout = "\n".join(lines) + "\n"
             proc.wait()
             if proc.returncode != 0:
                 logging.error(f"yt-dlp failed with return code {proc.returncode}")
-                return False
-            return True
+                return ExeResult(
+                    ok=False,
+                    output=stdout,
+                    error=f"yt-dlp failed with return code {proc.returncode}",
+                )
+        logger.info(f"yt-dlp command succeeded: {full_cmd}")
+        return ExeResult(ok=True, output=stdout)
 
     def is_proxy(self) -> bool:
         return False
@@ -129,7 +151,9 @@ class RealOrProxyExecutor(YtDlpExecutor):
             logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
         return cookies_txt
 
-    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+    def execute(
+        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+    ) -> ExeResult:
         # Always ensure proxies are updated
         self._update_proxies()
 
@@ -137,7 +161,13 @@ class RealOrProxyExecutor(YtDlpExecutor):
         logger.info(f"Executing command:\n  {cmd_str}\n")
 
         if self.real_failures > 3:
-            return self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+            ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+            out: ExeResult = ExeResult(
+                ok=ok,
+                output="NO OUTPUT FOR PROXY",
+                error="ERROR HAPPENED" if not ok else None,
+            )
+            return out
         try:
             return self.real.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
         except subprocess.CalledProcessError:
@@ -147,7 +177,13 @@ class RealOrProxyExecutor(YtDlpExecutor):
                 self._refresh_cookies(self.source)
                 # Update proxies again
                 YtDLPProxy.update()
-            return self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+            ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+            out: ExeResult = ExeResult(
+                ok=ok,
+                output="NO OUTPUT FOR PROXY",
+                error="ERROR HAPPENED" if not ok else None,
+            )
+            return out
 
     def is_proxy(self) -> bool:
         return self.real_failures > 3
