@@ -39,7 +39,8 @@ class ExeResult:
     """Class to hold the result of a yt-dlp command."""
 
     ok: bool
-    output: str | None
+    stdout: str | None
+    stderr: str | None
     error: str | None = None
 
 
@@ -88,30 +89,42 @@ class RealYtdlp(YtDlpExecutor):
         self.yt_exe = yt_exe
 
     def execute(
-        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+        self,
+        cmd_list: list[str],
+        yt_dlp_path: Path | None = None,
     ) -> ExeResult:
         full_cmd = [self.yt_exe.exe.as_posix()] + cmd_list
+        logger.info(f"Executing command:\n  {subprocess.list2cmdline(full_cmd)}\n")
         proc = subprocess.Popen(
-            full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            full_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        lines: list[str] = []
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
         with proc:
             assert proc.stdout is not None
+            assert proc.stderr is not None
             for line in proc.stdout:
                 linestr = line.decode("utf-8").strip()
                 print(linestr)
-                lines.append(linestr)
-            stdout = "\n".join(lines) + "\n"
+                stdout_lines.append(linestr)
+            stdout = "\n".join(stdout_lines) + "\n"
+
+            for line in proc.stderr:
+                linestr = line.decode("utf-8").strip()
+                print(linestr)
+                stderr_lines.append(linestr)
+            stderr = "\n".join(stderr_lines) + "\n"
             proc.wait()
             if proc.returncode != 0:
                 logging.error(f"yt-dlp failed with return code {proc.returncode}")
                 return ExeResult(
                     ok=False,
-                    output=stdout,
+                    stdout=stdout,
+                    stderr=stderr,
                     error=f"yt-dlp failed with return code {proc.returncode}",
                 )
         logger.info(f"yt-dlp command succeeded: {full_cmd}")
-        return ExeResult(ok=True, output=stdout)
+        return ExeResult(ok=True, stdout=stdout, stderr=stderr)
 
     def is_proxy(self) -> bool:
         return False
@@ -156,15 +169,13 @@ class RealOrProxyExecutor(YtDlpExecutor):
     ) -> ExeResult:
         # Always ensure proxies are updated
 
-        cmd_str = subprocess.list2cmdline(cmd_list)
-        logger.info(f"Executing command:\n  {cmd_str}\n")
-
         if self.real_failures > 3:
             self._update_proxies()
             ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
             out: ExeResult = ExeResult(
                 ok=ok,
-                output="NO OUTPUT FOR PROXY",
+                stdout="NO OUTPUT FOR PROXY",
+                stderr="NO STDERR FOR PROXY",
                 error="ERROR HAPPENED" if not ok else None,
             )
             return out
@@ -179,7 +190,8 @@ class RealOrProxyExecutor(YtDlpExecutor):
             ok: bool = self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
             out: ExeResult = ExeResult(
                 ok=ok,
-                output="NO OUTPUT FOR PROXY",
+                stdout="NO OUTPUT FOR PROXY",
+                stderr="NO STDERR FOR PROXY",
                 error="ERROR HAPPENED" if not ok else None,
             )
             return out
@@ -227,8 +239,6 @@ def yt_dlp_get_upload_date(
         "--print",
         "%(upload_date)s",
         "--skip-download",
-        ">>",
-        "upload_date.txt",
     ]
 
     if no_geo_bypass:
@@ -242,20 +252,17 @@ def yt_dlp_get_upload_date(
         executor = RealOrProxyExecutor(yt_exe, source=source)
 
         # Use the executor to run the command
-        ok = executor.execute(cmd_list, yt_dlp_path=yt_exe.exe)
-        if not ok:
+        rslt = executor.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+        if not rslt.ok:
             return RuntimeError("Failed to get upload date")
 
-        # Find the output from the command
-        # Since we're using --print, the output should be in the console
-        # We need to run it again with subprocess to capture the output
-        full_cmd = [yt_exe.exe.as_posix()] + cmd_list
-        result = subprocess.run(full_cmd, check=True, capture_output=True, text=True)
+        logger.info(f"Command stdout: {rslt.stdout}")
+        logger.info(f"Command stderr: {rslt.stderr}")
 
         # yt-dlp returns upload date in format YYYYMMDD
-        upload_date_str = result.stdout.strip()
+        upload_date_str = rslt.stdout.strip() if rslt.stdout else ""
 
-        if not upload_date_str or len(upload_date_str) != 8:
+        if not upload_date_str:
             return ValueError(f"Invalid upload date format: {upload_date_str}")
 
         # Parse the date string into a datetime object
