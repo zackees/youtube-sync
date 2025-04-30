@@ -4,7 +4,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
-from youtube_sync import FSPath
 from youtube_sync.final_result import FinalResult
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
 from youtube_sync.ytdlp.download_request import DownloadRequest
@@ -112,8 +111,7 @@ def download_mp3s(
         # Submit the entire download and conversion process as a single task
         fut = FUTURE_RESOLVER_POOL.submit(
             _process_download_and_convert,
-            di.url,
-            di.outmp3,
+            di,
             cookied_path,
             source,
             download_pool,
@@ -133,8 +131,7 @@ def download_mp3s(
 
 
 def _process_download_and_convert(
-    url: str,
-    outmp3: FSPath,
+    di: DownloadRequest,
     cookies: Path | None,
     source: Source,
     download_pool: ThreadPoolExecutor,
@@ -153,14 +150,14 @@ def _process_download_and_convert(
     # Note that this is run from a top level thread pool, so this doesn't actually block.
     #
     # Create downloader
-    downloader = YtDlpDownloader(url, outmp3, cookies_txt=cookies, source=source)
+    downloader = YtDlpDownloader(di.url, di.outmp3, cookies_txt=cookies, source=source)
 
     try:
         # Check for keyboard interrupt
         if check_keyboard_interrupt():
             rslt = FinalResult(
-                url=url,
-                outmp3=outmp3,
+                url=di.url,
+                outmp3=di.outmp3,
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
@@ -179,15 +176,15 @@ def _process_download_and_convert(
             if isinstance(downloader.date, datetime):
                 upload_date = downloader.date
             elif upload_date is None:
-                logger.warning(f"Failed to download {url}: {download_result}")
+                logger.warning(f"Failed to download {di.url}: {download_result}")
             else:
                 logger.warning(
-                    f"Failed to download {url}: {download_result} (date: {downloader.date})"
+                    f"Failed to download {di.url}: {download_result} (date: {downloader.date})"
                 )
                 upload_date = None
             rslt = FinalResult(
-                url=url,
-                outmp3=outmp3,
+                url=di.url,
+                outmp3=di.outmp3,
                 exception=download_result,
                 date=upload_date,
             )
@@ -197,8 +194,8 @@ def _process_download_and_convert(
         # Check for keyboard interrupt again before conversion
         if check_keyboard_interrupt():
             rslt = FinalResult(
-                url=url,
-                outmp3=outmp3,
+                url=di.url,
+                outmp3=di.outmp3,
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
@@ -219,8 +216,8 @@ def _process_download_and_convert(
         set_keyboard_interrupt()
         # Set the result with the exception
         rslt = FinalResult(
-            url=url,
-            outmp3=outmp3,
+            url=di.url,
+            outmp3=di.outmp3,
             exception=KeyboardInterruptException(str(e)),
             date=None,
         )
@@ -230,8 +227,8 @@ def _process_download_and_convert(
         # Handle any other exceptions
         # result_future.set_result((url, outmp3, e))
         rslt = FinalResult(
-            url=url,
-            outmp3=outmp3,
+            url=di.url,
+            outmp3=di.outmp3,
             exception=e,
             date=None,
         )
