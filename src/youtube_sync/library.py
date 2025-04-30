@@ -19,7 +19,7 @@ from youtube_sync.library_data import LibraryData, Source
 from youtube_sync.logutil import create_logger
 from youtube_sync.to_channel_url import to_channel_url
 from youtube_sync.vid_entry import VidEntry
-from youtube_sync.ytdlp.download_item import DownloadRequest
+from youtube_sync.ytdlp.download_request import DownloadRequest
 from youtube_sync.ytdlp.ytdlp import YtDlp
 
 logger = create_logger(__name__, "INFO")

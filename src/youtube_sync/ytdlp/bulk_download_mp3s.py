@@ -7,7 +7,7 @@ from pathlib import Path
 from youtube_sync import FSPath
 from youtube_sync.final_result import FinalResult
 from youtube_sync.pools import FFMPEG_EXECUTORS, FUTURE_RESOLVER_POOL
-from youtube_sync.ytdlp.download_item import DownloadRequest
+from youtube_sync.ytdlp.download_request import DownloadRequest
 from youtube_sync.ytdlp.downloader import YtDlpDownloader
 from youtube_sync.ytdlp.error import (
     KeyboardInterruptException,

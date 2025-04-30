@@ -10,7 +10,7 @@ from youtube_sync import FSPath
 from youtube_sync.cookies import Cookies
 from youtube_sync.final_result import FinalResult
 from youtube_sync.types import ChannelId, Source
-from youtube_sync.ytdlp.download_item import DownloadRequest
+from youtube_sync.ytdlp.download_request import DownloadRequest
 from youtube_sync.ytdlp.exe import YtDlpCmdRunner
 
 
