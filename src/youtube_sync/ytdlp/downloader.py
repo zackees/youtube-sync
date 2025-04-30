@@ -65,8 +65,8 @@ class YtDlpDownloader:
         """
         from .download_best_audio import (
             yt_dlp_download_best_audio,
-            yt_dlp_get_upload_date,
         )
+        from .download_video_upload_date import yt_dlp_get_upload_date
 
         if check_keyboard_interrupt():
             return KeyboardInterruptException(
