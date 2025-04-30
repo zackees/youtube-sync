@@ -36,8 +36,7 @@ def _process_conversion(
         if isinstance(convert_result, Exception):
             # return (downloader.url, downloader.outmp3, convert_result)
             out: FinalResult = FinalResult(
-                url=downloader.url,
-                outmp3=downloader.outmp3,
+                request=downloader.di,
                 exception=convert_result,
                 date=None,
             )
@@ -53,8 +52,9 @@ def _process_conversion(
             logger.warning(f"Failed to get upload date for {downloader.url}")
             upload_date = None
         out: FinalResult = FinalResult(
-            url=downloader.url,
-            outmp3=downloader.outmp3,
+            # url=downloader.url,
+            # outmp3=downloader.outmp3,
+            request=downloader.di,
             exception=None,
             date=upload_date,
         )
@@ -62,7 +62,10 @@ def _process_conversion(
     except Exception as e:
         # return (downloader.url, downloader.outmp3, e)
         out: FinalResult = FinalResult(
-            url=downloader.url, outmp3=downloader.outmp3, exception=e, date=None
+            # url=downloader.url, outmp3=downloader.outmp3,
+            request=downloader.di,
+            exception=e,
+            date=None,
         )
         return out
     finally:
@@ -150,14 +153,15 @@ def _process_download_and_convert(
     # Note that this is run from a top level thread pool, so this doesn't actually block.
     #
     # Create downloader
-    downloader = YtDlpDownloader(di.url, di.outmp3, cookies_txt=cookies, source=source)
+    downloader = YtDlpDownloader(di=di, cookies_txt=cookies, source=source)
 
     try:
         # Check for keyboard interrupt
         if check_keyboard_interrupt():
             rslt = FinalResult(
-                url=di.url,
-                outmp3=di.outmp3,
+                # url=di.url,
+                # outmp3=di.outmp3,
+                request=di,
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
@@ -183,8 +187,9 @@ def _process_download_and_convert(
                 )
                 upload_date = None
             rslt = FinalResult(
-                url=di.url,
-                outmp3=di.outmp3,
+                # url=di.url,
+                # outmp3=di.outmp3,
+                request=di,
                 exception=download_result,
                 date=upload_date,
             )
@@ -194,8 +199,9 @@ def _process_download_and_convert(
         # Check for keyboard interrupt again before conversion
         if check_keyboard_interrupt():
             rslt = FinalResult(
-                url=di.url,
-                outmp3=di.outmp3,
+                # url=di.url,
+                # outmp3=di.outmp3,
+                request=di,
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
@@ -216,8 +222,9 @@ def _process_download_and_convert(
         set_keyboard_interrupt()
         # Set the result with the exception
         rslt = FinalResult(
-            url=di.url,
-            outmp3=di.outmp3,
+            # url=di.url,
+            # outmp3=di.outmp3,
+            request=di,
             exception=KeyboardInterruptException(str(e)),
             date=None,
         )
@@ -227,8 +234,9 @@ def _process_download_and_convert(
         # Handle any other exceptions
         # result_future.set_result((url, outmp3, e))
         rslt = FinalResult(
-            url=di.url,
-            outmp3=di.outmp3,
+            # url=di.url,
+            # outmp3=di.outmp3,
+            request=di,
             exception=e,
             date=None,
         )

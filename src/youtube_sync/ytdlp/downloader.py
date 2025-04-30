@@ -3,11 +3,13 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from virtual_fs import FSPath
+
 # from youtube_sync.filesystem import FS
-from youtube_sync import FSPath
 from youtube_sync.config import Source
 from youtube_sync.ffmpeg import convert_audio_to_mp3
 from youtube_sync.ffmpeg import init_once as ffmpeg_init_once
+from youtube_sync.final_result import DownloadRequest
 
 from .error import KeyboardInterruptException, check_keyboard_interrupt
 from .exe import YtDlpCmdRunner
@@ -17,7 +19,7 @@ class YtDlpDownloader:
     """Class for downloading and converting YouTube videos to MP3."""
 
     def __init__(
-        self, url: str, outmp3: FSPath, source: Source, cookies_txt: Path | None = None
+        self, di: DownloadRequest, source: Source, cookies_txt: Path | None = None
     ):
         """Initialize the downloader with a temporary directory and download parameters.
 
@@ -29,8 +31,9 @@ class YtDlpDownloader:
         ffmpeg_init_once()
         self._temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = Path(self._temp_dir.name)
-        self.url = url
-        self.outmp3 = outmp3
+        # self.url = url
+        # self.outmp3 = outmp3
+        self.di = di
         self.cookies_txt = cookies_txt
         self.downloaded_file: Path | None = None
         self.temp_mp3: Path | None = None
@@ -38,10 +41,20 @@ class YtDlpDownloader:
         self.date: datetime | Exception | None = None
 
         # Ensure output directory exists
-        par_dir = outmp3.parent
+        par_dir = self.di.outmp3.parent
         if par_dir:
             # os.makedirs(par_dir, exist_ok=True)
             par_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def url(self) -> str:
+        """Return the URL to download."""
+        return self.di.url
+
+    @property
+    def outmp3(self) -> FSPath:
+        """Return the output MP3 path."""
+        return self.di.outmp3
 
     def __enter__(self):
         """Support for context manager."""
@@ -131,9 +144,9 @@ class YtDlpDownloader:
         import time
 
         start = time.time()
-        print(f"Copying {self.temp_mp3} -> {self.outmp3}")
+        print(f"Copying {self.temp_mp3} -> {self.di.outmp3}")
         data = self.temp_mp3.read_bytes()
-        self.outmp3.write_bytes(data)
+        self.di.outmp3.write_bytes(data)
         diff = time.time() - start
         print(
             f"\n#################################\n# Copy done in {diff:.2f} seconds: {self.outmp3}\n#################################\n"

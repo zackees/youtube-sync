@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from youtube_sync import FSPath
+from youtube_sync.ytdlp.download_request import DownloadRequest
 
 
 @dataclass
 class FinalResult:
-    url: str
-    outmp3: FSPath
+    request: DownloadRequest
     date: datetime | None
     exception: Exception | None
