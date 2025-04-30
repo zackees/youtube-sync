@@ -34,6 +34,7 @@ class YtDlpDownloader:
         self.downloaded_file: Path | None = None
         self.temp_mp3: Path | None = None
         self.source = source
+        self.date: str | None = None
 
         # Ensure output directory exists
         par_dir = outmp3.parent

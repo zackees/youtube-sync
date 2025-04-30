@@ -34,24 +34,22 @@ def _process_conversion(
                 url=downloader.url,
                 outmp3=downloader.outmp3,
                 exception=convert_result,
+                date=None,
             )
             return out
 
         # Copy to destination
         downloader.copy_to_destination()
         # return (downloader.url, downloader.outmp3, None)
+        date = downloader.date
         out: FinalResult = FinalResult(
-            url=downloader.url,
-            outmp3=downloader.outmp3,
-            exception=None,
+            url=downloader.url, outmp3=downloader.outmp3, exception=None, date=date
         )
         return out
     except Exception as e:
         # return (downloader.url, downloader.outmp3, e)
         out: FinalResult = FinalResult(
-            url=downloader.url,
-            outmp3=downloader.outmp3,
-            exception=e,
+            url=downloader.url, outmp3=downloader.outmp3, exception=e, date=None
         )
         return out
     finally:
@@ -148,6 +146,7 @@ def _process_download_and_convert(
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
+                date=None,
             )
             result_future.set_result(rslt)
             return
@@ -162,6 +161,7 @@ def _process_download_and_convert(
                 url=url,
                 outmp3=outmp3,
                 exception=download_result,
+                date=None,
             )
             result_future.set_result(rslt)
             return
@@ -174,6 +174,7 @@ def _process_download_and_convert(
                 exception=KeyboardInterruptException(
                     "Download aborted due to previous keyboard interrupt"
                 ),
+                date=None,
             )
             result_future.set_result(rslt)
             return
@@ -193,6 +194,7 @@ def _process_download_and_convert(
             url=url,
             outmp3=outmp3,
             exception=KeyboardInterruptException(str(e)),
+            date=None,
         )
         result_future.set_result(rslt)
         _thread.interrupt_main()
@@ -203,6 +205,7 @@ def _process_download_and_convert(
             url=url,
             outmp3=outmp3,
             exception=e,
+            date=None,
         )
         result_future.set_result(rslt)
     finally:

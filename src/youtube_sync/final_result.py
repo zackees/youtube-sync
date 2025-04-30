@@ -7,4 +7,5 @@ from youtube_sync import FSPath
 class FinalResult:
     url: str
     outmp3: FSPath
+    date: str | None
     exception: Exception | None
