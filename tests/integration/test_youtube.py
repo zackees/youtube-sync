@@ -2,9 +2,8 @@
 Command entry point.
 """
 
-from base import Args, integration_test
-
 from youtube_sync import Source
+from youtube_sync.integration_test import Args, integration_test
 
 YOURTUBE_SILVER_GURU = Args(
     source=Source.YOUTUBE,
