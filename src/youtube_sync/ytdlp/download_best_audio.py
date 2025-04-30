@@ -3,6 +3,8 @@ import logging
 import os
 import subprocess
 import time
+from abc import ABC, abstractmethod
+from datetime import datetime
 from pathlib import Path
 
 from filelock import FileLock
@@ -32,13 +34,205 @@ _STARTUP_TIME = time.time()
 
 
 def _update_proxies_once() -> None:
-
+    """Legacy function kept for compatibility."""
     global _PROXIES_UPDATED
     if _PROXIES_UPDATED:
         return
     with _UPDATE_PROXIES_LOCK:
         YtDLPProxy.update()
         _PROXIES_UPDATED = True
+
+
+class YtDlpExecutor(ABC):
+    """Abstract base class for yt-dlp execution strategies."""
+
+    @abstractmethod
+    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+        """Execute a yt-dlp command.
+
+        Args:
+            cmd_list: Command arguments to pass to yt-dlp
+            yt_dlp_path: Path to the yt-dlp executable
+
+        Returns:
+            True if execution was successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def is_proxy(self) -> bool:
+        """Check if this executor is using a proxy.
+
+        Returns:
+            True if using proxy, False otherwise
+        """
+        pass
+
+
+class RealYtdlp(YtDlpExecutor):
+    """Execute yt-dlp directly as a subprocess."""
+
+    def __init__(self, yt_exe: YtDlpCmdRunner):
+        self.yt_exe = yt_exe
+
+    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+        full_cmd = [self.yt_exe.exe.as_posix()] + cmd_list
+        proc = subprocess.Popen(
+            full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        with proc:
+            assert proc.stdout is not None
+            for line in proc.stdout:
+                linestr = line.decode("utf-8").strip()
+                print(linestr)
+            proc.wait()
+            if proc.returncode != 0:
+                logging.error(f"yt-dlp failed with return code {proc.returncode}")
+                return False
+            return True
+
+    def is_proxy(self) -> bool:
+        return False
+
+
+class RealOrProxyExecutor(YtDlpExecutor):
+    """Executor that tries real execution first, then falls back to proxy if needed."""
+
+    def __init__(self, yt_exe: YtDlpCmdRunner, source: Source):
+        self.proxy = YtDLPProxy()
+        self.real = RealYtdlp(yt_exe)
+        self.real_failures = 0
+        self.yt_exe = yt_exe
+        self.source = source
+        # Update proxies once during initialization
+        self._update_proxies()
+
+    def _update_proxies(self) -> None:
+        """Update proxies once."""
+        global _PROXIES_UPDATED
+        if not _PROXIES_UPDATED:
+            with _UPDATE_PROXIES_LOCK:
+                YtDLPProxy.update()
+                _PROXIES_UPDATED = True
+
+    def _refresh_cookies(self, source: Source) -> Path | None:
+        """Refresh cookies and return the path to the cookies file."""
+        if source is None:
+            logger.warning("Cannot refresh cookies: source is None")
+            return None
+
+        logger.info("Refreshing cookies")
+        cookies: Cookies = Cookies.from_browser(source=source, save=True)
+        cookies_txt = Path(cookies.path_txt)
+        if cookies_txt is not None and cookies_txt.exists():
+            cookies_txt_str = cookies_txt.read_text()
+            logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
+        return cookies_txt
+
+    def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
+        # Always ensure proxies are updated
+        self._update_proxies()
+
+        cmd_str = subprocess.list2cmdline(cmd_list)
+        logger.info(f"Executing command:\n  {cmd_str}\n")
+
+        if self.real_failures > 3:
+            return self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+        try:
+            return self.real.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+        except subprocess.CalledProcessError:
+            self.real_failures += 1
+            # If we're switching to proxy mode, refresh cookies and proxies
+            if self.real_failures > 3 and self.source is not None:
+                self._refresh_cookies(self.source)
+                # Update proxies again
+                YtDLPProxy.update()
+            return self.proxy.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+
+    def is_proxy(self) -> bool:
+        return self.real_failures > 3
+
+
+def yt_dlp_get_upload_date(
+    yt_exe: YtDlpCmdRunner,
+    source: Source,
+    url: str,
+    cookies_txt: Path | None,
+    no_geo_bypass: bool = True,
+) -> datetime | Exception:
+    """Get the upload date of a video.
+
+    Args:
+        yt_exe: YtDlpCmdRunner instance
+        source: Source platform (YouTube, etc.)
+        url: The URL of the video
+        cookies_txt: Path to cookies.txt file or None
+        no_geo_bypass: Whether to disable geo-bypass
+
+    Returns:
+        datetime object representing the upload date or Exception if failed
+    """
+    from datetime import datetime
+
+    from youtube_sync.cookies import get_user_agent
+
+    if check_keyboard_interrupt():
+        return KeyboardInterruptException(
+            "Operation aborted due to previous keyboard interrupt"
+        )
+
+    user_agent: str = get_user_agent()
+
+    # Command to get video info in JSON format
+    cmd_list = [
+        url,
+        "--user-agent",
+        user_agent,
+        "--no-playlist",
+        "--print",
+        "%(upload_date)s",
+        "--skip-download",
+        ">>",
+        "upload_date.txt",
+    ]
+
+    if no_geo_bypass:
+        cmd_list.append("--no-geo-bypass")
+
+    if cookies_txt is not None:
+        cmd_list.extend(["--cookies", cookies_txt.as_posix()])
+
+    try:
+        # Create an executor that will handle proxies and cookies automatically
+        executor = RealOrProxyExecutor(yt_exe, source=source)
+
+        # Use the executor to run the command
+        ok = executor.execute(cmd_list, yt_dlp_path=yt_exe.exe)
+        if not ok:
+            return RuntimeError("Failed to get upload date")
+
+        # Find the output from the command
+        # Since we're using --print, the output should be in the console
+        # We need to run it again with subprocess to capture the output
+        full_cmd = [yt_exe.exe.as_posix()] + cmd_list
+        result = subprocess.run(full_cmd, check=True, capture_output=True, text=True)
+
+        # yt-dlp returns upload date in format YYYYMMDD
+        upload_date_str = result.stdout.strip()
+
+        if not upload_date_str or len(upload_date_str) != 8:
+            return ValueError(f"Invalid upload date format: {upload_date_str}")
+
+        # Parse the date string into a datetime object
+        upload_date = datetime.strptime(upload_date_str, "%Y%m%d")
+        return upload_date
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to get upload date: {e}")
+        return e
+    except Exception as e:
+        logger.error(f"Error getting upload date: {e}")
+        return e
 
 
 def yt_dlp_download_best_audio(
@@ -70,8 +264,6 @@ def yt_dlp_download_best_audio(
             "Download aborted due to previous keyboard interrupt"
         )
 
-    _update_proxies_once()
-
     # Use a generic name for the temporary file - let yt-dlp determine the extension
     temp_file = Path(os.path.join(temp_dir, "temp_audio"))
 
@@ -99,46 +291,7 @@ def yt_dlp_download_best_audio(
     ke: KeyboardInterrupt | None = None
     last_error: Exception | None = None
 
-    class RealYtdlp:
-        def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
-            full_cmd = [yt_exe.exe.as_posix()] + cmd_list
-            # subprocess.run(full_cmd, check=True)
-            proc = subprocess.Popen(
-                full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
-            with proc:
-                assert proc.stdout is not None
-                for line in proc.stdout:
-                    linestr = line.decode("utf-8").strip()
-                    print(linestr)
-                proc.wait()
-                if proc.returncode != 0:
-                    logging.error(f"yt-dlp failed with return code {proc.returncode}")
-                    return False
-                return True
-
-    class RealOrProxy:
-        def __init__(self) -> None:
-            self.proxy = YtDLPProxy()
-            self.real = RealYtdlp()
-            self.real_failures = 0
-
-        def execute(self, cmd_list: list[str], yt_dlp_path: Path | None = None) -> bool:
-            cmd_str = subprocess.list2cmdline(cmd_list)
-            logger.info(f"Executing command:\n  {cmd_str}\n")
-            if self.real_failures > 3:
-                return self.proxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
-            try:
-                self.real.execute(cmd_list, yt_dlp_path=yt_exe.exe)
-                return True
-            except subprocess.CalledProcessError:
-                self.real_failures += 1
-                return self.proxy.execute(cmd_list, yt_dlp_path=yt_exe.exe)
-
-        def is_proxy(self) -> bool:
-            return self.real_failures > 3
-
-    executor: RealOrProxy = RealOrProxy()
+    executor: YtDlpExecutor = RealOrProxyExecutor(yt_exe, source=source)
 
     for attempt in range(retries):
         if check_keyboard_interrupt():
@@ -147,23 +300,8 @@ def yt_dlp_download_best_audio(
             )
 
         try:
-            # cmd_str = subprocess.list2cmdline(cmd_list)
-            # logger.debug(
-            #     "\n\n###################\n# Running command: %s\n###################\n\n",
-            #     cmd_str,
-            # )
+            # Execute the command
             ok = executor.execute(cmd_list, yt_dlp_path=yt_exe.exe)
-            # proc = subprocess.Popen(cmd_list)
-            # while True:
-            #     if proc.poll() is not None:
-            #         break
-            #     if check_keyboard_interrupt():
-            #         proc.terminate()
-            #         return KeyboardInterruptException(
-            #             "Download aborted due to previous keyboard interrupt"
-            #         )
-            #     time.sleep(0.1)
-
             if ok:
                 # Find the downloaded file (with whatever extension yt-dlp used)
                 downloaded_files = list(temp_dir.glob("temp_audio.*"))
@@ -184,24 +322,9 @@ def yt_dlp_download_best_audio(
                 )
                 return downloaded_files[0]
             else:
-                # if YtDlpCmdRunner.is_keyboard_interrupt(rtn):
-                #     set_keyboard_interrupt()
-                #     raise KeyboardInterrupt("KeyboardInterrupt")
-                # last_error = subprocess.CalledProcessError(
-                #     returncode=proc.returncode, cmd=cmd_list
-                # )
                 logger.info(
                     f"Download attempt {attempt+1}/{retries} failed: {last_error}"
                 )
-                if executor.is_proxy():
-                    logger.error("Refreshing cookies")
-                    cookies: Cookies = Cookies.from_browser(source=source, save=True)
-                    cookies_txt = Path(cookies.path_txt)
-                    if cookies_txt is not None and cookies_txt.exists():
-                        cookies_txt_str = cookies_txt.read_text()
-                        logger.info(f"Cookies ({cookies_txt}):\n{cookies_txt_str}\n")
-                    # update the proxies
-                    YtDLPProxy.update()
 
         except KeyboardInterrupt as kee:
             set_keyboard_interrupt()
