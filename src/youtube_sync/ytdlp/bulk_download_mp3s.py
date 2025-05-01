@@ -32,19 +32,19 @@ def _process_conversion(
     """
     try:
         # Convert to MP3
-        convert_result = downloader.convert_to_mp3()
-        if isinstance(convert_result, Exception):
-            # return (downloader.url, downloader.outmp3, convert_result)
-            out: FinalResult = FinalResult(
-                request=downloader.di,
-                exception=convert_result,
-                date=None,
-            )
-            return out
-
-        # Copy to destination
-        downloader.copy_to_destination()
-        # return (downloader.url, downloader.outmp3, None)
+        di: DownloadRequest = downloader.di
+        if di.download_vid:
+            convert_result = downloader.convert_to_mp3()
+            if isinstance(convert_result, Exception):
+                # return (downloader.url, downloader.outmp3, convert_result)
+                out: FinalResult = FinalResult(
+                    request=downloader.di,
+                    exception=convert_result,
+                    date=None,
+                )
+                return out
+            downloader.copy_to_destination()
+            # return (downloader.url, downloader.outmp3, None)
         upload_date: datetime | None = None
         if isinstance(downloader.date, datetime):
             upload_date = downloader.date
