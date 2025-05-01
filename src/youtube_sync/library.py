@@ -381,7 +381,8 @@ class Library:
 
             # now add the vids that need upload dates
             for vid in missing_upload_dates_or_error:
-                missing_downloads.append(vid)
+                if vid not in missing_downloads:
+                    missing_downloads.append(vid)
 
             # Determine how many to download in this batch
             remaining_limit = None if limit is None else limit - download_count
