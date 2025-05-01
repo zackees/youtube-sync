@@ -225,6 +225,16 @@ class Library:
         """Find missing downloads."""
         return _find_missing_downloads(self.libdata.vids, self.out_dir)
 
+    def find_vids_missing_upload_date(self) -> list[VidEntry] | Exception:
+        """Find vids that are missing an upload date."""
+        if self.libdata is None:
+            return []
+        out: list[VidEntry] = []
+        for vid in self.libdata.vids:
+            if vid.date_upload is None:
+                out.append(vid)
+        return out
+
     def load(self) -> list[VidEntry]:
         """Load json from file."""
         # self.libdata = _load_json(self.library_json_path)
