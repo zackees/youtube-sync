@@ -26,12 +26,14 @@ class VidEntry:
         title: str,
         file_path: str | None = None,
         date: datetime | None = None,
-        upload_date: datetime | None = None,
+        upload_date: datetime | str | None = None,
         error=False,
         data: dict | None = None,
     ) -> None:
         _dbg_vid_dump(data)
         assert "http" in url
+        if isinstance(upload_date, str):
+            upload_date = datetime.fromisoformat(upload_date)
         self.url = url
         self.title = title
         self.date = date
