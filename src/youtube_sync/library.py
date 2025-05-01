@@ -345,6 +345,29 @@ class Library:
                 "\n#######################\n# Scanning for missing files\n###################"
             )
             missing_downloads_or_error = self.find_missing_downloads()
+            missing_upload_dates_or_error = self.find_vids_missing_upload_date()
+
+            if isinstance(missing_upload_dates_or_error, Exception):
+                logger.error(
+                    f"Error finding vids missing upload date: {missing_upload_dates_or_error}"
+                )
+                missing_upload_dates_or_error = {}
+
+            if isinstance(missing_downloads_or_error, Exception):
+                logger.error(
+                    f"Error finding missing downloads: {missing_downloads_or_error}"
+                )
+                missing_downloads_or_error = {}
+
+            vids_needing_upload_date: set[str] = set([])
+            vids_needing_mp3: set[str] = set([])
+            for vid in missing_upload_dates_or_error:
+                if vid.date_upload is None:
+                    vids_needing_upload_date.add(vid.url)
+                    continue
+
+            for vid in missing_downloads_or_error:
+                vids_needing_mp3.add(vid.url)
 
             batch_size: int
             if isinstance(missing_downloads_or_error, Exception):
@@ -353,7 +376,12 @@ class Library:
                 )
                 return
 
-            missing_downloads: list[VidEntry] = missing_downloads_or_error
+            assert isinstance(missing_downloads_or_error, list)
+            missing_downloads: list[VidEntry] = missing_downloads_or_error.copy()
+
+            # now add the vids that need upload dates
+            for vid in missing_upload_dates_or_error:
+                missing_downloads.append(vid)
 
             # Determine how many to download in this batch
             remaining_limit = None if limit is None else limit - download_count
@@ -372,11 +400,13 @@ class Library:
                 vid = missing_downloads[i]
                 next_url = vid.url
                 next_mp3_path = self.out_dir / vid.file_path
+                download_vid = vid.url in vids_needing_mp3
+                download_upload_date = vid.url in vids_needing_upload_date
                 di: DownloadRequest = DownloadRequest(
                     url=next_url,
                     outmp3=next_mp3_path,
-                    download_vid=True,
-                    download_date=True,
+                    download_vid=download_vid,
+                    download_date=download_upload_date,
                 )
                 downloads_to_process.append(di)
 
