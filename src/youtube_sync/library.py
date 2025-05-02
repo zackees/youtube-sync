@@ -364,7 +364,6 @@ class Library:
             for vid in missing_upload_dates_or_error:
                 if vid.date_upload is None:
                     vids_needing_upload_date.add(vid.url)
-                    continue
 
             for vid in missing_downloads_or_error:
                 vids_needing_mp3.add(vid.url)
