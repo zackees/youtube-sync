@@ -7,7 +7,7 @@ import os
 import sys
 import traceback
 import warnings
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -42,7 +42,7 @@ def _find_missing_downloads(
     try:
         out: list[VidEntry] = []
         files, _ = dst_video_path.ls()
-        files_set: set[str] = set(files)
+        files_set: set[str] = set([os.path.basename(f) for f in files])
 
         for vid in vids:
             file_path = vid.file_path
@@ -83,6 +83,57 @@ def _make_library(
     return library
 
 
+def _is_valid_date_path(s: str) -> bool:
+    parts = s.split(" ")
+    if len(parts) < 2:
+        return False
+    p = parts[0]
+    # if p is less than 10 characters, it is not a date
+    if len(p) < 10:
+        return False
+    try:
+        datetime.strptime(p, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+
+def _task_change_name(cwd: FSPath, vid: VidEntry, new_name: str) -> str:
+    # print(f"Renaming {vid.file_path} to {new_name}")
+    try:
+        # self.filesystem.rename(vid.file_path, new_name)
+        prev_name = vid.file_path
+
+        prev_mp3_file = cwd / prev_name
+        prev_txt_file = prev_mp3_file.with_suffix(".txt")
+
+        new_mp3_file = cwd / new_name
+        new_txt_file = new_mp3_file.with_suffix(".txt")
+
+        if prev_mp3_file.exists():
+            if new_mp3_file.exists():
+                logger.warning(f"File already exists: {new_mp3_file}")
+            else:
+                prev_mp3_file.moveTo(new_mp3_file)
+
+        if prev_txt_file.exists():
+            if new_txt_file.exists():
+                logger.warning(f"File already exists: {new_txt_file}")
+            else:
+                prev_txt_file.moveTo(new_txt_file)
+        # Now change the name in the vid entry
+        vid.file_path = new_name
+
+    except Exception as e:
+        import traceback
+
+        stacktrace_str = traceback.format_exc()
+        print(stacktrace_str)
+        logger.error(f"Error renaming {vid.file_path} to {new_name}: {e}")
+        return str(e)
+    return f"Renamed {vid.file_path} to {new_name}"
+
+
 class Library:
     """Represents the library"""
 
@@ -103,7 +154,7 @@ class Library:
         self.ytdlp = YtDlp(source=source)
         self.channel_url = channel_url
         self.channel_name = channel_name
-        self.json_path = json_path
+        self.json_path: FSPath = json_path
         self.out_dir = json_path.parent
         self.load()
         if not isinstance(self.libdata, LibraryData):
@@ -234,6 +285,58 @@ class Library:
             if vid.date_upload is None:
                 out.append(vid)
         return out
+
+    def fixup_video_names(self) -> None:
+        """Fixup the video names so that it is prepended with the date in YYYY-MM-DD format."""
+        if self.libdata is None:
+            return
+
+        task_data: list[tuple[VidEntry, str]] = []
+        for vid in self.libdata.vids:
+            if vid.date_upload is None:
+                print(f"Vid {vid.url} has no upload date, skipping.")
+                continue
+
+            is_valid_date_path = _is_valid_date_path(vid.file_path)
+            if is_valid_date_path:
+                # print(f"Vid {vid.url} already has a valid file path, skipping.")
+                continue
+
+            date_str = vid.date_upload.strftime("%Y-%m-%d")
+            # Assumes file_path is actually just a file_name.
+            new_name = f"{date_str} {vid.file_path}"
+
+            # def task_change_name(vid=vid, new_name=new_name) -> None:
+            #     # print(f"Renaming {vid.file_path} to {new_name}")
+            #     return _task_change_name(vid=vid, new_name=new_name)
+            item = (vid, new_name)
+
+            # vid.task_change_name = new_name
+            task_data.append(item)
+        # print(f"Fixed up {len(self.libdata.vids)} video names.")
+        print(f"Fixed up {len(task_data)} video names.")
+
+        with ThreadPoolExecutor(max_workers=32) as executor:
+            futures = []
+            for vid, new_name in task_data:
+                future = executor.submit(_task_change_name, self.out_dir, vid, new_name)
+                futures.append(future)
+
+            for future in as_completed(futures):
+                try:
+                    msg = future.result()
+                    if msg:
+                        print(msg)
+                except KeyboardInterrupt:
+                    print("KeyboardInterrupt detected. Stopping renames.")
+                    executor.shutdown(wait=False, cancel_futures=True)
+                    raise
+                except Exception as e:
+                    logger.error(f"Error renaming video: {e}")
+
+        print(f"Fixed up {len(task_data)} video names.")
+        print("Done fixing video names: saving library.")
+        self.save(overwrite=True)
 
     def load(self) -> list[VidEntry]:
         """Load json from file."""

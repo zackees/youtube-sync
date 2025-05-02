@@ -5,6 +5,22 @@
 import re
 
 
+def _starts_with_YYYY_MM_DD(date_str: str) -> bool:
+    """
+    Check if a string starts with a date in the format YYYY-MM-DD.
+
+    Args:
+    - date_str (str): The string to check.
+
+    Returns:
+    - bool: True if the string starts with a date in the format YYYY-MM-DD, False otherwise.
+    """
+    out = bool(re.match(r"^\d{4}-\d{2}-\d{2}", date_str))
+    if out:
+        print("FOUND IT")
+    return out
+
+
 def clean_filename(filename: str) -> str:
     """
     Cleans a string to make it a valid directory name by removing emojis,
@@ -17,6 +33,9 @@ def clean_filename(filename: str) -> str:
     Returns:
     - str: A cleaned-up string suitable for use as a filename.
     """
+    assert not _starts_with_YYYY_MM_DD(
+        filename
+    ), f"Filename {filename} starts with YYYY-MM-DD"
     # strip out any leading or trailing whitespace
     filename = filename.strip()
     # strip out leading and trailing periods

@@ -44,6 +44,12 @@ class YouTubeSyncImpl:
     def source(self) -> Source:
         return self.api.source()
 
+    def fixup_video_names(self, refresh=True) -> None:
+        if refresh:
+            self.library.load()
+        out = self.library.fixup_video_names()
+        return out
+
     def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry] | Exception:
         if refresh:
             self.library.load()

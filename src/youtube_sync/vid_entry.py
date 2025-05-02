@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +17,24 @@ def _dbg_vid_dump(data: dict | None) -> None:
     dbg_out_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
+def _parse_date_from_str(date_str: str | None) -> date | None:
+    """dates will like 2023-10-01T12:00:00Z or 2023-10-01"""
+    if date_str is None:
+        return None
+    # First try normal datetime format
+    try:
+        date_obj = datetime.fromisoformat(date_str)
+        return date_obj.date()
+    except ValueError:
+        # if that fails then attempt to do a straight YYYY-MM-DD parse
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            return date_obj.date()
+        except ValueError:
+            # if that fails then return None
+            raise
+
+
 class VidEntry:
     """Minimal information of a video on a channel."""
 
@@ -25,26 +43,29 @@ class VidEntry:
         url: str,
         title: str,
         file_path: str | None = None,
-        date: datetime | None = None,
-        upload_date: datetime | str | None = None,
+        creation_date: datetime | None = None,
+        upload_date: date | str | None = None,
         error=False,
         data: dict | None = None,
     ) -> None:
+        assert isinstance(
+            creation_date, datetime | None
+        ), f"creation_date: {creation_date} is of type {type(creation_date)}"
         _dbg_vid_dump(data)
         assert "http" in url
         if isinstance(upload_date, str):
-            upload_date = datetime.fromisoformat(upload_date)
+            upload_date = _parse_date_from_str(upload_date)
         self.url = url
         self.title = title
-        self.date = date
-        self.data = data
+        self.date = creation_date
+        upload_date_str = f"{upload_date} " if isinstance(upload_date, str) else ""
         if file_path is None:
-            self.file_path = clean_filename(f"{title}.mp3")
+            self.file_path = clean_filename(f"{upload_date_str}{title}.mp3")
         else:
-            self.file_path = clean_filename(file_path)
-        if date is None:
+            self.file_path = file_path
+        if creation_date is None:
             self.date = datetime.now()
-        self.date_upload: datetime | None = upload_date
+        self.date_upload: date | None = upload_date
         self.error = error
 
     # needed for set membership
@@ -80,20 +101,21 @@ class VidEntry:
         filepath = data.get("file_path")
         if filepath is None:
             filepath = clean_filename(data["title"])
-        filepath = clean_filename(filepath)
-        date: datetime | None = None
+        creation_date: datetime | None = None
         if data is not None:
             json_date = data.get("date")
             if json_date is not None:
-                date = datetime.fromisoformat(json_date)
-        upload_date: datetime | None = None
+                creation_date = datetime.fromisoformat(json_date)
+        upload_date: date | None = None
         if data.get("date_upload") is not None:
-            upload_date = datetime.fromisoformat(data["date_upload"])
+            upload_date_str = data["date_upload"]
+            # upload_date = date.fromisoformat(upload_date_str)
+            upload_date = _parse_date_from_str(upload_date_str)
         error = data.get("error", False)
         return VidEntry(
             url=data["url"],
             title=data["title"],
-            date=date,
+            creation_date=creation_date,
             upload_date=upload_date,
             file_path=filepath,
             error=error,

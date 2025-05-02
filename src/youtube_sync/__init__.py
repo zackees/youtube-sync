@@ -34,6 +34,11 @@ class YouTubeSync:
             library_path=library_path,
             channel_url=channel_url,
         )
+        # Fix items
+        self.fixup_video_names()
+
+    def fixup_video_names(self, refresh=True) -> None:
+        return self.impl.fixup_video_names(refresh=refresh)
 
     @property
     def library(self) -> Library:
