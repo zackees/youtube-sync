@@ -31,7 +31,7 @@ dependencies = [
     "static-ffmpeg>=2.12",
     "pytest-playwright",
     "beautifulsoup4>=4.13.3",
-    "virtual-fs>=1.0.21",
+    "virtual-fs>=1.0.24",
     "webdriver-manager",
     "pyvirtualdisplay",
     "yt-dlp>=2025.3.31",
