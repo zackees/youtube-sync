@@ -443,6 +443,48 @@ class Library:
             if (limit is not None) and (download_count >= limit):
                 return
 
+            print(
+                "\n#######################\n# Scan for missing upload dates\n###################"
+            )
+            missing_upload_dates_or_error = self.find_vids_missing_upload_date()
+            if isinstance(missing_upload_dates_or_error, Exception):
+                logger.error(
+                    f"Error finding vids missing upload date: {missing_upload_dates_or_error}"
+                )
+                missing_upload_dates_or_error = {}
+            assert isinstance(missing_upload_dates_or_error, list)
+            missing_dates: list[VidEntry] = missing_upload_dates_or_error
+            if missing_dates:
+                # always prioritize missing upload dates and filling them in before proceeding.
+                # this is because the upload date is used to determine the file name.
+                downloads_to_process: list[DownloadRequest] = []
+                for vid in missing_dates:
+                    next_url = vid.url
+                    next_mp3_path = self.out_dir / vid.file_path
+                    di: DownloadRequest = DownloadRequest(
+                        url=next_url,
+                        outmp3=next_mp3_path,
+                        download_vid=False,
+                        download_date=True,
+                    )
+                    download_vid = False
+                    download_upload_date = True
+                    di.download_vid = download_vid
+                    di.download_date = download_upload_date
+                    downloads_to_process.append(di)
+                futures: list[Future[FinalResult]] = self.ytdlp.download_mp3s(
+                    downloads=downloads_to_process,
+                    download_pool=download_pool,
+                )
+                for i, f in enumerate(futures):
+                    rslt: FinalResult = f.result()
+                    upload_date = rslt.date
+                    missing_dates[i].date_upload = upload_date
+                # save result
+                # self.save(overwrite=True)
+                self.merge(missing_dates, save=False)
+                self.fixup_video_names()
+
             # Find missing downloads
             print(
                 "\n#######################\n# Scanning for missing files\n###################"
