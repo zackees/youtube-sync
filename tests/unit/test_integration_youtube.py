@@ -11,6 +11,8 @@ from pathlib import Path
 from youtube_sync import Source
 from youtube_sync.integration_test import Args, integration_test
 
+os.environ["FIX_MISSING_DATES"] = "0"
+
 HERE = Path(__file__).parent
 
 os.chdir(HERE.parent.parent)

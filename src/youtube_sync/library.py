@@ -484,6 +484,15 @@ class Library:
                 # self.save(overwrite=True)
                 self.merge(missing_dates, save=False)
                 self.fixup_video_names()
+                # return so that the other downloads get a chance to fix their names as well.
+                library_url = self.channel_url
+
+                value = int(os.environ.get("FIX_MISSING_DATES", "1"))
+                if value == 1:
+                    warnings.warn(
+                        f"\n################## \n# Upload dates fixed {library_url}\n###################\n"
+                    )
+                    return
 
             # Find missing downloads
             print(
