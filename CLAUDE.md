@@ -10,7 +10,7 @@ youtube-sync is a Python library for syncing YouTube and other video platform ch
 
 ### Setup
 ```bash
-# Install dependencies with uv
+# Install dependencies with uv (includes yt-dlp with curl-cffi for Rumble support)
 uv venv
 uv pip install -r pyproject.toml
 uv pip install -e .
@@ -20,6 +20,9 @@ uv run playwright install chromium
 
 # Install rclone binaries
 uv run rclone-api-install-bins
+
+# Verify curl-cffi installation (required for Rumble downloads)
+uv run yt-dlp --list-impersonate-targets
 ```
 
 ### Running the Application
@@ -109,7 +112,7 @@ docker run -v $(pwd)/config.json:/app/config.json youtube-sync
 
 Three supported sources (Source enum in `src/youtube_sync/types.py`):
 - **YOUTUBE**: Uses yt-dlp with optional bot scanner fallback
-- **RUMBLE**: Uses yt-dlp via RumbleSyncImpl
+- **RUMBLE**: Uses yt-dlp via RumbleSyncImpl with browser impersonation (chrome-120) to bypass anti-bot protection
 - **BRIGHTEON**: Uses ytdlp-brighteon plugin
 
 ### Storage Abstraction
@@ -151,6 +154,7 @@ Library and videos stored in: `{output}/{channel_name}/{source}/`
 - YtDlpCmdRunner manages executable path and version
 - Plugin support for non-YouTube sources (Brighteon)
 - Cookie handling for YouTube authentication bypass
+- Browser impersonation via curl-cffi for Rumble (chrome-120) to bypass anti-bot protection
 
 ## Configuration Format
 
@@ -201,6 +205,8 @@ config.json structure:
 
 - Line length limit: 200 characters (ruff configuration)
 - Python 3.10+ required
+- yt-dlp with curl-cffi extras required for Rumble support (installed via pyproject.toml)
+- Rumble downloads use browser impersonation (--impersonate chrome-120) to bypass anti-bot protection
 - yt-dlp updates automatically on first run
 - Library.json uses FileLock for thread-safe concurrent access
 - Video dates parsed from upload_date, sorted oldest-first for downloads

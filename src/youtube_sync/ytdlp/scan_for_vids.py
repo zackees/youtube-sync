@@ -64,6 +64,10 @@ def scan_for_vids(
     if cookies_txt is not None:
         cmd_list += ["--cookies", str(cookies_txt)]
 
+    # Add browser impersonation for Rumble to bypass anti-bot protection
+    if "rumble.com" in channel_url:
+        cmd_list += ["--impersonate", "chrome-120"]
+
     if limit is not None:
         cmd_list += ["--playlist-end", str(limit)]
     cmd_list += [channel_url]

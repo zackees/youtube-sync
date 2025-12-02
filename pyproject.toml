@@ -34,7 +34,9 @@ dependencies = [
     "virtual-fs>=1.0.24",
     "webdriver-manager",
     "pyvirtualdisplay",
-    "yt-dlp>=2025.3.31",
+    # Updated to include curl-cffi extras for Rumble browser impersonation support (--impersonate chrome-120)
+    # Using latest stable version with curl-cffi support (pre-release versions available if needed with --prerelease=allow)
+    "yt-dlp[default,curl-cffi]>=2025.3.31",
     "rclone-api>=1.5.61",
     "yt-dlp-proxy>=1.0.7",
     "youtube-trusted-session-generator>=0.0.4",

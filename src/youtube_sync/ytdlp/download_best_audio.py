@@ -252,6 +252,10 @@ def yt_dlp_download_best_audio(
     if cookies_txt is not None:
         cmd_list.extend(["--cookies", cookies_txt.as_posix()])
 
+    # Add browser impersonation for Rumble to bypass anti-bot protection
+    if source == Source.RUMBLE:
+        cmd_list.extend(["--impersonate", "chrome-120"])
+
     ke: KeyboardInterrupt | None = None
     last_error: Exception | None = None
 

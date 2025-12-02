@@ -66,6 +66,10 @@ def yt_dlp_get_upload_date(
     if cookies_txt is not None:
         cmd_list.extend(["--cookies", cookies_txt.as_posix()])
 
+    # Add browser impersonation for Rumble to bypass anti-bot protection
+    if source == Source.RUMBLE:
+        cmd_list.extend(["--impersonate", "chrome-120"])
+
     try:
         # Create an executor that will handle proxies and cookies automatically
         executor = RealOrProxyExecutor(yt_exe, source=source)
