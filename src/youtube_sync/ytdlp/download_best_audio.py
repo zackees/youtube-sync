@@ -254,7 +254,7 @@ def yt_dlp_download_best_audio(
 
     # Add browser impersonation for Rumble to bypass anti-bot protection
     if source == Source.RUMBLE:
-        cmd_list.extend(["--impersonate", "chrome-120"])
+        cmd_list.extend(["--impersonate", "chrome-120", "--legacy-server-connect"])
 
     ke: KeyboardInterrupt | None = None
     last_error: Exception | None = None
