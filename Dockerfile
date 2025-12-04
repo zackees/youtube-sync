@@ -85,6 +85,7 @@ ENV TMPDIR=/mytemp
 COPY pre-requirements.txt ./
 RUN uv venv
 RUN uv pip install -r pre-requirements.txt
+RUN uv run playwright install-deps chromium
 RUN uv run playwright install chromium
 # RUN uv run reclone-api-install-bins
 

@@ -15,7 +15,8 @@ uv venv
 uv pip install -r pyproject.toml
 uv pip install -e .
 
-# Install playwright browser
+# Install playwright system dependencies and browser
+uv run playwright install-deps chromium
 uv run playwright install chromium
 
 # Install rclone binaries
