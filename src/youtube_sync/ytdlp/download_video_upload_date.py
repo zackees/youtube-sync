@@ -83,7 +83,16 @@ def yt_dlp_get_upload_date(
         logger.info(f"Command stderr: {rslt.stderr}")
 
         # yt-dlp returns upload date in format YYYYMMDD
-        upload_date_str = rslt.stdout.strip() if rslt.stdout else ""
+        # The output may contain warnings, so we need to extract just the date
+        # The date should be on the last non-empty line
+        output_lines = rslt.stdout.strip().split("\n") if rslt.stdout else []
+        upload_date_str = ""
+        for line in reversed(output_lines):
+            line = line.strip()
+            # Look for a line that looks like YYYYMMDD (8 digits)
+            if line and line.isdigit() and len(line) == 8:
+                upload_date_str = line
+                break
 
         if not upload_date_str:
             return ValueError(f"Invalid upload date format: {upload_date_str}")

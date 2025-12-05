@@ -58,13 +58,17 @@ class YtDlpExecutor(ABC):
 
     @abstractmethod
     def execute(
-        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+        self,
+        cmd_list: list[str],
+        yt_dlp_path: Path | None = None,
+        timeout_seconds: int = 1800,
     ) -> ExeResult:
         """Execute a yt-dlp command.
 
         Args:
             cmd_list: Command arguments to pass to yt-dlp
             yt_dlp_path: Path to the yt-dlp executable
+            timeout_seconds: Timeout in seconds (default 30 minutes)
 
         Returns:
             True if execution was successful, False otherwise
@@ -91,39 +95,99 @@ class RealYtdlp(YtDlpExecutor):
         self,
         cmd_list: list[str],
         yt_dlp_path: Path | None = None,
+        timeout_seconds: int = 1800,  # 30 minutes default
     ) -> ExeResult:
         full_cmd = [self.yt_exe.exe.as_posix()] + cmd_list
         logger.info(f"Executing command:\n  {subprocess.list2cmdline(full_cmd)}\n")
         proc = subprocess.Popen(
-            full_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            full_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=0,  # Unbuffered
         )
         stdout_lines: list[str] = []
-        stderr_lines: list[str] = []
+        last_output_time = time.time()
+        text_buffer = ""  # For complete text lines
+        byte_buffer = b""  # For incomplete UTF-8 sequences
+
         with proc:
             assert proc.stdout is not None
-            assert proc.stderr is not None
-            for line in proc.stdout:
-                linestr = line.decode("utf-8").strip()
-                print(linestr)
-                stdout_lines.append(linestr)
-            stdout = "\n".join(stdout_lines) + "\n"
+            # Read in small chunks and treat both \n and \r as line endings
+            while True:
+                chunk = proc.stdout.read(1024)
+                if not chunk:
+                    # End of stream - decode any remaining bytes and save content
+                    if byte_buffer:
+                        text_buffer += byte_buffer.decode("utf-8", errors="replace")
+                    if text_buffer.strip():
+                        print(text_buffer, flush=True)
+                        stdout_lines.append(text_buffer)
+                    break
 
-            for line in proc.stderr:
-                linestr = line.decode("utf-8").strip()
-                print(linestr)
-                stderr_lines.append(linestr)
-            stderr = "\n".join(stderr_lines) + "\n"
+                # Accumulate bytes
+                byte_buffer += chunk
+                last_output_time = time.time()
+
+                # Try to decode as much as possible
+                # Find the last valid UTF-8 boundary
+                decoded_text = ""
+                for i in range(len(byte_buffer), max(0, len(byte_buffer) - 3), -1):
+                    # Try to decode up to position i
+                    try:
+                        decoded_text = byte_buffer[:i].decode("utf-8")
+                        # Success - keep any remaining bytes for next iteration
+                        byte_buffer = byte_buffer[i:]
+                        break
+                    except UnicodeDecodeError:
+                        # Continue trying with fewer bytes
+                        continue
+
+                text_buffer += decoded_text
+
+                # Process complete lines (split on both \n and \r)
+                while "\n" in text_buffer or "\r" in text_buffer:
+                    # Find the earliest line ending
+                    newline_pos = text_buffer.find("\n")
+                    cr_pos = text_buffer.find("\r")
+
+                    if newline_pos == -1:
+                        line_end_pos = cr_pos
+                    elif cr_pos == -1:
+                        line_end_pos = newline_pos
+                    else:
+                        line_end_pos = min(newline_pos, cr_pos)
+
+                    line = text_buffer[:line_end_pos]
+                    text_buffer = text_buffer[line_end_pos + 1 :]
+
+                    # Print and save all non-empty lines
+                    if line:
+                        print(line, flush=True)
+                        stdout_lines.append(line)
+
+                # Check timeout
+                if time.time() - last_output_time > timeout_seconds:
+                    proc.kill()
+                    logging.error(f"yt-dlp timed out after {timeout_seconds} seconds")
+                    return ExeResult(
+                        ok=False,
+                        stdout="\n".join(stdout_lines) + "\n",
+                        stderr=None,
+                        error=f"yt-dlp timed out after {timeout_seconds} seconds",
+                    )
+
+            stdout = "\n".join(stdout_lines) + "\n"
             proc.wait()
             if proc.returncode != 0:
                 logging.error(f"yt-dlp failed with return code {proc.returncode}")
                 return ExeResult(
                     ok=False,
                     stdout=stdout,
-                    stderr=stderr,
+                    stderr=None,
                     error=f"yt-dlp failed with return code {proc.returncode}",
                 )
         logger.info(f"yt-dlp command succeeded: {full_cmd}")
-        return ExeResult(ok=True, stdout=stdout, stderr=stderr)
+        return ExeResult(ok=True, stdout=stdout, stderr=None)
 
     def is_proxy(self) -> bool:
         return False
@@ -164,7 +228,10 @@ class RealOrProxyExecutor(YtDlpExecutor):
         return cookies_txt
 
     def execute(
-        self, cmd_list: list[str], yt_dlp_path: Path | None = None
+        self,
+        cmd_list: list[str],
+        yt_dlp_path: Path | None = None,
+        timeout_seconds: int = 1800,
     ) -> ExeResult:
         # Always ensure proxies are updated
 
@@ -179,7 +246,9 @@ class RealOrProxyExecutor(YtDlpExecutor):
             )
             return out
         try:
-            return self.real.execute(cmd_list, yt_dlp_path=self.yt_exe.exe)
+            return self.real.execute(
+                cmd_list, yt_dlp_path=self.yt_exe.exe, timeout_seconds=timeout_seconds
+            )
         except subprocess.CalledProcessError:
             self.real_failures += 1
             # If we're switching to proxy mode, refresh cookies and proxies
@@ -233,6 +302,10 @@ def yt_dlp_download_best_audio(
 
     user_agent: str = get_user_agent()
 
+    # For Rumble, the audio format has extension "audio" which yt-dlp rejects
+    # So we download the smallest video format instead (360p) and extract audio
+    format_selector = "mp4-360p/worst" if source == Source.RUMBLE else "bestaudio/worst"
+
     # Command to download best audio format without any conversion
     cmd_list = [
         # yt_dlp_proxy_path.as_posix(),
@@ -240,10 +313,11 @@ def yt_dlp_download_best_audio(
         "--user-agent",
         user_agent,
         "-f",
-        "bestaudio/worst",  # Select best audio format
+        format_selector,  # Select best audio format
         "--no-playlist",  # Don't download playlists
         "--output",
         f"{temp_file.as_posix()}.%(ext)s",  # Output filename pattern
+        "--progress",  # Show progress even when stdout is not a TTY
     ]
 
     if no_geo_bypass:

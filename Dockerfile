@@ -86,7 +86,8 @@ COPY pre-requirements.txt ./
 RUN uv venv
 RUN uv pip install -r pre-requirements.txt
 RUN uv run playwright install-deps chromium
-RUN uv run playwright install chromium
+# Install chromium with increased timeout and retry logic
+RUN uv run playwright install chromium || uv run playwright install chromium || uv run playwright install chromium
 # RUN uv run reclone-api-install-bins
 
 RUN uv run rclone-api-install-bins

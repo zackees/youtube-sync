@@ -15,4 +15,5 @@ fluxbox -display :0 &
 # Add delay
 sleep 10
 
+# Run entrypoint (Python uses line buffering by default for stdout)
 uv run entrypoint.py
