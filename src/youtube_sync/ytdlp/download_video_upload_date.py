@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -83,19 +84,27 @@ def yt_dlp_get_upload_date(
         logger.info(f"Command stderr: {rslt.stderr}")
 
         # yt-dlp returns upload date in format YYYYMMDD
-        # The output may contain warnings, so we need to extract just the date
-        # The date should be on the last non-empty line
-        output_lines = rslt.stdout.strip().split("\n") if rslt.stdout else []
+        # The output may contain warnings and verbose logs, so we need to extract just the date
+        # Use regex to find all 8-digit patterns that look like dates (YYYYMMDD)
+        # Pattern: 4 digits starting with 19 or 20 (year), followed by 2 digits 01-12 (month),
+        # followed by 2 digits 01-31 (day)
+        date_pattern = re.compile(
+            r"^(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])$", re.MULTILINE
+        )
+
         upload_date_str = ""
-        for line in reversed(output_lines):
-            line = line.strip()
-            # Look for a line that looks like YYYYMMDD (8 digits)
-            if line and line.isdigit() and len(line) == 8:
-                upload_date_str = line
-                break
+        if rslt.stdout:
+            # Find the actual matched string in stdout (use the last matching line)
+            for line in reversed(rslt.stdout.strip().split("\n")):
+                line = line.strip()
+                if date_pattern.match(line):
+                    upload_date_str = line
+                    break
 
         if not upload_date_str:
-            return ValueError(f"Invalid upload date format: {upload_date_str}")
+            logger.error(f"Could not extract upload date from output: {rslt.stdout}")
+            stdout_preview = (rslt.stdout or "")[:200]
+            return ValueError(f"Invalid upload date format in output: {stdout_preview}")
 
         # Parse the date string into a datetime object
         upload_date = datetime.strptime(upload_date_str, "%Y%m%d")
