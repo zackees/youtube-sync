@@ -32,7 +32,7 @@ def yt_dlp_verbose(yt_exe: Path | None = None) -> str | Exception:
 
 def _fetch_channel_info_ytdlp(
     video_url: str, yt_exe: Path | None = None, cookies_txt: Path | None = None
-) -> dict[Any, Any]:
+) -> dict[str, Any]:
     """Fetch the info.
 
     Args:
@@ -79,7 +79,7 @@ def _fetch_channel_info_ytdlp(
 
 def _fetch_video_info(
     video_url: str, yt_exe: Path, cookies_txt: Path | None = None
-) -> dict:
+) -> dict[str, Any]:
     cmd_list = [
         yt_exe.as_posix(),
         "-J",
@@ -179,7 +179,7 @@ class YtDlp:
             return self.cookies
         return None
 
-    def fetch_channel_info(self, video_url: str) -> dict[Any, Any]:
+    def fetch_channel_info(self, video_url: str) -> dict[str, Any]:
         cookies = self._extract_cookies_if_needed()
         # cookies_txt = cookies.path_txt if cookies is not None else None
         cookies_txt: Path | None = (
@@ -189,7 +189,7 @@ class YtDlp:
             video_url, yt_exe=self.yt_exe, cookies_txt=cookies_txt
         )
 
-    def fetch_video_info(self, video_url: str) -> dict:
+    def fetch_video_info(self, video_url: str) -> dict[str, Any]:
         cookies = self._extract_cookies_if_needed()
         # cookies_txt = cookies.path_txt if cookies is not None else None
         cookies_txt: Path | None = (

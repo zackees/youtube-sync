@@ -51,23 +51,23 @@ def _make_options(
 ) -> ChromeOptions:
     """Makes the Chrome options."""
     opts = ChromeOptions()
-    opts.add_argument("--disable-notifications")
-    opts.add_argument("--mute-audio")
+    opts.add_argument("--disable-notifications")  # type: ignore[reportUnknownMemberType]
+    opts.add_argument("--mute-audio")  # type: ignore[reportUnknownMemberType]
 
     if headless:
-        opts.add_argument("--headless=new")
+        opts.add_argument("--headless=new")  # type: ignore[reportUnknownMemberType]
 
     if disable_gpu:
-        opts.add_argument("--disable-gpu")
+        opts.add_argument("--disable-gpu")  # type: ignore[reportUnknownMemberType]
 
     if disable_dev_shm_usage:
-        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("--disable-dev-shm-usage")  # type: ignore[reportUnknownMemberType]
 
     if user_agent:
-        opts.add_argument(f"--user-agent={user_agent}")
+        opts.add_argument(f"--user-agent={user_agent}")  # type: ignore[reportUnknownMemberType]
 
     if _IS_DOCKER:
-        opts.add_argument("--remote-debugging-address=0.0.0.0")
+        opts.add_argument("--remote-debugging-address=0.0.0.0")  # type: ignore[reportUnknownMemberType]
 
     return opts
 
@@ -112,7 +112,7 @@ def open_webdriver(  # pylint: disable=too-many-arguments,too-many-branches
         driver = webdriver.Chrome(service=service, options=opts)
 
         if headless:
-            driver.set_window_size(1440, 900)
+            driver.set_window_size(1440, 900)  # type: ignore[reportUnknownMemberType]
 
         return driver
 

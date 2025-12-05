@@ -10,8 +10,9 @@ import warnings
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-from appdirs import user_data_dir
+from appdirs import user_data_dir  # type: ignore[reportUnknownVariableType]
 from filelock import FileLock
 
 from youtube_sync import FSPath, RealFS
@@ -27,7 +28,7 @@ logger = create_logger(__name__, "INFO")
 
 def _get_library_json_lock_path() -> str:
     """Get the library json path."""
-    out = os.path.join(user_data_dir("youtube-sync"), "library.json.lock")
+    out = os.path.join(user_data_dir("youtube-sync"), "library.json.lock")  # type: ignore[reportUnknownMemberType, reportUnknownArgumentType]
     return out
 
 
@@ -252,7 +253,7 @@ class Library:
     def __str__(self) -> str:
         return self.libdata.to_json_str()
 
-    def __eq__(self, value):
+    def __eq__(self, value: object) -> bool:
         if not isinstance(value, Library):
             return False
         return self.libdata == value.libdata
@@ -265,7 +266,7 @@ class Library:
             vids=[],
         )
 
-    def known_vids(self, load=True) -> list[VidEntry]:
+    def known_vids(self, load: bool = True) -> list[VidEntry]:
         """Get the downloaded vids."""
         if load:
             self.load()
@@ -317,16 +318,16 @@ class Library:
         print(f"Fixed up {len(task_data)} video names.")
 
         with ThreadPoolExecutor(max_workers=32) as executor:
-            futures = []
+            futures: list[Future[str | None]] = []
             for vid, new_name in task_data:
                 future = executor.submit(_task_change_name, self.out_dir, vid, new_name)
-                futures.append(future)
+                futures.append(future)  # type: ignore[reportUnknownMemberType]
 
-            for future in as_completed(futures):
+            for future in as_completed(futures):  # type: ignore[reportUnknownVariableType, reportUnknownArgumentType]
                 try:
-                    msg = future.result()
+                    msg: str | None = future.result()  # type: ignore[reportUnknownMemberType]
                     if msg:
-                        print(msg)
+                        print(msg)  # type: ignore[reportUnknownArgumentType]
                 except KeyboardInterrupt:
                     print("KeyboardInterrupt detected. Stopping renames.")
                     executor.shutdown(wait=False, cancel_futures=True)
@@ -381,13 +382,13 @@ class Library:
             self.save(overwrite=True)
         return self.libdata.vids.copy()
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """Convert to dictionary."""
         data = self.libdata or self._empty_data()
         out = data.to_json()
         return out
 
-    def save(self, overwrite=False) -> Exception | None:
+    def save(self, overwrite: bool = False) -> Exception | None:
         """Save json to file."""
         data = self.libdata or self._empty_data()
         text = data.to_json_str()
@@ -515,12 +516,12 @@ class Library:
 
             vids_needing_upload_date: set[str] = set([])
             vids_needing_mp3: set[str] = set([])
-            for vid in missing_upload_dates_or_error:
-                if vid.date_upload is None:
-                    vids_needing_upload_date.add(vid.url)
+            for vid in missing_upload_dates_or_error:  # type: ignore[reportUnknownVariableType]
+                if vid.date_upload is None:  # type: ignore[reportUnknownMemberType]
+                    vids_needing_upload_date.add(vid.url)  # type: ignore[reportUnknownMemberType, reportUnknownArgumentType]
 
-            for vid in missing_downloads_or_error:
-                vids_needing_mp3.add(vid.url)
+            for vid in missing_downloads_or_error:  # type: ignore[reportUnknownVariableType]
+                vids_needing_mp3.add(vid.url)  # type: ignore[reportUnknownMemberType, reportUnknownArgumentType]
 
             batch_size: int
             if isinstance(missing_downloads_or_error, Exception):
@@ -533,9 +534,9 @@ class Library:
             missing_downloads: list[VidEntry] = missing_downloads_or_error.copy()
 
             # now add the vids that need upload dates
-            for vid in missing_upload_dates_or_error:
-                if vid not in missing_downloads:
-                    missing_downloads.append(vid)
+            for vid in missing_upload_dates_or_error:  # type: ignore[reportUnknownVariableType]
+                if vid not in missing_downloads:  # type: ignore[reportUnknownArgumentType]
+                    missing_downloads.append(vid)  # type: ignore[reportUnknownArgumentType]
 
             # Determine how many to download in this batch
             remaining_limit = None if limit is None else limit - download_count

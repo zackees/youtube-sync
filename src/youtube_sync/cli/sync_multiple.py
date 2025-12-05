@@ -168,7 +168,7 @@ def run(args: Args) -> None:
     rclone_config = config.rclone
 
     output = config.output
-    with Vfs.begin(output, rclone_conf=rclone_config) as cwd:
+    with Vfs.begin(output, rclone_conf=rclone_config) as cwd:  # type: ignore[reportUnknownMemberType]
         # Process each channel in the config
         for channel in config.channels:
             logger.info(f"Processing channel: {channel.name}")

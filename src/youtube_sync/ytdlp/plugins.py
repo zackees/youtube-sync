@@ -16,11 +16,11 @@ def _install_yt_dlp_plugin_from_url(
     reinstall: bool = False,
 ) -> Exception | None:
     """Install yt-dlp plugin."""
-    from download import download
+    from download import download  # type: ignore[reportUnknownVariableType]
 
-    def verbose_print(*args, **kwargs):
+    def verbose_print(*args: object, **kwargs: object) -> None:
         if verbose:
-            print(*args, **kwargs)
+            print(*args, **kwargs)  # type: ignore[reportCallIssue,reportArgumentType]
 
     if plugin_dir is None:
         plugin_dir_or_err = yt_dlp_plugin_dir()

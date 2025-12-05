@@ -5,7 +5,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from static_ffmpeg import add_paths
+from static_ffmpeg import add_paths  # type: ignore[reportUnknownVariableType]
 
 from youtube_sync.ytdlp.error import (
     KeyboardInterruptException,

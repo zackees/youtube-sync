@@ -33,16 +33,16 @@ def _my_date_parse(date_string: str | datetime) -> datetime:
         raise
 
 
-def parse_datetime(s, tzinfo=None) -> datetime:  # type: ignore
+def parse_datetime(s, tzinfo=None) -> datetime:  # type: ignore[reportUnknownParameterType, reportUnknownArgumentType]
     """Parses a datetime string"""
-    date: datetime = _my_date_parse(s)
+    date: datetime = _my_date_parse(s)  # type: ignore[reportUnknownArgumentType]
     if tzinfo:
         if isinstance(tzinfo, str):
             tzinfo = pytz.timezone(tzinfo)
         if date.tzinfo is None:
-            date = date.replace(tzinfo=tzinfo)
+            date = date.replace(tzinfo=tzinfo)  # type: ignore[reportUnknownArgumentType]
         else:
-            date = date.astimezone(tzinfo)
+            date = date.astimezone(tzinfo)  # type: ignore[reportUnknownArgumentType]
     return date
 
 
@@ -89,4 +89,4 @@ def iso8601_duration_as_seconds(d: str) -> int:
 
 def timestamp_to_iso8601(timestamp: float) -> str:
     """Converts a timestamp to an iso8601 string"""
-    return datetime.utcfromtimestamp(timestamp).isoformat() + "Z"
+    return datetime.utcfromtimestamp(timestamp).isoformat() + "Z"  # type: ignore[reportDeprecated]

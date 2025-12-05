@@ -44,24 +44,26 @@ class YouTubeSyncImpl:
     def source(self) -> Source:
         return self.api.source()
 
-    def fixup_video_names(self, refresh=True) -> None:
+    def fixup_video_names(self, refresh: bool = True) -> None:
         if refresh:
             self.library.load()
         out = self.library.fixup_video_names()
         return out
 
-    def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry] | Exception:
+    def find_vids_missing_downloads(
+        self, refresh: bool = True
+    ) -> list[VidEntry] | Exception:
         if refresh:
             self.library.load()
         out = self.library.find_missing_downloads()
         return out
 
-    def known_vids(self, refresh=True) -> list[VidEntry]:
+    def known_vids(self, refresh: bool = True) -> list[VidEntry]:
         out = self.library.known_vids(load=refresh)
         return out
 
     def scan_for_vids(
-        self, limit: int | None, stop_on_duplicate_vids=False
+        self, limit: int | None, stop_on_duplicate_vids: bool = False
     ) -> list[VidEntry]:
         remaining_to_download: list[VidEntry] | Exception = (
             self.find_vids_missing_downloads()
@@ -87,7 +89,7 @@ class YouTubeSyncImpl:
             logger.info("Skipping scan for vids, enough videos already downloaded")
             return []
 
-    def find_vids_already_downloaded(self, refresh=True) -> list[VidEntry]:
+    def find_vids_already_downloaded(self, refresh: bool = True) -> list[VidEntry]:
         known_vids = self.known_vids(refresh=refresh)
         find_vids_missing_downloads = self.find_vids_missing_downloads()
         if isinstance(find_vids_missing_downloads, Exception):

@@ -5,6 +5,10 @@ Download a youtube video as an mp3.
 import subprocess
 import sys
 import warnings
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from subprocess import CompletedProcess
 
 # def download_mp3(url: str, outmp3: str, ytdlp: YtDlp) -> None:
 #     """Download the youtube video as an mp3."""
@@ -20,9 +24,9 @@ def update_yt_dlp(check: bool) -> bool:
         return False
     # cmd_list = [yt_exe.exe.as_posix(), "--update"]
     cmd_list = ["--version"]
-    cp = yt_exe.run(cmd_list, check=False, capture_output=True)
+    cp: CompletedProcess[bytes] = yt_exe.run(cmd_list, check=False, capture_output=True)  # type: ignore[assignment]
     # cp = subprocess.run(cmd_list, check=False, capture_output=True)
-    cps = [cp]
+    cps: list[CompletedProcess[bytes]] = [cp]
     if cp.returncode != 0:
         python_exe = sys.executable
         cmd_list_pip_update = [
@@ -33,13 +37,13 @@ def update_yt_dlp(check: bool) -> bool:
             "--upgrade",
             "yt-dlp",
         ]
-        cp = subprocess.run(cmd_list_pip_update, check=False, capture_output=True)
+        cp = subprocess.run(cmd_list_pip_update, check=False, capture_output=True)  # type: ignore[misc]
         cps.append(cp)
         if cp.returncode != 0:
-            stdout1 = cps[0].stdout.decode("utf-8")
-            stderr1 = cps[0].stderr.decode("utf-8")
-            stdout2 = cps[1].stdout.decode("utf-8")
-            stderr2 = cps[1].stderr.decode("utf-8")
+            stdout1: str = cps[0].stdout.decode("utf-8")
+            stderr1: str = cps[0].stderr.decode("utf-8")
+            stdout2: str = cps[1].stdout.decode("utf-8")
+            stderr2: str = cps[1].stderr.decode("utf-8")
             msg = "Failed to update yt-dlp:\n"
             msg += f" first command:\n  {cps[0].args}\n  {stdout1}\n  {stderr1}\n"
             msg += f" second command:\n  {cps[1].args}\n  {stdout2}\n  {stderr2}\n"

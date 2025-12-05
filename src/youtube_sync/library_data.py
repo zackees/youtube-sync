@@ -4,6 +4,7 @@
 
 import json
 from dataclasses import dataclass
+from typing import Any
 
 from youtube_sync import FSPath
 from youtube_sync.types import Source
@@ -19,7 +20,7 @@ class LibraryData:
     source: Source
     vids: list[VidEntry]
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "channel_name": self.channel_name,
@@ -28,7 +29,7 @@ class LibraryData:
             "vids": [vid.to_dict() for vid in self.vids],
         }
 
-    def to_json_str(self, minify=False) -> str:
+    def to_json_str(self, minify: bool = False) -> str:
         """Convert to json string."""
         data = self.to_json()
         indent = None if minify else 4
@@ -47,16 +48,18 @@ class LibraryData:
             else:
                 self.vids.append(vid)
 
-    def __eq__(self, value) -> bool:
+    def __eq__(self, value: object) -> bool:
         if not isinstance(value, LibraryData):
             return False
         return self.vids == value.vids
 
-    def __ne__(self, value) -> bool:
+    def __ne__(self, value: object) -> bool:
         return not self.__eq__(value)
 
     @staticmethod
-    def from_json(data: dict | FSPath) -> "LibraryData | Exception | FileNotFoundError":
+    def from_json(
+        data: dict[str, Any] | FSPath,
+    ) -> "LibraryData | Exception | FileNotFoundError":
         """Create from dictionary."""
         try:
             if isinstance(data, FSPath):

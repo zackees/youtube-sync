@@ -45,15 +45,15 @@ def parse_youtube_videos(div_strs: list[str]) -> list[VidEntry]:
         soup = BeautifulSoup(div_str, "html.parser")
         title_link = soup.find("a", id="video-title-link")
         try:
-            title = title_link.get("title")  # type: ignore
-            href = title_link.get("href")  # type: ignore
+            title = title_link.get("title")  # type: ignore[reportUnknownArgumentType]
+            href = title_link.get("href")  # type: ignore[reportUnknownArgumentType]
             assert title and href
-            href = URL_BASE + str(href)
+            href = URL_BASE + str(href)  # type: ignore[reportUnknownArgumentType]
         except Exception:
             stack_trace = traceback.format_exc()
             warnings.warn(f"Error scraping video: {stack_trace}")
             continue
-        out.append(VidEntry(title=str(title), url=href))
+        out.append(VidEntry(title=str(title), url=href))  # type: ignore[reportUnknownArgumentType]
     return out
 
 
@@ -105,8 +105,8 @@ def list_vids_from_html(html_blocks: set[str]) -> list[VidEntry]:
         vids = parse_youtube_videos([block])
         all_vids.extend(vids)
     # Deduplicate by URL
-    seen = set()
-    unique_vids = []
+    seen: set[str] = set()
+    unique_vids: list[VidEntry] = []
     for vid in all_vids:
         if vid.url not in seen:
             seen.add(vid.url)

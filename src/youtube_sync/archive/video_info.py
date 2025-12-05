@@ -9,9 +9,13 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional, Set
 
-from youtube_sync.date import iso_fmt, now_local, parse_datetime
+from youtube_sync.date import parse_datetime  # type: ignore[reportUnknownVariableType]
+from youtube_sync.date import (  # type: ignore[reportUnknownVariableType]
+    iso_fmt,
+    now_local,
+)
 
 
 @dataclass
@@ -38,9 +42,9 @@ class VideoInfo:
     subtitles_url: str = ""
     rank: Optional[float] = None  # optional stdev rank.
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict[str, Any]:
         """Generates a dictionary representing this class instance."""
-        out = {
+        out: dict[str, Any] = {
             "channel_name": self.channel_name,
             "title": self.title,
             "date_published": self.date_published,
@@ -72,7 +76,7 @@ class VideoInfo:
         return VideoInfo.from_dict(d)
 
     @classmethod
-    def from_dict(cls, data: Dict) -> VideoInfo:
+    def from_dict(cls, data: dict[str, Any]) -> VideoInfo:
         """Deserializes from dictionary back to VideoInfo"""
         views = _parse_views(data["views"])
         return VideoInfo(
@@ -99,16 +103,16 @@ class VideoInfo:
         )
 
     @classmethod
-    def from_list_of_dicts(cls, data: List[Dict]) -> List[VideoInfo]:
-        out: List[VideoInfo] = []
+    def from_list_of_dicts(cls, data: list[dict[str, Any]]) -> list[VideoInfo]:
+        out: list[VideoInfo] = []
         for datum in data:
             vi = VideoInfo.from_dict(datum)
             out.append(vi)
         return out
 
     @classmethod
-    def to_plain_list(cls, data: List[VideoInfo]) -> List[Dict]:
-        out = []
+    def to_plain_list(cls, data: list[VideoInfo]) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
         vid_info: VideoInfo
         for vid_info in data:
             d = vid_info.to_dict()
@@ -118,9 +122,9 @@ class VideoInfo:
     @classmethod
     def to_compact_csv(
         cls,
-        vid_list: List[VideoInfo],
+        vid_list: list[VideoInfo],
         exclude_columns: Optional[Set[str]] = None,
-    ) -> List[List]:
+    ) -> list[list[Any]]:
         """
         Generates a compact csv form of the data. The csv form consists of a header list, followed by N data
         lists. This has the advantage of eliminating the redundant keys in the dictionary form, which helps
@@ -135,12 +139,12 @@ class VideoInfo:
             columns_set = columns_set - exclude_columns
         exclude_columns = exclude_columns or set({})
         columns = sorted(list(columns_set))
-        out: List[Any] = []
+        out: list[Any] = []
         # Create the header for the csv
         out.append(columns)
         for vid in vid_list:
             vid_dict = vid.to_dict()
-            row = []
+            row: list[Any] = []
             for col in columns:
                 val = vid_dict.get(col, "")
                 row.append(val)
@@ -148,7 +152,7 @@ class VideoInfo:
         return out
 
     @classmethod
-    def from_compact_csv(cls, csv_list: List[List]) -> List[VideoInfo]:
+    def from_compact_csv(cls, csv_list: list[list[Any]]) -> list[VideoInfo]:
         """
         Generates a compact csv form of the data. The csv form consists of a header list, followed by N data
         lists. This has the advantage of eliminating the redundant keys in the dictionary form, which helps
@@ -157,8 +161,8 @@ class VideoInfo:
         if len(csv_list) == 0:
             return []
         # Header line is the key list
-        key_list: List = [e.strip() for e in csv_list[0]]
-        out: List[VideoInfo] = []
+        key_list: list[str] = [e.strip() for e in csv_list[0]]
+        out: list[VideoInfo] = []
         # Go through the rest of the list and and construct the data, using the key_list
         # as the schema to build out the output list of VideoInfo.
         for datum in csv_list[1:]:
@@ -179,16 +183,18 @@ class VideoInfo:
 
     # Set operations like intersection, union, etc are nice to have.
     # This needs hash, eq, and ne.
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.channel_name + self.title)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, VideoInfo):
+            return False
         return (self.channel_name, self.title) == (
             other.channel_name,
             other.title,
         )
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
         return not (self == other)  # pylint: disable=superfluous-parens

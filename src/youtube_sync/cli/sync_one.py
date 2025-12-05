@@ -118,7 +118,7 @@ def _get_test_dst_fsfile() -> FSPath:
 
 def _get_test_dst_fsfile_remote() -> FSPath:
     local_root = "dst:TorrentBooks/Transcriptions/test/silverguru/youtube"
-    cwd = RemoteFS.from_rclone_config(src=local_root, rclone_conf=None).cwd()
+    cwd = RemoteFS.from_rclone_config(src=local_root, rclone_conf=None).cwd()  # type: ignore[reportUnknownMemberType]
     return cwd
 
 

@@ -8,6 +8,7 @@ import logging
 import subprocess
 import warnings
 from pathlib import Path
+from typing import Any
 
 from youtube_sync.library import VidEntry
 from youtube_sync.logutil import create_logger
@@ -15,7 +16,7 @@ from youtube_sync.logutil import create_logger
 logger = create_logger(__name__, logging.DEBUG)
 
 
-def _json_to_vid_entry(data: dict) -> VidEntry:
+def _json_to_vid_entry(data: dict[str, Any]) -> VidEntry:
     """Create a VidEntry from a dictionary."""
     title = data["title"]
     url = data["webpage_url"]
@@ -145,7 +146,7 @@ def scan_for_vids(
     return out
 
 
-def unit_test(limit=1) -> int:
+def unit_test(limit: int = 1) -> int:
     """Run the tests."""
     # change logging level to debug
     logger.setLevel(logging.DEBUG)

@@ -122,7 +122,7 @@ def download_mp3s(
         )
 
         # Create a future that will represent the final result for this download
-        def on_done_task(count=i) -> None:
+        def on_done_task(count: int = i) -> None:
             print(
                 f"\n###########################\n# Download {count+1}/{len(downloads)} complete\n###########################\n"
             )

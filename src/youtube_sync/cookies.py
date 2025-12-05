@@ -5,6 +5,7 @@ import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from filelock import FileLock
 
@@ -19,7 +20,7 @@ logger = create_logger(__name__, logging.getLogger().level)
 COOKIE_REFRESH_SECONDS = 2 * 24 * 60 * 60  # 2 days
 
 
-def _convert_cookies_to_txt(cookies: list[dict]) -> str:
+def _convert_cookies_to_txt(cookies: list[dict[str, Any]]) -> str:
     """
     Convert a list of cookie dictionaries to the cookies.txt (Netscape format).
 
@@ -63,7 +64,7 @@ def _convert_cookies_to_txt(cookies: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
+def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict[str, Any]]:
     logger.info("Getting cookies using WebDriver from %s", url)
     try:
         with open_webdriver(disable_gpu=True) as driver:
@@ -71,20 +72,20 @@ def _get_cookies_from_browser_using_webdriver(url: str) -> list[dict]:
             driver.delete_all_cookies()
             logger.debug("Navigating to %s", url)
             driver.get(url)
-            cookies = driver.get_cookies()
-            logger.info("Retrieved %d cookies from WebDriver", len(cookies))
-            return cookies
+            cookies = driver.get_cookies()  # type: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            logger.info("Retrieved %d cookies from WebDriver", len(cookies))  # type: ignore[reportUnknownArgumentType]
+            return cookies  # type: ignore[reportUnknownVariableType]
     except Exception as e:
         logger.error("Error getting cookies with WebDriver: %s", str(e))
         raise
 
 
-def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
+def _get_cookies_from_browser_using_playwright(url: str) -> list[dict[str, Any]]:
     from .playwright_launcher import Page, launch_playwright, set_headless
 
     logger.info("Getting cookies using Playwright from %s", url)
     set_headless(True)
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
 
     try:
         page: Page
@@ -101,7 +102,7 @@ def _get_cookies_from_browser_using_playwright(url: str) -> list[dict]:
         raise
 
 
-def _get_cookies_from_browser(url: str) -> list[dict]:
+def _get_cookies_from_browser(url: str) -> list[dict[str, Any]]:
     logger.info("Getting cookies from browser for %s", url)
     # return _get_cookies_from_browser_using_webdriver(url=url)
     return _get_cookies_from_browser_using_playwright(url=url)
@@ -296,7 +297,7 @@ class Cookies:
         return Cookies(source=source, text=txt)
 
     @staticmethod
-    def from_browser(source: Source, save=True) -> "Cookies":
+    def from_browser(source: Source, save: bool = True) -> "Cookies":
 
         logger.info("\n############################")
         logger.info("# Getting cookies for %s", source)

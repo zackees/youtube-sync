@@ -24,7 +24,7 @@ class YouTubeSync:
                 raise ValueError(f"Invalid channel URL: {channel_url}")
 
         if not isinstance(media_output, FSPath):
-            media_output = Vfs.begin(src=media_output)
+            media_output = Vfs.begin(src=media_output)  # type: ignore[reportUnknownMemberType]
 
         self.impl = YouTubeSyncImpl(
             channel_name=channel_name,
@@ -37,7 +37,7 @@ class YouTubeSync:
         # Fix items
         self.fixup_video_names()
 
-    def fixup_video_names(self, refresh=True) -> None:
+    def fixup_video_names(self, refresh: bool = True) -> None:
         return self.impl.fixup_video_names(refresh=refresh)
 
     @property
@@ -48,18 +48,20 @@ class YouTubeSync:
     def source(self) -> Source:
         return self.impl.source
 
-    def find_vids_missing_downloads(self, refresh=True) -> list[VidEntry] | Exception:
+    def find_vids_missing_downloads(
+        self, refresh: bool = True
+    ) -> list[VidEntry] | Exception:
         if refresh:
             self.impl.known_vids(refresh=True)
         out = self.library.find_missing_downloads()
         return out
 
-    def known_vids(self, refresh=True) -> list[VidEntry]:
+    def known_vids(self, refresh: bool = True) -> list[VidEntry]:
         out = self.impl.known_vids(refresh=refresh)
         return out
 
     def scan_for_vids(
-        self, limit: int | None, stop_on_duplicate_vids=False
+        self, limit: int | None, stop_on_duplicate_vids: bool = False
     ) -> list[VidEntry]:
         out = self.impl.scan_for_vids(
             limit=limit,
@@ -67,7 +69,7 @@ class YouTubeSync:
         )
         return out
 
-    def find_vids_already_downloaded(self, refresh=True) -> list[VidEntry]:
+    def find_vids_already_downloaded(self, refresh: bool = True) -> list[VidEntry]:
         out = self.impl.known_vids(refresh=refresh)
         return out
 

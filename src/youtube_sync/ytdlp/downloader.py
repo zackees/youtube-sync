@@ -70,7 +70,7 @@ class YtDlpDownloader:
         """Support for context manager."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Clean up resources when exiting context."""
         self.dispose()
 

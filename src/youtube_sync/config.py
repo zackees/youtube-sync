@@ -5,6 +5,7 @@ Unit test file.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from virtual_fs import FSPath, Vfs
 
@@ -22,7 +23,7 @@ class CmdOptions:
     scan: bool
 
     @staticmethod
-    def from_dict(data: dict) -> "CmdOptions":
+    def from_dict(data: dict[str, Any]) -> "CmdOptions":
         download = data.get("download", True)
         scan = data.get("scan", True)
         return CmdOptions(
@@ -52,7 +53,7 @@ class Channel:
     channel_id: str
 
     @staticmethod
-    def from_dict(data: dict) -> "Channel":
+    def from_dict(data: dict[str, Any]) -> "Channel":
         return Channel(
             name=data["name"],
             source=Source.from_str(data["source"]),
@@ -78,8 +79,8 @@ class Channel:
 
 
 def _remove_duplicates(channels: list[Channel]) -> list[Channel]:
-    seen = set()
-    out = []
+    seen: set[Channel] = set()
+    out: list[Channel] = []
     for channel in channels:
         if channel not in seen:
             out.append(channel)
@@ -95,7 +96,7 @@ class Config:
     def __init__(
         self,
         output: str,
-        rclone: dict,
+        rclone: dict[str, Any],
         channels: list[Channel],
         cmd_options: CmdOptions,
     ):
@@ -105,7 +106,7 @@ class Config:
         self.cmd_options = cmd_options
 
     @staticmethod
-    def from_dict(data: dict) -> "Config | Exception":
+    def from_dict(data: dict[str, Any]) -> "Config | Exception":
         try:
             channels = [Channel.from_dict(channel) for channel in data["channels"]]
             output = data["output"]
@@ -140,6 +141,6 @@ class Config:
             return e
 
     def to_paths(self) -> list[tuple[Channel, FSPath]]:
-        cwd: FSPath = Vfs.begin(self.output, rclone_conf=self.rclone)
+        cwd: FSPath = Vfs.begin(self.output, rclone_conf=self.rclone)  # type: ignore[reportUnknownMemberType]
         # return [(channel, channel.to_fs_path(FSPath.from_str(self.output))) for channel in self.channels]
         return [(channel, channel.to_fs_path(cwd)) for channel in self.channels]

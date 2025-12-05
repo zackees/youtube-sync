@@ -8,7 +8,7 @@ from youtube_sync.clean_filename import clean_filename
 _DBG_ENABLE_VID_DUMP = False
 
 
-def _dbg_vid_dump(data: dict | None) -> None:
+def _dbg_vid_dump(data: dict[str, Any] | None) -> None:
     if not _DBG_ENABLE_VID_DUMP:
         return
     assert data is not None
@@ -45,8 +45,8 @@ class VidEntry:
         file_path: str | None = None,
         creation_date: datetime | None = None,
         upload_date: date | str | None = None,
-        error=False,
-        data: dict | None = None,
+        error: bool = False,
+        data: dict[str, Any] | None = None,
     ) -> None:
         assert isinstance(
             creation_date, datetime | None
@@ -69,7 +69,7 @@ class VidEntry:
         self.error = error
 
     # needed for set membership
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.url)
 
     def __eq__(self, other: Any):
@@ -81,7 +81,7 @@ class VidEntry:
         data = self.to_dict()
         return json.dumps(data)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         dateupload_str: str | None = None
         if self.date_upload is not None:
@@ -96,7 +96,7 @@ class VidEntry:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "VidEntry":
+    def from_dict(cls, data: dict[str, Any]) -> "VidEntry":
         """Create from dictionary."""
         filepath = data.get("file_path")
         if filepath is None:

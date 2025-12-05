@@ -7,7 +7,7 @@ from pathlib import Path
 from youtube_sync.ytdlp.error import set_keyboard_interrupt
 
 
-def _yt_dlp_exe(install_missing_plugins=True) -> Path | Exception:
+def _yt_dlp_exe(install_missing_plugins: bool = True) -> Path | Exception:
     yt_exe = shutil.which("yt-dlp")
     if yt_exe is None:
         return FileNotFoundError("yt-dlp not found")
@@ -36,14 +36,14 @@ class YtDlpCmdRunner:
         return _is_keyboard_interrupt(rtn)
 
     @staticmethod
-    def create_or_raise(install_missing_plugins=True) -> "YtDlpCmdRunner":
+    def create_or_raise(install_missing_plugins: bool = True) -> "YtDlpCmdRunner":
         yt_exe = _yt_dlp_exe(install_missing_plugins=install_missing_plugins)
         if isinstance(yt_exe, Exception):
             raise yt_exe
         return YtDlpCmdRunner(yt_exe)
 
     @staticmethod
-    def create(install_missing_plugins=True) -> "YtDlpCmdRunner | Exception":
+    def create(install_missing_plugins: bool = True) -> "YtDlpCmdRunner | Exception":
         yt_exe = _yt_dlp_exe(install_missing_plugins=install_missing_plugins)
         if isinstance(yt_exe, Exception):
             return yt_exe
@@ -52,28 +52,28 @@ class YtDlpCmdRunner:
     def __init__(self, exe: Path) -> None:
         self.exe = exe
 
-    def run(self, args: list[str], **proc_args) -> subprocess.CompletedProcess:
+    def run(self, args: list[str], **proc_args: object) -> subprocess.CompletedProcess[bytes]:  # type: ignore[reportUnknownParameterType]
         cmd_list = [self.exe.as_posix()] + args
         cmd_str = subprocess.list2cmdline(cmd_list)
-        cp: subprocess.CompletedProcess = subprocess.run(cmd_list, **proc_args)
-        if cp.returncode != 0:
-            if _is_keyboard_interrupt(cp.returncode):
+        cp: subprocess.CompletedProcess[bytes] = subprocess.run(cmd_list, **proc_args)  # type: ignore[reportUnknownArgumentType]
+        if cp.returncode != 0:  # type: ignore[reportUnknownMemberType]
+            if _is_keyboard_interrupt(cp.returncode):  # type: ignore[reportUnknownMemberType,reportUnknownArgumentType]
                 set_keyboard_interrupt()
                 raise KeyboardInterrupt("KeyboardInterrupt")
-            stdout = cp.stdout
-            stderr = cp.stderr
-            out: str = ""
-            if stdout:
+            stdout = cp.stdout  # type: ignore[reportUnknownVariableType,reportUnknownMemberType]
+            stderr = cp.stderr  # type: ignore[reportUnknownVariableType,reportUnknownMemberType]
+            out: str = ""  # type: ignore[reportUnknownVariableType]
+            if stdout:  # type: ignore[reportUnknownVariableType]
                 if isinstance(stdout, bytes):
-                    out += stdout.decode("utf-8")
+                    out += stdout.decode("utf-8")  # type: ignore[reportUnknownVariableType]
                 else:
-                    out += stdout
-            if stderr:
+                    out += stdout  # type: ignore[reportUnknownVariableType]
+            if stderr:  # type: ignore[reportUnknownVariableType]
                 if isinstance(stderr, bytes):
-                    out += stderr.decode("utf-8")
+                    out += stderr.decode("utf-8")  # type: ignore[reportUnknownVariableType]
                 else:
-                    out += stderr
-            msg = f"Failed to run yt-dlp with args: {cmd_str}\n  Return code: {cp.returncode}\n  out: {out}"
+                    out += stderr  # type: ignore[reportUnknownVariableType]
+            msg = f"Failed to run yt-dlp with args: {cmd_str}\n  Return code: {cp.returncode}\n  out: {out}"  # type: ignore[reportUnknownMemberType,reportUnknownVariableType]
             warnings.warn(msg)
             raise RuntimeError(msg)
-        return cp
+        return cp  # type: ignore[reportUnknownVariableType]
