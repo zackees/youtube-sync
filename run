@@ -1,3 +1,58 @@
 #!/bin/bash
 
+# Function to check if a Docker image has corrupted metadata
+check_image_corruption() {
+    local image_name=$1
+
+    # Try to inspect the image, capture both stdout and stderr
+    if ! docker inspect "$image_name" >/dev/null 2>&1; then
+        return 1  # Image doesn't exist or is corrupted
+    fi
+
+    # Additional check: Try to get the image JSON
+    if ! docker image inspect "$image_name" --format '{{.Id}}' >/dev/null 2>&1; then
+        return 1  # JSON is corrupted
+    fi
+
+    return 0  # Image is healthy
+}
+
+# Function to clean up corrupted images
+cleanup_corrupted_image() {
+    local image_name=$1
+
+    echo "Detected corrupted image: $image_name"
+    echo "Attempting to clean up..."
+
+    # Get containers using this image (if any)
+    local containers=$(docker ps -aq --filter ancestor="$image_name" 2>/dev/null)
+
+    if [ -n "$containers" ]; then
+        echo "Removing containers using $image_name..."
+        docker rm -f $containers 2>/dev/null || true
+    fi
+
+    # Try to remove the image
+    echo "Removing corrupted image $image_name..."
+    docker rmi -f "$image_name" 2>/dev/null || true
+
+    echo "Cleanup complete. Proceeding with rebuild..."
+}
+
+# Get the image name from docker-compose.yml
+# This assumes the service builds an image tagged as youtube-sync-webdriver
+IMAGE_NAME="youtube-sync-webdriver"
+
+# Check if the image exists and is corrupted
+if docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${IMAGE_NAME}:latest$"; then
+    echo "Checking image $IMAGE_NAME for corruption..."
+    if ! check_image_corruption "$IMAGE_NAME"; then
+        cleanup_corrupted_image "$IMAGE_NAME"
+    else
+        echo "Image $IMAGE_NAME is healthy."
+    fi
+fi
+
+# Now run docker compose
+echo "Starting docker compose..."
 docker compose up --build
